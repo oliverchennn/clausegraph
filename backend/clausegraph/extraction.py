@@ -19,7 +19,7 @@ MAX_NATIVE_CHARACTERS = 2_000_000
 MAX_NATIVE_BYTES = 20 * 1024 * 1024
 PDF_PARSE_TIMEOUT_SECONDS = 20.0
 _NUMBER = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?"
-_MONEY = re.compile(rf"(?:\$\s*({_NUMBER})(?![\d.,])|USD\s*({_NUMBER})(?![\d.,])|(?<![\d.,])({_NUMBER})\s*(?:USD|dollars?)\b|(?<![\d.,])(\d+)\s*cents?\b)", re.IGNORECASE)
+_MONEY = re.compile(rf"(?:\$\s*({_NUMBER})(?!\d|[.,]\d)|USD\s*({_NUMBER})(?!\d|[.,]\d)|(?<![\d.,])({_NUMBER})\s*(?:USD|dollars?)\b|(?<![\d.,])(\d+)\s*cents?\b)", re.IGNORECASE)
 
 
 def _pdf_worker(content: bytes, connection):
@@ -216,6 +216,31 @@ def rule_blocker(rule: Rule, *, check_approval: bool = True) -> str | None:
     return None
 
 
+def _incoming_money_supported(rule: Rule) -> bool:
+    quotes = "\n".join(evidence.quote for evidence in rule.evidence)
+    incoming = re.search(r"\b(?:paycheck|payroll|income|refund\w*|reimburs\w*|grant|benefit|deposited|disburs\w*|receiv\w*)\b", quotes, re.IGNORECASE)
+    expense = re.search(r"\b(?:rent|fees?|charges?|charged|repay\w*|deduct\w*|debit\w*|purchase|cost)\b|\byou\s+owe\b", quotes, re.IGNORECASE)
+    return bool(incoming and not expense)
+
+
+def event_evidence_blocker(event: FinancialEvent, rules: list[Rule], *, check_values: bool = True) -> str | None:
+    """An amount/date quote cannot turn a payable bill into incoming cash."""
+    if event.kind != "projected":
+        return "Extracted candidates cannot attest an actual transaction."
+    indexed = {rule.id: rule for rule in rules}
+    if not event.source_rule_ids or any(rid not in indexed for rid in event.source_rule_ids):
+        return "Event lacks a known source rule."
+    sources = [indexed[rid] for rid in event.source_rule_ids]
+    matching = [rule for rule in sources if not check_values or (rule.amount_cents == event.amount_cents and rule.due_date == event.date)]
+    if not matching:
+        return "No single source obligation supports both the event amount and date."
+    if event.direction == "income" and not any(_incoming_money_supported(rule) for rule in matching):
+        return "The event source does not unambiguously describe incoming money."
+    if event.direction == "expense" and all(_incoming_money_supported(rule) for rule in matching):
+        return "The event source describes incoming money, not an expense."
+    return None
+
+
 def action_evidence_blocker(action: Action, rules: list[Rule], events: list[FinancialEvent] | None = None) -> str | None:
     """Check each transformation's literals and target linkage independently of approvals.
 
@@ -271,8 +296,8 @@ def action_evidence_blocker(action: Action, rules: list[Rule], events: list[Fina
                 return "The added event date is not supported by an explicit source date."
             if effect.event.kind != "projected":
                 return "An action cannot invent an actual transaction."
-            if effect.event.direction == "income" and not any(rule.kind == "benefit" for rule in sources) and not re.search(r"\b(?:income|paycheck|payroll|refund|reimbursement|grant|deposit|disburs\w*)\b", quotes, re.IGNORECASE):
-                return "The source does not identify the added event as incoming money."
+            if effect.event.direction == "income" and not any(_incoming_money_supported(rule) and effect.event.amount_cents in monetary_values("\n".join(e.quote for e in rule.evidence)) for rule in sources):
+                return "The source does not identify the added amount as incoming money."
         elif events is not None:
             target = targets.get(effect.target_event_id)
             if target is None:
@@ -335,5 +360,5 @@ def compile_rules(result: ExtractionResult) -> ExtractionResult:
             break
         actions = filtered
     compiled.actions = actions
-    compiled.events = [event for event in compiled.events if sources_valid(event.source_rule_ids) and any(rules[rid].amount_cents == event.amount_cents and rules[rid].due_date == event.date for rid in event.source_rule_ids)]
+    compiled.events = [event for event in compiled.events if sources_valid(event.source_rule_ids) and event_evidence_blocker(event, compiled.rules) is None]
     return compiled

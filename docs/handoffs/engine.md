@@ -10,6 +10,7 @@ Branch: `codex/engine`, checkout `.worktrees/engine`. Re-claimed through the liv
 - `graph.py`: typed evidence/rule/action/event/entity graph, source-bearing edges, contradictory same-identity clauses, ambiguous entities, missing references, rule/action cycles and explicit supersession.
 - Regression tests cover demo arithmetic, approvals, unsupported benefits, source injection, exact provenance, horizon boundaries, relocation, essential protection, event collisions, dependencies, honest solver statuses and twelve exhaustive small-case solver comparisons.
 - Resumed audit fixed concrete gaps: optimization independently revalidates each action's evidence/date/amount/fee and target-rule linkage; cancellation cannot omit evidenced debt acceleration or fees. Unreviewed/deleted-source expenses remain counted and prevent a confirmed plan, as do not-yet-materialized unresolved obligations. Explicit links expose contradictory obligation rules with different labels; duplicate obligation/due-date entries require review. Extreme monetary/burden magnitudes and overflowing calendars fail explicitly before solver overflow. Every PlanResult retains a deep copy of the normalized scenario assumptions.
+- Follow-up review closes event direction inversion: a bill cannot become incoming cash merely by sharing a quoted amount/date, salary cannot be compiled as an expense, and extracted candidates cannot attest actual transactions. Known obligations absent from the represented ledger prevent confirmation. Incoming-money detection deliberately withholds ambiguous expense/receipt wording. Corrected currency parser accepts terminal punctuation while rejecting truncated invalid precision/grouping.
 
 ## Interfaces
 
@@ -17,13 +18,15 @@ Public signatures match `docs/ARCHITECTURE.md` without engine-lane changes to ca
 
 `action_evidence_blocker(action, rules, events=None) -> str | None` is a reusable internal check used by compilation and optimization. Supplying events additionally checks exact target source/dependency linkage; source-free intake targets require a quoted monetary match. Conditional approval assumptions do not bypass this check. `extract_native` retains its public signature; callers need no change for subprocess isolation. Optimizer input ValueErrors (ambiguous income controls, invalid calendar) should map to API HTTP 422; API lane was notified.
 
+`event_evidence_blocker(event, rules, check_values=True) -> str | None` additionally validates candidate direction and ties amount/date to one source. The optimizer checks source-backed projected income; explicit income scenario assumptions bypass literal values only, preserving the direction/evidence checks. Existing actual ledger records remain immutable and are not re-extracted.
+
 Root added `RuleReview.conditions` and fixed payroll classification after proposals through the live channel. Root was advised to make remaining money fields strict integer contracts consistently.
 
 ## Exact checks
 
 Using root `.venv/Scripts/python.exe`, cwd this checkout:
 
-- `-m pytest backend/tests -q`: **81 passed, 1 skipped in 3.31s** (2026-09-19). The skip is PostgreSQL without POSTGRES_TEST_URL; this checkout does not yet include the API lane's new tests.
+- `-m pytest backend/tests -q`: **86 passed, 1 skipped in 3.45s** (2026-09-19). The skip is PostgreSQL without POSTGRES_TEST_URL; this checkout does not yet include the API lane's new tests.
 - `-m ruff check backend/clausegraph/engine.py backend/clausegraph/extraction.py backend/clausegraph/graph.py backend/tests/test_engine.py backend/tests/test_extraction.py backend/tests/test_graph.py`: **All checks passed**.
 - Earlier standalone demo optimization: OPTIMAL; baseline minimum -40000, proposed minimum 5000, ending 50000, only shift-payment selected.
 

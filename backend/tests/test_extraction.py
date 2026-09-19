@@ -107,7 +107,7 @@ def test_compiler_requires_human_review_and_amount_date_backing():
 
 
 def test_compiler_filters_pending_benefits_even_when_otherwise_reviewed():
-    document, extracted = candidate()
+    document, extracted = candidate("Receive a $60.00 grant on 2026-09-01.")
     extracted.rules[0].kind = "benefit"
     checked = validate_extraction(extracted, document)
     checked.rules[0].review_status = "reviewed"
@@ -129,6 +129,28 @@ def test_compiler_detects_forged_action_fee_and_unsupported_dates():
 
 def test_money_with_invalid_precision_or_grouping_cannot_match_a_prefix():
     assert not monetary_values("$60.123 and USD 1,234,56 and 1.234 dollars")
+    assert monetary_values("Pay $450.00. Or $450, if approved. USD 6.00.") == {45000, 600}
+
+
+@pytest.mark.parametrize("text", ["Rent of $60.00 is due on 2026-09-01.", "A $60.00 grant application fee is charged on 2026-09-01."])
+def test_compiler_cannot_turn_expenses_into_income(text):
+    document, extracted = candidate(text)
+    checked = validate_extraction(extracted, document)
+    checked.rules[0].review_status = "reviewed"
+    checked.events = [FinancialEvent(id="invented-income", title="Invented income", date=START, amount_cents=6000, direction="income", source_rule_ids=["rule"])]
+    assert not compile_rules(checked).events
+
+
+def test_compiler_cannot_attest_actual_transactions_or_invert_paycheck_direction():
+    document, extracted = candidate("A $60.00 paycheck will be deposited on 2026-09-01.")
+    checked = validate_extraction(extracted, document)
+    checked.rules[0].review_status = "reviewed"
+    checked.events = [FinancialEvent(id="salary", title="Salary", date=START, amount_cents=6000, direction="income", kind="actual", source_rule_ids=["rule"])]
+    assert not compile_rules(checked).events
+    checked.events[0].kind = "projected"
+    assert len(compile_rules(checked).events) == 1
+    checked.events[0].direction = "expense"
+    assert not compile_rules(checked).events
 
 
 def test_compiler_does_not_mix_amount_and_date_from_different_obligations():

@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from ortools.sat.python import cp_model
 
-from .extraction import action_evidence_blocker, rule_blocker
+from .extraction import action_evidence_blocker, event_evidence_blocker, rule_blocker
 from .graph import dependency_issues
 from .schemas import (
     Action, ApprovalStatus, DailyBalance, FinancialEvent, PlanRequest, PlanResult,
@@ -271,15 +271,19 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
     warnings.extend(issue.message for issue in graph_issues if issue.code == "duplicate_obligation")
     retained = []
     for event in scenario.events:
-        if event.direction == "income" and event.kind == "projected" and event.source_rule_ids and any(rid not in rule_map or rid in blocked_rules for rid in event.source_rule_ids):
+        bad_income_evidence = event.direction == "income" and event.kind == "projected" and event.source_rule_ids and event_evidence_blocker(event, rules, check_values=request.income_cents is None and request.income_date is None)
+        if event.direction == "income" and event.kind == "projected" and event.source_rule_ids and (bad_income_evidence or any(rid not in rule_map or rid in blocked_rules for rid in event.source_rule_ids)):
             warnings.append(f"{event.title} is excluded from the ledger because its evidence, conditions, review or approval are unresolved. Conditional income requires an explicit eligible claim action.")
         else:
             retained.append(event)
             if event.direction == "expense" and event.kind == "projected" and event.date >= scenario.start_date and any(rid not in rule_map or rid in blocked_rules for rid in event.source_rule_ids):
                 unresolved_ledger = True
                 warnings.append(f"{event.title} remains in the ledger, but its source obligation requires review; the plan cannot be confirmed.")
+    represented_rules = {rid for event in retained for rid in event.source_rule_ids}
+    superseded_rules = {old for rule in rules if rule.id not in blocked_rules for old in rule.supersedes}
     for rule in rules:
-        if rule.kind == "obligation" and rule.review_status != ReviewStatus.rejected and rule.id in blocked_rules and (rule.due_date is None or rule.due_date >= scenario.start_date):
+        missing_obligation = rule.id in blocked_rules or (rule.id not in represented_rules and rule.id not in superseded_rules)
+        if rule.kind == "obligation" and rule.review_status != ReviewStatus.rejected and missing_obligation and (rule.due_date is None or rule.due_date >= scenario.start_date):
             unresolved_ledger = True
             warnings.append(f"Obligation {rule.title} is unresolved; its amount or date may not be fully represented in the ledger.")
     scenario.events = retained

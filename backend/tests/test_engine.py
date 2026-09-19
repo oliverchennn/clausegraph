@@ -314,3 +314,18 @@ def test_calendar_overflow_is_an_explicit_validation_error():
     data.start_date = date.max
     with pytest.raises(ValueError, match="calendar"):
         optimize(data, [])
+
+
+def test_source_backed_expense_cannot_be_inverted_into_income():
+    data, _, rules = load_demo()
+    data.events[0].direction = "income"
+    plan = optimize(data, rules)
+    assert all("rent" not in row.event_ids for row in plan.baseline.daily)
+    assert any("Rent is excluded" in warning for warning in plan.warnings)
+    assert plan.state == "unresolved"
+
+
+def test_explicit_income_scenario_assumptions_remain_available():
+    data, _, rules = load_demo()
+    plan = optimize(data, rules, PlanRequest(income_cents=100000))
+    assert plan.proposed.ending_balance_cents == 60000
