@@ -1,10 +1,12 @@
 # ClauseGraph current checkpoint
 
-## Two-developer increment
+## Two-developer handoff: stop after current task
 
-PR4 is merged on main as9858956. The next required delivery is review guidance plus demo polish, following [WORKSTREAMS.md](WORKSTREAMS.md). The workflow bootstrap introduces separate A/B file ownership, per-task handoffs, trusted-base CI checks, local pre-push checks and Node22.23.2/npm10.9.8. See [A workflow handoff](handoffs/dev-a/review-workflow.md) for current checks. Review queue implementation is the next contract-first task; do not claim it shipped from this bootstrap record.
+Developer A is this agent; Developer B is the friend's agent in a separate session/clone. The user clarified that the roadmap assigns future work to those two agents; it does not authorize this session to implement every task. A is finishing only the current backend queue task and publishing all work for handoff. Do not resume the whole backlog or create another B implementation agent.
 
-A owns backend/contracts/dependencies/CI/shared docs and merges reviewed green PRs sequentially. B owns frontend/browser tests and its own task handoffs. Do not edit central docs from B. Every new task starts from freshly fetched origin/main on codex/dev-a/<task> or codex/dev-b/<task>; separate worktrees; retire squash-merged branches. Historical codex/integration and original engine/API/frontend worktrees are preserved, not active assignments.
+Workflow PR5 is merged on main3799876 with all CI checks passing, including Linux/Windows/macOS clean installs. The local pre-push hook is installed in this clone; the friend's separate clone must install it independently. A's backend contract task is codex/dev-a/review-queue; see [its handoff](handoffs/dev-a/review-queue.md). B's already-started UI work is preserved on codex/dev-b/review-guidance as a draft for the friend's agent, with its own handoff and unrun queue tests. No new frontend feature is claimed delivered.
+
+Read [WORKSTREAMS.md](WORKSTREAMS.md) for exact ownership, next tasks and the friend's startup sequence. B consumes the A contract only after its PR merges into main. A then reviews B's eventual PR and handles specifically identified backend changes. History, richer verification, advanced verification and feature-freeze rehearsal remain future assignments.
 
 ## Existing baseline
 

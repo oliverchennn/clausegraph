@@ -1517,6 +1517,165 @@
         "title": "ProviderStatus",
         "type": "object"
       },
+      "ReviewBlocker": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "enum": [
+              "evidence",
+              "review",
+              "condition",
+              "approval",
+              "dependency",
+              "fact",
+              "authorization"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "next_step": {
+            "title": "Next Step",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "category",
+          "message",
+          "next_step"
+        ],
+        "title": "ReviewBlocker",
+        "type": "object"
+      },
+      "ReviewQueue": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewQueueItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision",
+          "items"
+        ],
+        "title": "ReviewQueue",
+        "type": "object"
+      },
+      "ReviewQueueItem": {
+        "additionalProperties": false,
+        "properties": {
+          "action_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Action Ids",
+            "type": "array"
+          },
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewBlocker"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "disposition": {
+            "enum": [
+              "needs_review",
+              "waiting",
+              "blocked"
+            ],
+            "title": "Disposition",
+            "type": "string"
+          },
+          "event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Event Ids",
+            "type": "array"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "missing_source": {
+            "title": "Missing Source",
+            "type": "boolean"
+          },
+          "priority": {
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "title": "Priority",
+            "type": "integer"
+          },
+          "rule_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rule Ids",
+            "type": "array"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "subject_kind": {
+            "enum": [
+              "rule",
+              "action",
+              "event"
+            ],
+            "title": "Subject Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "subject_kind",
+          "subject_id",
+          "title",
+          "priority",
+          "disposition",
+          "blockers",
+          "rule_ids",
+          "action_ids",
+          "event_ids",
+          "evidence",
+          "missing_source"
+        ],
+        "title": "ReviewQueueItem",
+        "type": "object"
+      },
       "ReviewStatus": {
         "enum": [
           "pending",
@@ -3012,6 +3171,29 @@
           }
         ],
         "summary": "Smoke Providers"
+      }
+    },
+    "/api/review-queue": {
+      "get": {
+        "operationId": "workspace_review_queue_api_review_queue_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewQueue"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Workspace Review Queue"
       }
     },
     "/api/rules/{rule_id}": {

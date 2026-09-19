@@ -11,7 +11,10 @@ from pathlib import PurePath
 
 from pypdf import PdfReader
 
-from .schemas import Action, ApprovalStatus, Document, DocumentPage, ExtractionResult, FinancialEvent, ReviewStatus, Rule, Scenario
+from .schemas import (
+    Action, ApprovalStatus, Document, DocumentPage, ExtractionResult, FinancialEvent,
+    ReviewBlocker, ReviewStatus, Rule, Scenario,
+)
 
 
 MAX_NATIVE_PAGES = 200
@@ -202,18 +205,41 @@ def validate_extraction(result: ExtractionResult, document: Document) -> Extract
     return validated
 
 
-def rule_blocker(rule: Rule, *, check_approval: bool = True) -> str | None:
+def rule_blockers(rule: Rule, *, check_approval: bool = True) -> list[ReviewBlocker]:
+    """Describe every existing gate, in the legacy first-blocker order."""
+    blockers = []
     if rule.review_status != ReviewStatus.reviewed:
-        return f"{rule.title} requires human review."
+        blockers.append(ReviewBlocker(code="review_rejected" if rule.review_status == ReviewStatus.rejected else "human_review",
+            category="review", message=f"{rule.title} requires human review.",
+            next_step="This rule was rejected. Keep it excluded unless corrected source evidence justifies a new review."
+            if rule.review_status == ReviewStatus.rejected else "Read the original source, check the extracted facts and save your review."))
     if not rule.evidence or rule.evidence_status != "supported":
-        return f"{rule.title} lacks supported evidence."
+        blockers.append(ReviewBlocker(code="unsupported_evidence", category="evidence",
+            message=f"{rule.title} lacks supported evidence.",
+            next_step="Check the original quote, page and version. A confirmation note cannot override failed source checks."))
     if rule.entity_ambiguous:
-        return f"{rule.title} has an ambiguous entity match."
+        blockers.append(ReviewBlocker(code="ambiguous_entity", category="evidence",
+            message=f"{rule.title} has an ambiguous entity match.",
+            next_step="Obtain an unambiguous source identifying the correct party or account; do not infer an entity match."))
     if any(not condition.resolved or condition.satisfied is not True for condition in rule.conditions):
-        return f"{rule.title} has unresolved or unsatisfied conditions."
+        unsatisfied = any(condition.resolved and condition.satisfied is False for condition in rule.conditions)
+        blockers.append(ReviewBlocker(code="condition_unsatisfied" if unsatisfied else "condition_unresolved",
+            category="condition", message=f"{rule.title} has unresolved or unsatisfied conditions.",
+            next_step="A recorded condition is not satisfied. Keep the option excluded unless new evidence changes that fact."
+            if unsatisfied else "Check each stated condition against evidence; leave unknown conditions unresolved."))
     if check_approval and (rule.approval_status not in (ApprovalStatus.approved, ApprovalStatus.not_required) or (rule.kind == "benefit" and rule.approval_status != ApprovalStatus.approved)):
-        return f"{rule.title} lacks required third-party approval."
-    return None
+        denied = rule.approval_status == ApprovalStatus.denied
+        blockers.append(ReviewBlocker(code="approval_denied" if denied else "approval_pending",
+            category="approval", message=f"{rule.title} lacks required third-party approval.",
+            next_step="The recorded decision is denied. Only update it after a new decision from the relevant party."
+            if denied else "Wait for an actual third-party decision; human source review does not grant approval."))
+    return blockers
+
+
+def rule_blocker(rule: Rule, *, check_approval: bool = True) -> str | None:
+    """Preserve the planner/compiler's original first-blocker messages and order."""
+    blockers = rule_blockers(rule, check_approval=check_approval)
+    return blockers[0].message if blockers else None
 
 
 def _incoming_money_supported(rule: Rule) -> bool:

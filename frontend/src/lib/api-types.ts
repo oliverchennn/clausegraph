@@ -296,6 +296,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/review-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Workspace Review Queue */
+        get: operations["workspace_review_queue_api_review_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rules/{rule_id}": {
         parameters: {
             query?: never;
@@ -1014,6 +1031,63 @@ export interface components {
             model?: string | null;
             /** Name */
             name: string;
+        };
+        /** ReviewBlocker */
+        ReviewBlocker: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "evidence" | "review" | "condition" | "approval" | "dependency" | "fact" | "authorization";
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Next Step */
+            next_step: string;
+        };
+        /** ReviewQueue */
+        ReviewQueue: {
+            /** Items */
+            items: components["schemas"]["ReviewQueueItem"][];
+            /** Revision */
+            revision: number;
+        };
+        /** ReviewQueueItem */
+        ReviewQueueItem: {
+            /** Action Ids */
+            action_ids: string[];
+            /** Blockers */
+            blockers: components["schemas"]["ReviewBlocker"][];
+            /**
+             * Disposition
+             * @enum {string}
+             */
+            disposition: "needs_review" | "waiting" | "blocked";
+            /** Event Ids */
+            event_ids: string[];
+            /** Evidence */
+            evidence: components["schemas"]["Evidence"][];
+            /** Id */
+            id: string;
+            /** Missing Source */
+            missing_source: boolean;
+            /**
+             * Priority
+             * @enum {integer}
+             */
+            priority: 0 | 1 | 2;
+            /** Rule Ids */
+            rule_ids: string[];
+            /** Subject Id */
+            subject_id: string;
+            /**
+             * Subject Kind
+             * @enum {string}
+             */
+            subject_kind: "rule" | "action" | "event";
+            /** Title */
+            title: string;
         };
         /**
          * ReviewStatus
@@ -1801,6 +1875,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderStatus"][];
+                };
+            };
+        };
+    };
+    workspace_review_queue_api_review_queue_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewQueue"];
                 };
             };
         };

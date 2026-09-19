@@ -94,7 +94,7 @@ def test_hook_installer_preserves_existing_and_rejects_custom_path(tmp_path, mon
     assert hook.with_name("pre-push.clausegraph-previous").read_text() == original
     wrapped = hook.read_text()
     assert "pre-push.clausegraph.py" in wrapped
-    assert hook.with_name("pre-push.clausegraph.py").read_bytes() == (ROOT / "scripts/pre_push.py").read_bytes()
+    assert hook.with_name("pre-push.clausegraph.py").read_text() == (ROOT / "scripts/pre_push.py").read_text()
     assert installer.install() == hook  # idempotent, backup unchanged
     assert hook.read_text() == wrapped
     workflow.git("config", "core.hooksPath", ".custom-hooks")

@@ -22,7 +22,7 @@ from clausegraph.providers import ProviderError, Providers
 from clausegraph.schemas import (
     ApprovalStatus, AudioRequest, DeleteResponse, Document, DraftRequest, DraftResponse,
     ExtractionResult, HealthResponse, IntakeRequest, JobStatus, PlanRequest, PlanResult,
-    ProviderStatus, ReviewStatus, RuleReview, Scenario, SessionCreate, TranscriptResponse,
+    ProviderStatus, ReviewQueue, ReviewStatus, RuleReview, Scenario, SessionCreate, TranscriptResponse,
     UploadResponse, VerificationRequest, VerificationResult, Workspace,
 )
 from clausegraph.storage import MissingSession, Originals, StaleRevision, Store, utcnow
@@ -229,6 +229,12 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
     @app.get("/api/history", response_model=list[PlanResult])
     def scenario_history(request: Request, workspace: Session):
         return request.app.state.store.history(workspace.session_id)
+
+    @app.get("/api/review-queue", response_model=ReviewQueue)
+    def workspace_review_queue(workspace: Session):
+        from clausegraph.review import review_queue
+
+        return review_queue(workspace)
 
     @app.post("/api/verify", response_model=VerificationResult)
     def verify_fixed_plan(body: VerificationRequest, request: Request, workspace: Session):
