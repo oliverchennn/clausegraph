@@ -262,6 +262,7 @@ class RuleReview(Contract):
     due_date: Date | None = None
     note: str | None = None
     conditions: list[Condition] | None = None
+    evidence_confirmed: bool = False
 
 
 class ExtractionResult(Contract):
