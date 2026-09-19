@@ -520,3 +520,34 @@ def test_invalid_income_control_returns_validation_error(api):
     headers, _ = start(client, False)
     response = client.post("/api/plan", headers=headers, json={"income_cents": 90000})
     assert response.status_code == 422
+
+
+def test_deleting_source_preserves_essential_expense_and_marks_plan_unresolved(api):
+    client, _, _, _ = api
+    headers, _ = start(client)
+    response = client.delete("/api/documents/doc-1", headers=headers)
+    assert response.status_code == 200, response.text
+    rent = next(event for event in response.json()["scenario"]["events"] if event["id"] == "rent")
+    assert rent["essential"] and rent["amount_cents"] == 160000 and rent["source_rule_ids"] == ["rule-rent"]
+    plan = client.post("/api/plan", headers=headers, json={}).json()
+    assert plan["baseline"]["minimum_balance_cents"] == -40000
+    assert plan["proposed"]["ending_balance_cents"] == 50000
+    assert plan["state"] == "unresolved"
+
+
+def test_assumptions_survive_cache_history_and_workspace(api):
+    client, _, _, _ = api
+    headers, _ = start(client)
+    payload = {"income_cents": 80000, "income_date": "2026-09-22", "include_conditional": True,
+        "approval_overrides": {"rule-shift": "denied"}}
+    plan = client.post("/api/plan", headers=headers, json=payload).json()
+    assert plan["assumptions"]["income_cents"] == 80000
+    assert plan["assumptions"]["approval_overrides"] == {"rule-shift": "denied"}
+    assert client.post("/api/plan", headers=headers, json=payload).json()["id"] == plan["id"]
+    assert client.get("/api/workspace", headers=headers).json()["plan"]["assumptions"] == plan["assumptions"]
+    assert client.get("/api/history", headers=headers).json()[0]["assumptions"] == plan["assumptions"]
+
+
+def test_config_rejects_lease_shorter_than_bounded_provider_attempts():
+    with pytest.raises(ValueError, match="JOB_LEASE_SECONDS"):
+        Settings(_env_file=None, provider_timeout_seconds=120, provider_retries=3, job_lease_seconds=300)

@@ -42,6 +42,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_requires_durable_services(self):
+        longest_call = ((self.provider_timeout_seconds + 10) * (self.provider_retries + 1)
+                        + sum(min(2 ** attempt, 4) for attempt in range(self.provider_retries)) + 5)
+        if self.job_lease_seconds <= longest_call:
+            raise ValueError("JOB_LEASE_SECONDS must exceed one bounded provider call including retries/connect time")
         if self.environment == "production":
             if not self.database_url.startswith(("postgresql://", "postgresql+psycopg://")):
                 raise ValueError("Production requires PostgreSQL DATABASE_URL and explicit migrations")
