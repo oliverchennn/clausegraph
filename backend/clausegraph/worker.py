@@ -1,5 +1,6 @@
 """Leased shared worker. Run with `python -m clausegraph.worker`."""
 import logging
+import hashlib
 import secrets
 import time
 
@@ -29,18 +30,34 @@ def run_once(store: Store, originals: Originals, providers: Providers, owner: st
         document = next((doc.model_copy(deep=True) for doc in workspace.documents if doc.id == job["document_id"]), None)
         if document is None:
             raise MissingSession()
-        vision_used = not any(len(page.text.strip()) >= 40 for page in document.pages)
+        if job["payload"].get("document_version", document.version) != document.version:
+            raise StaleRevision()
+        vision_pages = {page.page for page in document.pages if len(page.text.strip()) < 40} if document.media_type == "application/pdf" else set()
+        vision_used = bool(vision_pages) or not document.pages
         original = None
         if vision_used:
             if document.media_type != "application/pdf":
                 raise ProviderError("No adequate native document text. Upload a readable text/CSV or PDF document.")
-            store.progress(job["id"], owner, "transcribing_pages", 15)
+            if not store.progress(job["id"], owner, "transcribing_pages", 15):
+                raise StaleRevision()
             original = originals.get(job["payload"]["original_key"])
-            document.pages = providers.vision(document, original)
-        store.progress(job["id"], owner, "extracting_clauses", 30)
+            if hashlib.sha256(original).hexdigest() != document.sha256:
+                raise ProviderError("Original integrity check failed; no extraction was performed.")
+            transcribed = {page.page: page for page in providers.vision(document, original)}
+            if any(number not in transcribed for number in vision_pages):
+                raise ProviderError("Vision transcription omitted an unreadable source page.")
+            document.pages = [transcribed[page.page] if page.page in vision_pages else page for page in document.pages]
+            if not document.pages:
+                document.pages = list(transcribed.values())
+                vision_pages = set(transcribed)
+        if not store.progress(job["id"], owner, "extracting_clauses", 30):
+            raise StaleRevision()
         result = providers.extract(document, workspace.scenario)
+        for rule in result.rules:
+            rule.consequential = True
         result = validate_extraction(result, document)
-        store.progress(job["id"], owner, "verifying_evidence", 65)
+        if not store.progress(job["id"], owner, "verifying_evidence", 65):
+            raise StaleRevision()
         try:
             checks = providers.verify(document, result.rules, original)
             indexed_checks = {check.rule_id: check for check in checks}
@@ -61,9 +78,10 @@ def run_once(store: Store, originals: Originals, providers: Providers, owner: st
             result.warnings.append(str(exc))
         if vision_used:
             for rule in result.rules:
-                rule.evidence_status = "disputed"
-                rule.review_status = ReviewStatus.unresolved
-                rule.verifier_notes = "Image-only source: model transcription requires original-page human verification. " + (rule.verifier_notes or "")
+                if any(evidence.page in vision_pages for evidence in rule.evidence):
+                    rule.evidence_status = "disputed" if rule.evidence_status != "unsupported" else "unsupported"
+                    rule.review_status = ReviewStatus.unresolved
+                    rule.verifier_notes = "Image-only source: model transcription requires original-page human verification. " + (rule.verifier_notes or "")
             result.warnings.append("Image-only source transcription is not independently verified native text.")
         document.status = "needs_review"
         document.error = "; ".join(result.warnings)[:1000] or None
@@ -75,7 +93,7 @@ def run_once(store: Store, originals: Originals, providers: Providers, owner: st
             current.scenario.actions = [action for action in current.scenario.actions
                 if not set(action.source_rule_ids).intersection(prior_ids)] + result.actions
             current.scenario.events = [event for event in current.scenario.events
-                if not set(event.source_rule_ids).intersection(prior_ids)]
+                if not set(event.source_rule_ids).intersection(prior_ids) or event.direction == "expense" or event.kind == "actual"]
             current.graph = build_graph(current.scenario, current.rules, current.documents)
 
         store.mutate(job["session_id"], apply, expected_revision=revision,

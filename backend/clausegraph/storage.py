@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.pool import StaticPool
 
 from clausegraph.config import Settings
-from clausegraph.schemas import JobStatus, Workspace
+from clausegraph.schemas import DailyBalance, JobStatus, PlanResult, Workspace
 
 metadata = MetaData()
 sessions = Table(
@@ -130,12 +130,40 @@ class Store:
         if payload is None:
             raise MissingSession()
         workspace = Workspace.model_validate(payload)
+        if workspace.plan:
+            self._restore_series(session_id, workspace.plan)
         workspace.jobs = self.list_jobs(session_id)
         return workspace
 
+    def _restore_series(self, session_id: str, plan: PlanResult):
+        with self.engine.connect() as connection:
+            rows = connection.execute(select(daily_balances).where(daily_balances.c.session_id == session_id,
+                daily_balances.c.run_id == plan.id).order_by(daily_balances.c.event_date)).mappings().all()
+        for series in ("baseline", "proposed"):
+            simulation = getattr(plan, series)
+            event_ids = {point.date: point.event_ids for point in simulation.daily}
+            selected = [row for row in rows if row["series"] == series]
+            if len(selected) != len(simulation.daily):
+                raise RuntimeError("Persisted chart series is incomplete")
+            simulation.daily = [DailyBalance(date=row["event_date"], balance_cents=row["balance_cents"],
+                income_cents=row["income_cents"], expense_cents=row["expense_cents"],
+                event_ids=event_ids.get(row["event_date"], [])) for row in selected]
+
+    def history(self, session_id: str) -> list[PlanResult]:
+        with self.engine.connect() as connection:
+            payloads = connection.execute(select(scenario_runs.c.payload).where(scenario_runs.c.session_id == session_id)
+                .order_by(scenario_runs.c.created_at.desc()).limit(30)).scalars().all()
+        plans = [PlanResult.model_validate(payload) for payload in payloads]
+        for plan in plans:
+            self._restore_series(session_id, plan)
+        return plans
+
     def mutate(self, session_id: str, change: Callable[[Workspace], None],
                expected_revision: int | None = None, invalidate: bool = True,
-               job_guard: tuple[str, str] | None = None, job_result: dict | None = None) -> Workspace:
+               job_guard: tuple[str, str] | None = None, job_result: dict | None = None,
+               original: tuple[str, int, str] | None = None, enqueue: dict | None = None,
+               purge_document_id: str | None = None, purge_rule_ids: list[str] | None = None,
+               reset_history: bool = False, supersede_document_id: str | None = None) -> Workspace:
         with self.engine.begin() as connection:
             row = connection.execute(select(sessions).where(sessions.c.id == session_id).with_for_update()).mappings().first()
             if row is None:
@@ -158,7 +186,22 @@ class Store:
             ).values(snapshot=workspace.model_dump(mode="json"), revision=workspace.revision))
             if updated.rowcount != 1:
                 raise StaleRevision()
+            if reset_history:
+                for table in (jobs, daily_balances, scenario_runs, financial_events, rule_versions, document_versions):
+                    connection.execute(delete(table).where(table.c.session_id == session_id))
+            if purge_document_id:
+                self._purge_document_history(connection, session_id, purge_document_id, purge_rule_ids or [])
+            if supersede_document_id:
+                connection.execute(update(jobs).where(jobs.c.session_id == session_id,
+                    jobs.c.document_id == supersede_document_id, jobs.c.status.in_(("queued", "running"))).values(
+                        status="failed", stage="superseded", error="A newer document version replaced this source.", updated_at=utcnow()))
             self._project(connection, workspace)
+            if original:
+                connection.execute(update(document_versions).where(document_versions.c.session_id == session_id,
+                    document_versions.c.id == original[0], document_versions.c.version == original[1]).values(original_key=original[2]))
+            if enqueue:
+                connection.execute(insert(jobs).values(**self._job_values(session_id, enqueue["document_id"],
+                    workspace.revision, enqueue["payload"])))
             if job_guard:
                 connection.execute(update(jobs).where(jobs.c.id == job_guard[0]).values(
                     status="completed", stage="needs_review", progress=100, updated_at=utcnow(),
@@ -208,10 +251,22 @@ class Store:
                             income_cents=point.income_cents, expense_cents=point.expense_cents,
                             kind="projected") for point in points])
 
-    def set_original(self, session_id: str, document_id: str, key: str):
+    def set_original(self, session_id: str, document_id: str, key: str, version: int = 1):
         with self.engine.begin() as connection:
             connection.execute(update(document_versions).where(document_versions.c.session_id == session_id,
-                document_versions.c.id == document_id).values(original_key=key))
+                document_versions.c.id == document_id, document_versions.c.version == version).values(original_key=key))
+
+    def original_key(self, session_id: str, document_id: str, version: int) -> str | None:
+        with self.engine.connect() as connection:
+            return connection.execute(select(document_versions.c.original_key).where(
+                document_versions.c.session_id == session_id, document_versions.c.id == document_id,
+                document_versions.c.version == version)).scalar_one_or_none()
+
+    def document_version(self, session_id: str, document_id: str, version: int) -> dict | None:
+        with self.engine.connect() as connection:
+            return connection.execute(select(document_versions.c.payload).where(
+                document_versions.c.session_id == session_id, document_versions.c.id == document_id,
+                document_versions.c.version == version)).scalar_one_or_none()
 
     def original_keys(self, session_id: str, document_id: str | None = None) -> list[str]:
         statement = select(document_versions.c.original_key).where(document_versions.c.session_id == session_id)
@@ -222,30 +277,51 @@ class Store:
 
     def purge_document_history(self, session_id: str, document_id: str, rule_ids: list[str]):
         with self.engine.begin() as connection:
-            connection.execute(delete(jobs).where(jobs.c.session_id == session_id, jobs.c.document_id == document_id))
-            connection.execute(delete(document_versions).where(document_versions.c.session_id == session_id,
-                document_versions.c.id == document_id))
-            if rule_ids:
-                connection.execute(delete(rule_versions).where(rule_versions.c.session_id == session_id,
-                    rule_versions.c.id.in_(rule_ids)))
-            # Old plan narratives can contain extracted wording. Purge them on source deletion.
-            connection.execute(delete(scenario_runs).where(scenario_runs.c.session_id == session_id))
-            connection.execute(delete(daily_balances).where(daily_balances.c.session_id == session_id))
+            self._purge_document_history(connection, session_id, document_id, rule_ids)
 
-    def delete_session(self, session_id: str):
+    @staticmethod
+    def _purge_document_history(connection, session_id: str, document_id: str, rule_ids: list[str]):
+        connection.execute(delete(jobs).where(jobs.c.session_id == session_id, jobs.c.document_id == document_id))
+        connection.execute(delete(document_versions).where(document_versions.c.session_id == session_id,
+            document_versions.c.id == document_id))
+        historical_rules = connection.execute(select(rule_versions.c.id, rule_versions.c.payload).where(
+            rule_versions.c.session_id == session_id)).mappings()
+        all_rule_ids = set(rule_ids) | {row["id"] for row in historical_rules
+            if any(item.get("document_id") == document_id for item in row["payload"].get("evidence", []))}
+        if all_rule_ids:
+            connection.execute(delete(rule_versions).where(rule_versions.c.session_id == session_id,
+                rule_versions.c.id.in_(all_rule_ids)))
+        # Old plan narratives can contain extracted wording. Purge them on source deletion.
+        connection.execute(delete(scenario_runs).where(scenario_runs.c.session_id == session_id))
+        connection.execute(delete(daily_balances).where(daily_balances.c.session_id == session_id))
+
+    def delete_session(self, session_id: str, expected_revision: int | None = None,
+                       cleanup: Callable[[], None] | None = None):
         with self.engine.begin() as connection:
+            revision = connection.execute(select(sessions.c.revision).where(sessions.c.id == session_id)
+                .with_for_update()).scalar_one_or_none()
+            if revision is None:
+                raise MissingSession()
+            if expected_revision is not None and revision != expected_revision:
+                raise StaleRevision()
+            if cleanup:
+                cleanup()
             for table in (jobs, daily_balances, scenario_runs, financial_events, rule_versions, document_versions):
                 connection.execute(delete(table).where(table.c.session_id == session_id))
             connection.execute(delete(sessions).where(sessions.c.id == session_id))
 
     def enqueue(self, session_id: str, document_id: str, revision: int, payload: dict) -> JobStatus:
-        now = utcnow()
-        values = dict(id=secrets.token_urlsafe(18), session_id=session_id, document_id=document_id,
-            base_revision=revision, status="queued", stage="queued", progress=0, error=None,
-            payload=payload, attempts=0, created_at=now, updated_at=now)
+        values = self._job_values(session_id, document_id, revision, payload)
         with self.engine.begin() as connection:
             connection.execute(insert(jobs).values(**values))
         return self.public_job(values)
+
+    @staticmethod
+    def _job_values(session_id: str, document_id: str, revision: int, payload: dict) -> dict:
+        now = utcnow()
+        return dict(id=secrets.token_urlsafe(18), session_id=session_id, document_id=document_id,
+            base_revision=revision, status="queued", stage="queued", progress=0, error=None,
+            payload=payload, attempts=0, created_at=now, updated_at=now)
 
     @staticmethod
     def public_job(row) -> JobStatus:
@@ -263,6 +339,12 @@ class Store:
             rows = connection.execute(select(jobs).where(jobs.c.session_id == session_id)
                 .order_by(jobs.c.created_at.desc()).limit(100)).mappings()
             return [self.public_job(row) for row in rows]
+
+    def document_jobs(self, session_id: str, document_id: str, version: int) -> list[JobStatus]:
+        with self.engine.connect() as connection:
+            rows = connection.execute(select(jobs).where(jobs.c.session_id == session_id,
+                jobs.c.document_id == document_id).order_by(jobs.c.created_at.desc())).mappings()
+            return [self.public_job(row) for row in rows if row["payload"].get("document_version", 1) == version]
 
     def claim(self, owner: str) -> dict | None:
         now = utcnow()
@@ -290,7 +372,7 @@ class Store:
                  status: str = "running", error: str | None = None) -> bool:
         with self.engine.begin() as connection:
             result = connection.execute(update(jobs).where(jobs.c.id == job_id,
-                jobs.c.lease_owner == owner, jobs.c.status == "running").values(
+                jobs.c.lease_owner == owner, jobs.c.status == "running", jobs.c.lease_until > utcnow()).values(
                 stage=stage, progress=progress, status=status, error=error, updated_at=utcnow(),
                 lease_until=utcnow() + timedelta(seconds=self.settings.job_lease_seconds)))
             return result.rowcount == 1
@@ -314,8 +396,8 @@ class Originals:
     def prefix(session_id: str) -> str:
         return hashlib.sha256(session_id.encode()).hexdigest()
 
-    def key(self, session_id: str, document_id: str) -> str:
-        return f"{self.prefix(session_id)}/{document_id}"
+    def key(self, session_id: str, document_id: str, version: int = 1) -> str:
+        return f"{self.prefix(session_id)}/{document_id}/v{version}"
 
     def _path(self, key: str) -> Path:
         path = (self.root / key).resolve()
@@ -323,8 +405,9 @@ class Originals:
             raise ValueError("Invalid object key")
         return path
 
-    def put(self, session_id: str, document_id: str, content: bytes, media_type: str) -> str:
-        key = self.key(session_id, document_id)
+    def put(self, session_id: str, document_id: str, content: bytes, media_type: str, version: int = 1) -> str:
+        # A random suffix prevents concurrent same-name uploads overwriting each other's originals.
+        key = self.key(session_id, document_id, version) + "-" + secrets.token_hex(8)
         if self.client:
             self.client.put_object(Bucket=self.settings.spaces_bucket, Key=key, Body=content,
                 ContentType=media_type, ACL="private")

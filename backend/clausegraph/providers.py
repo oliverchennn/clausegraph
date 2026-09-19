@@ -128,6 +128,7 @@ class Providers:
             raise ProviderError("NVIDIA returned an invalid extraction schema. Nothing was compiled.") from exc
         # A model cannot grant itself review, evidence validity, or approval.
         for rule in result.rules:
+            rule.consequential = True
             rule.review_status = ReviewStatus.pending
             rule.evidence_status = "unchecked"
             rule.approval_status = ApprovalStatus.pending if rule.kind in ("benefit", "option") else ApprovalStatus.not_required
@@ -138,7 +139,7 @@ class Providers:
             action.review_status = ReviewStatus.pending
             if action.kind in ("claim", "request", "shift"):
                 action.approval_status = ApprovalStatus.pending
-        return self._namespace(result, document.id, scenario)
+        return self._namespace(result, f"{document.id}:v{document.version}", scenario)
 
     @staticmethod
     def _namespace(result: ExtractionResult, document_id: str, scenario: Scenario) -> ExtractionResult:

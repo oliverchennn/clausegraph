@@ -1,10 +1,13 @@
 """Session-private FastAPI application. All financial arithmetic stays in the engine."""
 import asyncio
 import hashlib
+import json
 import secrets
 import time
+from collections import OrderedDict
 from contextlib import asynccontextmanager
 from datetime import date
+from threading import Lock
 from typing import Annotated
 
 from botocore.exceptions import BotoCoreError, ClientError
@@ -27,9 +30,64 @@ from clausegraph.storage import MissingSession, Originals, StaleRevision, Store,
 bearer = HTTPBearer(auto_error=False)
 
 
+class UploadLimitMiddleware:
+    """Bound multipart request bytes before the parser can spool an unbounded body."""
+    def __init__(self, app, max_bytes: int):
+        self.app, self.max_bytes = app, max_bytes
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("path") not in ("/api/documents", "/api/audio/transcribe"):
+            return await self.app(scope, receive, send)
+        limit = self.max_bytes + 65536  # bounded multipart form/header overhead
+        headers = dict(scope.get("headers", []))
+        try:
+            length = int(headers.get(b"content-length", b"0"))
+        except ValueError:
+            return await JSONResponse({"detail": "Invalid content length."}, status_code=400)(scope, receive, send)
+        if length > limit:
+            return await JSONResponse({"detail": "Upload request exceeds the configured size limit."}, status_code=413)(scope, receive, send)
+        buffered = bytearray()
+        while True:
+            try:
+                message = await asyncio.wait_for(receive(), timeout=30)
+            except TimeoutError:
+                return await JSONResponse({"detail": "Upload timed out."}, status_code=408)(scope, receive, send)
+            if message["type"] == "http.disconnect":
+                return
+            buffered.extend(message.get("body", b""))
+            if len(buffered) > limit:
+                return await JSONResponse({"detail": "Upload request exceeds the configured size limit."}, status_code=413)(scope, receive, send)
+            if not message.get("more_body", False):
+                break
+        delivered = False
+        async def bounded_receive():
+            nonlocal delivered
+            if delivered:
+                return await receive()
+            delivered = True
+            return {"type": "http.request", "body": bytes(buffered), "more_body": False}
+        await self.app(scope, bounded_receive, send)
+
+
 def refresh_graph(workspace: Workspace):
     from clausegraph.graph import build_graph
     workspace.graph = build_graph(workspace.scenario, workspace.rules, workspace.documents)
+
+
+def invalidate_source(workspace: Workspace, document_id: str, *, deleted: bool = False) -> set[str]:
+    rule_ids = {rule.id for rule in workspace.rules if any(item.document_id == document_id for item in rule.evidence)}
+    workspace.rules = [rule for rule in workspace.rules if rule.id not in rule_ids]
+    workspace.scenario.actions = [action for action in workspace.scenario.actions if not rule_ids.intersection(action.source_rule_ids)]
+    retained = []
+    for event in workspace.scenario.events:
+        if rule_ids.intersection(event.source_rule_ids):
+            if event.direction == "income" and event.kind == "projected":
+                continue
+            if deleted:
+                event.title = "Expense awaiting source review" if event.direction == "expense" else "Recorded income awaiting source review"
+        retained.append(event)
+    workspace.scenario.events = retained
+    return rule_ids
 
 
 def create_app(settings: Settings | None = None, store: Store | None = None,
@@ -43,6 +101,8 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         app.state.providers = providers or Providers(configured)
         app.state.originals = originals or Originals(configured)
         app.state.provider_cache = None
+        app.state.plan_cache = OrderedDict()
+        app.state.plan_cache_lock = Lock()
         yield
         if store is None:
             app.state.store.engine.dispose()
@@ -55,6 +115,7 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         allow_origins=[origin.strip() for origin in config.cors_origins.split(",") if origin.strip()],
         allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "DELETE"],
         allow_headers=["Authorization", "Content-Type"], expose_headers=["Content-Disposition"])
+    app.add_middleware(UploadLimitMiddleware, max_bytes=config.max_upload_bytes)
 
     @app.middleware("http")
     async def privacy_headers(request: Request, call_next):
@@ -96,6 +157,27 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         cache = request.app.state.provider_cache
         return cache[1] if cache and time.monotonic() - cache[0] < 300 else request.app.state.providers.statuses()
 
+    def clear_plan_cache(request: Request, session_id: str):
+        with request.app.state.plan_cache_lock:
+            for key in list(request.app.state.plan_cache):
+                if key[0] == session_id:
+                    del request.app.state.plan_cache[key]
+
+    def original_bytes(request: Request, workspace: Workspace, document: Document) -> bytes:
+        key = request.app.state.store.original_key(workspace.session_id, document.id, document.version)
+        if key:
+            content = request.app.state.originals.get(key)
+            if hashlib.sha256(content).hexdigest() != document.sha256:
+                raise HTTPException(409, "Original integrity check failed; evidence confirmation is blocked.")
+            return content
+        if document.synthetic:
+            # Demo text is intentionally synthetic and immutable, not a live sponsor result.
+            content = "\n\n".join(page.text for page in document.pages).encode("utf-8")
+            if hashlib.sha256(content).hexdigest() != document.sha256:
+                raise HTTPException(409, "Synthetic source integrity check failed.")
+            return content
+        raise HTTPException(404, "The private original is unavailable; evidence confirmation is blocked.")
+
     def new_workspace(session_id: str, demo: bool) -> Workspace:
         from clausegraph.schemas import DependencyGraph
         if demo:
@@ -124,13 +206,23 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
     def get_workspace(request: Request, workspace: Session):
         return present(request, workspace)
 
+    @app.get("/api/history", response_model=list[PlanResult])
+    def scenario_history(request: Request, workspace: Session):
+        return request.app.state.store.history(workspace.session_id)
+
     @app.post("/api/demo/reset", response_model=Workspace)
     def reset_demo(request: Request, workspace: Session):
         data_store = request.app.state.store
-        for key in data_store.original_keys(workspace.session_id):
-            request.app.state.originals.delete(key)
-        data_store.delete_session(workspace.session_id)
-        return present(request, data_store.create(new_workspace(workspace.session_id, True)))
+        def apply(current: Workspace):
+            for key in data_store.original_keys(current.session_id):
+                request.app.state.originals.delete(key)
+            fresh = new_workspace(current.session_id, True)
+            current.mode, current.scenario = fresh.mode, fresh.scenario
+            current.documents, current.rules, current.graph = fresh.documents, fresh.rules, fresh.graph
+            current.jobs = []
+        updated = data_store.mutate(workspace.session_id, apply, expected_revision=workspace.revision, reset_history=True)
+        clear_plan_cache(request, workspace.session_id)
+        return present(request, updated)
 
     @app.post("/api/intake", response_model=Workspace)
     def intake(body: IntakeRequest, request: Request, workspace: Session):
@@ -149,9 +241,23 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
     @app.post("/api/plan", response_model=PlanResult)
     def plan(body: PlanRequest, request: Request, workspace: Session):
         from clausegraph.engine import optimize
-        result = optimize(workspace.scenario, workspace.rules, body, revision=workspace.revision)
+        key = (workspace.session_id, workspace.revision, json.dumps(body.model_dump(mode="json"), sort_keys=True))
+        with request.app.state.plan_cache_lock:
+            cached = request.app.state.plan_cache.get(key)
+        if cached and time.monotonic() - cached[0] < 600:
+            result = cached[1].model_copy(deep=True)
+        else:
+            try:
+                result = optimize(workspace.scenario, workspace.rules, body, revision=workspace.revision)
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from exc
         request.app.state.store.mutate(workspace.session_id, lambda current: setattr(current, "plan", result),
             expected_revision=workspace.revision, invalidate=False)
+        with request.app.state.plan_cache_lock:
+            request.app.state.plan_cache[key] = (time.monotonic(), result.model_copy(deep=True))
+            request.app.state.plan_cache.move_to_end(key)
+            while len(request.app.state.plan_cache) > 128:
+                request.app.state.plan_cache.popitem(last=False)
         return result
 
     @app.post("/api/documents", response_model=UploadResponse, status_code=201)
@@ -184,65 +290,91 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         data_store = request.app.state.store
         duplicate = next((doc for doc in workspace.documents if doc.sha256 == digest), None)
         if duplicate:
-            matching_jobs = [job for job in workspace.jobs if job.document_id == duplicate.id]
+            matching_jobs = data_store.document_jobs(workspace.session_id, duplicate.id, duplicate.version)
             active = next((job for job in matching_jobs if job.status in ("queued", "running", "completed")), None)
             if consent and active is None:
-                keys = data_store.original_keys(workspace.session_id, duplicate.id)
-                if keys:
-                    active = data_store.enqueue(workspace.session_id, duplicate.id, workspace.revision,
-                        {"consent": True, "original_key": keys[0]})
+                key = data_store.original_key(workspace.session_id, duplicate.id, duplicate.version)
+                if key:
+                    def retry(current: Workspace):
+                        target = next(item for item in current.documents if item.id == duplicate.id)
+                        target.status, target.error = "uploaded", None
+                    updated = data_store.mutate(workspace.session_id, retry, expected_revision=workspace.revision,
+                        enqueue={"document_id": duplicate.id, "payload": {"consent": True,
+                        "original_key": key, "document_version": duplicate.version}})
+                    active = updated.jobs[0]
+                    duplicate = next(item for item in updated.documents if item.id == duplicate.id)
             return UploadResponse(document=duplicate, job=active, duplicate=True)
         from clausegraph.extraction import extract_native
         try:
             pages = await run_in_threadpool(extract_native, content, name, media_type)
         except Exception as exc:
             raise HTTPException(422, "The document could not be read. Check that the PDF is valid and unencrypted.") from exc
-        document = Document(id=secrets.token_urlsafe(18), name=name, media_type=media_type,
+        previous = next((doc for doc in workspace.documents if doc.name.casefold() == name.casefold() and not doc.synthetic), None)
+        document = Document(id=previous.id if previous else secrets.token_urlsafe(18),
+            version=previous.version + 1 if previous else 1, name=name, media_type=media_type,
             sha256=digest, pages=pages, created_at=utcnow(), synthetic=False,
             status="uploaded" if consent else "needs_review",
             error=None if consent else "External processing was not authorized. Native text was stored privately; no provider was called.")
-        key = await run_in_threadpool(request.app.state.originals.put, workspace.session_id, document.id, content, media_type)
+        key = await run_in_threadpool(request.app.state.originals.put, workspace.session_id, document.id, content, media_type, document.version)
         try:
             def apply(current: Workspace):
+                if previous:
+                    invalidate_source(current, previous.id)
+                    current.documents = [item for item in current.documents if item.id != previous.id]
                 current.documents.append(document)
                 refresh_graph(current)
-            updated = data_store.mutate(workspace.session_id, apply, expected_revision=workspace.revision)
-            data_store.set_original(workspace.session_id, document.id, key)
+            updated = data_store.mutate(workspace.session_id, apply, expected_revision=workspace.revision,
+                original=(document.id, document.version, key), enqueue={"document_id": document.id,
+                    "payload": {"consent": True, "original_key": key, "document_version": document.version}} if consent else None,
+                supersede_document_id=previous.id if previous else None)
         except Exception:
             await run_in_threadpool(request.app.state.originals.delete, key)
             raise
-        job = data_store.enqueue(workspace.session_id, document.id, updated.revision,
-            {"consent": True, "original_key": key}) if consent else None
+        job = next((item for item in updated.jobs if item.document_id == document.id and item.status == "queued"), None) if consent else None
         return UploadResponse(document=document, job=job)
+
+    @app.get("/api/documents/{document_id}/original")
+    def download_original(document_id: str, request: Request, workspace: Session, version: int | None = None):
+        document = next((item for item in workspace.documents if item.id == document_id), None)
+        if document is None:
+            raise HTTPException(404, "Document not found in this session.")
+        if version is not None and version != document.version:
+            payload = request.app.state.store.document_version(workspace.session_id, document_id, version)
+            if payload is None:
+                raise HTTPException(404, "Document version not found in this session.")
+            document = Document.model_validate(payload)
+        content = original_bytes(request, workspace, document)
+        # Fixed attachment filename avoids untrusted filename header injection.
+        suffix = {"application/pdf": "pdf", "text/plain": "txt", "text/csv": "csv"}.get(document.media_type, "bin")
+        return Response(content, media_type=document.media_type,
+            headers={"Content-Disposition": f'attachment; filename="source-v{document.version}.{suffix}"'})
 
     @app.delete("/api/documents/{document_id}", response_model=Workspace)
     def delete_document(document_id: str, request: Request, workspace: Session):
         if not any(document.id == document_id for document in workspace.documents):
             raise HTTPException(404, "Document not found in this session.")
         rule_ids = {rule.id for rule in workspace.rules if any(item.document_id == document_id for item in rule.evidence)}
-        keys = request.app.state.store.original_keys(workspace.session_id, document_id)
-        for key in keys:
-            request.app.state.originals.delete(key)
         def apply(current: Workspace):
+            for key in request.app.state.store.original_keys(workspace.session_id, document_id):
+                request.app.state.originals.delete(key)
             current.documents = [document for document in current.documents if document.id != document_id]
-            current.rules = [rule for rule in current.rules if rule.id not in rule_ids]
-            current.scenario.actions = [action for action in current.scenario.actions if not rule_ids.intersection(action.source_rule_ids)]
-            current.scenario.events = [event for event in current.scenario.events if not rule_ids.intersection(event.source_rule_ids)]
+            invalidate_source(current, document_id, deleted=True)
             refresh_graph(current)
-        updated = request.app.state.store.mutate(workspace.session_id, apply, expected_revision=workspace.revision)
-        request.app.state.store.purge_document_history(workspace.session_id, document_id, list(rule_ids))
-        updated.jobs = request.app.state.store.list_jobs(workspace.session_id)
+        updated = request.app.state.store.mutate(workspace.session_id, apply, expected_revision=workspace.revision,
+            purge_document_id=document_id, purge_rule_ids=list(rule_ids))
+        clear_plan_cache(request, workspace.session_id)
         return present(request, updated)
 
     @app.patch("/api/rules/{rule_id}", response_model=Workspace)
     def review_rule(rule_id: str, body: RuleReview, request: Request, workspace: Session):
-        from clausegraph.extraction import compile_rules, validate_extraction
+        from clausegraph.extraction import compile_rules, extract_native, validate_extraction
         if not any(rule.id == rule_id for rule in workspace.rules):
             raise HTTPException(404, "Rule not found in this session.")
         candidate_payloads = request.app.state.store.extraction_candidates(workspace.session_id)
         def apply(current: Workspace):
             rule = next(item for item in current.rules if item.id == rule_id)
             original_validity = rule.evidence_status
+            prior_amount, prior_date = rule.amount_cents, rule.due_date
             if body.amount_cents is not None:
                 rule.amount_cents = body.amount_cents
             if body.due_date is not None:
@@ -253,14 +385,37 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
                 if expected != supplied or len(rule.conditions) != len(body.conditions):
                     raise HTTPException(422, "Review can resolve existing conditions but cannot replace source conditions.")
                 rule.conditions = body.conditions
-            # Editing an amount/date cannot make unsupported text into supported evidence.
-            if body.amount_cents is not None or body.due_date is not None:
-                for document in current.documents:
-                    if any(e.document_id == document.id for e in rule.evidence):
-                        checked = validate_extraction(ExtractionResult(rules=[rule.model_copy(deep=True)]), document)
-                        if checked.rules[0].evidence_status != "supported":
-                            rule.evidence_status = checked.rules[0].evidence_status
-            if original_validity in ("disputed", "unsupported"):
+            needs_validation = body.evidence_confirmed or body.amount_cents is not None or body.due_date is not None
+            deterministic_support = True
+            if needs_validation:
+                documents = {item.id: item for item in current.documents}
+                if not rule.evidence or any(item.document_id not in documents for item in rule.evidence):
+                    deterministic_support = False
+                for document_id in {item.document_id for item in rule.evidence}:
+                    if document_id not in documents:
+                        continue
+                    document = documents[document_id].model_copy(deep=True)
+                    content = original_bytes(request, current, document)
+                    # Validate native evidence against the original bytes, not a cached/model page.
+                    native = extract_native(content, document.name, document.media_type)
+                    native_index = {page.page: page for page in native}
+                    document.pages = [native_index.get(page.page, page) if len(native_index.get(page.page, page).text.strip()) >= 40
+                        or document.media_type != "application/pdf" else page for page in document.pages]
+                    candidate_rule = rule.model_copy(deep=True)
+                    candidate_rule.evidence_status = "unchecked"
+                    checked = validate_extraction(ExtractionResult(rules=[candidate_rule]), document)
+                    deterministic_support = deterministic_support and checked.rules[0].evidence_status == "supported"
+                if not deterministic_support:
+                    rule.evidence_status = "unsupported"
+                elif original_validity == "supported":
+                    rule.evidence_status = "supported"
+            if body.evidence_confirmed:
+                if not body.note or not body.note.strip():
+                    raise HTTPException(422, "Evidence confirmation requires a note describing what you checked against the original.")
+                if not deterministic_support:
+                    raise HTTPException(422, "Original quote, amount, date, version or entity checks failed. Confirmation cannot override unsupported provenance.")
+                rule.evidence_status = "supported"
+            elif original_validity in ("disputed", "unsupported"):
                 rule.evidence_status = original_validity
             if body.review_status == ReviewStatus.reviewed and rule.evidence_status != "supported":
                 raise HTTPException(422, "Unsupported or disputed evidence cannot be marked reviewed without verified source support.")
@@ -269,6 +424,15 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
                 rule.approval_status = body.approval_status
             if body.note:
                 rule.verifier_notes = (rule.verifier_notes or "") + "\nHuman review: " + body.note[:1000]
+            def update_derived_event(event):
+                if event.kind != "projected" or rule_id not in event.source_rule_ids:
+                    return
+                if body.amount_cents is not None and event.amount_cents == prior_amount:
+                    event.amount_cents = rule.amount_cents
+                if body.due_date is not None and event.date == prior_date:
+                    event.date = rule.due_date
+            for event in current.scenario.events:
+                update_derived_event(event)
             indexed = {item.id: item for item in current.rules}
             for action in current.scenario.actions:
                 if rule_id not in action.source_rule_ids:
@@ -285,15 +449,29 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
                     action.approval_status = ApprovalStatus.approved
                 else:
                     action.approval_status = ApprovalStatus.not_required
+                for effect in action.effects:
+                    if effect.event:
+                        update_derived_event(effect.event)
+                    if body.due_date is not None and effect.date == prior_date:
+                        effect.date = rule.due_date
             # Materialize only reviewed obligations. Retain unreviewed action candidates for graph/review UI.
             for payload in candidate_payloads:
                 candidate = ExtractionResult.model_validate(payload)
-                candidate.rules = [indexed[item.id] for item in candidate.rules if item.id in indexed]
+                # Cross-document dependencies resolve against the current reviewed rule set.
+                candidate.rules = list(indexed.values())
+                for event in candidate.events:
+                    if event.kind == "projected" and len(event.source_rule_ids) == 1:
+                        source = indexed.get(event.source_rule_ids[0])
+                        if source and source.amount_cents is not None and source.due_date is not None:
+                            event.amount_cents, event.date = source.amount_cents, source.due_date
                 action_index = {item.id: item for item in current.scenario.actions}
                 candidate.actions = [action_index[item.id] for item in candidate.actions if item.id in action_index]
                 all_candidate_ids = {item.id for item in candidate.events}
                 compiled = compile_rules(candidate)
-                current.scenario.events = [item for item in current.scenario.events if item.id not in all_candidate_ids] + compiled.events
+                # Review cannot silently erase an already recorded obligation if a clause is later disputed.
+                compiled_ids = {item.id for item in compiled.events}
+                current.scenario.events = [item for item in current.scenario.events
+                    if item.id not in all_candidate_ids or (item.id not in compiled_ids and (item.direction == "expense" or item.kind == "actual"))] + compiled.events
             for document in current.documents:
                 sources = [item for item in current.rules if any(e.document_id == document.id for e in item.evidence)]
                 if sources:
@@ -431,9 +609,11 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
 
     @app.delete("/api/session", response_model=DeleteResponse)
     def delete_private_session(request: Request, workspace: Session):
-        for key in request.app.state.store.original_keys(workspace.session_id):
-            request.app.state.originals.delete(key)
-        request.app.state.store.delete_session(workspace.session_id)
+        def cleanup():
+            for key in request.app.state.store.original_keys(workspace.session_id):
+                request.app.state.originals.delete(key)
+        request.app.state.store.delete_session(workspace.session_id, expected_revision=workspace.revision, cleanup=cleanup)
+        clear_plan_cache(request, workspace.session_id)
         return DeleteResponse(deleted=True)
 
     return app
