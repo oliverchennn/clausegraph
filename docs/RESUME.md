@@ -39,6 +39,10 @@ Conservative literal/operation and entity checks can withhold valid unusual clau
 
 ## Branches and handoff
 
+PR #1 squash-merged integration through `29e7426` into main as `b547df2`, preserving the same files under a new commit. PR #2's duplicate-history conflicts were reconciled by merging main back into integration while preserving the current code. The local safety branch `codex/backup-integration-before-pr2-fix` retains user commit `34014a2` before that repair. This backup is a recovery reference, not a new implementation lane.
+
+After future squash merges, fetch origin and create the next feature branch from `origin/main`. If continuing an existing branch is necessary, merge refreshed main into it first and inspect the result. Avoid pulling divergent main blindly, replaying already-squashed commits, or force-pushing to solve this ancestry issue. Local `main` can lag the remote; use the refreshed remote reference as the new-branch starting point. Preserve lane worktrees and any uncommitted work.
+
 Root owns contracts/locks/migrations/fixtures/CI/deployment. Engine/API/frontend lanes use separate .worktrees directories; their implementation commits are integrated. Agents completed their bounded lanes; no further delegation is required. Preserve worktrees and user files.
 Git may require a per-command `-c safe.directory=C:/Users/vzhu0/PycharmProjects/clausegraph` override due sandbox ownership. Do not set a global trust override or cherry-pick shared foundation commits again.
 Canonical schema: backend/clausegraph/schemas.py. After interface changes run `python scripts/export_openapi.py` then `npm --prefix frontend run generate:types`. Browser tests start isolated API port 8001/frontend port 3001; do not run the root dev frontend concurrently with root build/E2E because they share .next.

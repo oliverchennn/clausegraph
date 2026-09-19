@@ -1,8 +1,18 @@
 # Integration handoff
 
-Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegraph`. Root owns canonical schemas, fixtures, manifests/locks, generated types, migrations, CI and deployment. The original README-only repository is now a working local vertical slice. No cloud resources were provisioned or remote commits pushed.
+Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegraph`. Root owns canonical schemas, fixtures, manifests/locks, generated types, migrations, CI and deployment. The original README-only repository is now a working local vertical slice. No cloud resources were provisioned. The user published the integration branch and merged PR #1 before opening PR #2.
 
-## Latest change: hackathon MVP assessment (2026-09-19)
+## Latest change: reconcile squash-merge history for PR #2 (2026-09-19)
+
+Branch: `codex/integration`. The user's latest commit `34014a2` was clean and already published; no work was lost. PR #1 had squash-merged integration through `29e7426` into `main` as `b547df2`. Those two commits have the identical Git tree `df51c7f0d00a0c7283a912573e22f67b9b2c3c6b`, but different ancestry. Continuing the old integration branch caused PR #2 to compare from the original repository commit and report duplicate add/add conflicts.
+
+Repair: preserved `34014a2` in local branch `codex/backup-integration-before-pr2-fix`, then performed a normal merge of `origin/main`. Resolved the 23 conflicts to the saved integration versions because main's entire tree is already present in the older integration ancestor. This is a history reconciliation, with no discarded main-only work and no rebase or force-push. The merge's first parent retains the user's latest commit; its second parent records main. Local `main` and the three lane worktrees are left untouched.
+
+Checks: fresh GitHub PR metadata matched both local remote-tracking SHAs. Before the documentation update, `git diff --cached --exit-code codex/backup-integration-before-pr2-fix` and `git diff --exit-code` both passed: all tracked files exactly matched the saved integration snapshot after conflict resolution. Final change from that snapshot is limited to this handoff and RESUME guidance; no runtime, dependencies or API contracts changed, so application tests are not rerun for this repair. No unresolved index entries or diff whitespace errors remain.
+
+Publishing uses an ordinary fast-forward push to the existing PR #2 branch, never a forced update. Verify GitHub reports it mergeable before merging. Future work after a squash merge should start from refreshed `origin/main`, or explicitly merge main back into a reused branch first; see [RESUME.md](../RESUME.md).
+
+## Previous change: hackathon MVP assessment (2026-09-19)
 
 Branch: `codex/integration`, current root checkout; baseline commit `afdc0f0`. Read all repository Markdown docs, contributor instructions and lane handoffs, then inspected canonical contracts, engine results/gates, API persistence/export, dashboard comparisons, graph/chart and existing acceptance tests. No implementation lane was reopened.
 
