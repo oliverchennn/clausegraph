@@ -3,7 +3,12 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 const repository = path.resolve(__dirname, "..");
-const pythonCandidates = [path.join(repository, ".venv", "Scripts", "python.exe"), path.resolve(repository, "../../.venv/Scripts/python.exe"), path.join(repository, ".venv", "bin", "python")];
+const pythonCandidates = [
+  path.join(repository, ".venv", "Scripts", "python.exe"),
+  path.resolve(repository, "../../.venv/Scripts/python.exe"),
+  path.join(repository, ".venv", "bin", "python"),
+  path.resolve(repository, "../../.venv/bin/python"),
+];
 const python = process.env.PYTHON_EXECUTABLE || pythonCandidates.find(candidate => existsSync(candidate)) || "python";
 const apiPort = Number(process.env.E2E_API_PORT || "8001");
 const webPort = Number(process.env.E2E_WEB_PORT || "3001");

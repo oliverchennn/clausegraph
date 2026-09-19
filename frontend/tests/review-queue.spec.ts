@@ -19,14 +19,15 @@ test("review guidance opens a source, preserves failed reviews and refreshes aft
   await queue.getByRole("button", { name: `Review evidence for ${pendingQueue.items[0].title}`, exact: true }).click();
   const rule = page.getByTestId("rule-rule-rent");
   await expect(rule.getByRole("blockquote")).toContainText("$1,600");
-  await rule.getByLabel("Evidence review", { exact: true }).selectOption("reviewed");
+  const evidenceReview = rule.getByRole("combobox", { name: "Evidence review", exact: true });
+  await evidenceReview.selectOption("reviewed");
   await rule.getByRole("checkbox", { name: "I checked this rule against the original source." }).check();
   await rule.getByRole("button", { name: "Save review & recalculate" }).click();
   await expect(rule.getByRole("alert")).toContainText("Evidence confirmation requires a note");
-  await expect(rule.getByLabel("Evidence review", { exact: true })).toHaveValue("reviewed");
+  await expect(evidenceReview).toHaveValue("reviewed");
   const failedWorkspace = await (await page.request.get("/api/workspace", { headers: { Authorization: `Bearer ${token}` } })).json() as Workspace;
   expect(failedWorkspace.rules.find(item => item.id === "rule-rent")?.review_status).toBe("pending");
-  await rule.getByLabel("Review note").fill("Checked the synthetic lease quote and the original amount and date.");
+  await rule.getByRole("textbox", { name: "Review note", exact: true }).fill("Checked the synthetic lease quote and the original amount and date.");
   await rule.getByRole("button", { name: "Save review & recalculate" }).click();
   await expect(rule.getByRole("button", { name: "Review saved" })).toBeVisible();
   await page.getByRole("button", { name: "Close dialog" }).click();
@@ -81,10 +82,18 @@ test("an older real queue response cannot replace review guidance for a newer re
 
 test("queue loading failures are retryable and mobile review is keyboard accessible", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.route("**/api/review-queue", route => route.abort(), { times: 1 });
+  let failQueue = true;
+  await page.route("**/api/review-queue", async route => {
+    if (failQueue) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "Synthetic queue outage" }) });
+      return;
+    }
+    await route.continue();
+  });
   await page.goto("/");
   const queue = page.getByTestId("review-queue");
   await expect(queue.getByRole("alert")).toContainText("Review tasks could not be loaded");
+  failQueue = false;
   await queue.getByRole("button", { name: "Try again" }).click();
   await expect(queue.getByRole("button", { name: /^Review evidence for/ }).first()).toBeVisible();
   const review = queue.getByRole("button", { name: /^Review evidence for/ }).first();
