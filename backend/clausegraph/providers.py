@@ -60,15 +60,23 @@ class Providers:
     def evidence_model(self) -> str:
         return self.settings.nvidia_evidence_model if self.settings.evidence_provider == "nvidia" else self.settings.gemini_model
 
+    @property
+    def text_name(self) -> str:
+        return "Brev-hosted Nemotron" if self.settings.text_provider == "brev" else "NVIDIA Nemotron"
+
     def statuses(self) -> list[ProviderStatus]:
         result = []
-        for name, key, model in (("NVIDIA Nemotron", self.settings.nvidia_api_key, self.settings.nvidia_model),
+        for name, key, model in ((self.text_name, self.settings.text_configured, self.settings.text_model),
                 (self.evidence_name, self.settings.nvidia_api_key if self.settings.evidence_provider == "nvidia"
                  else self.settings.gemini_api_key, self.evidence_model),
                 ("ElevenLabs", self.settings.elevenlabs_api_key, self.settings.elevenlabs_stt_model)):
             result.append(ProviderStatus(name=name, configured=bool(key), mode="live" if key else "unavailable",
                 model=model, detail="Configured; live request not yet verified in this process." if key else
                 "Credential missing. No live requests or synthetic fallback."))
+        if self.settings.text_provider == "brev":
+            result[0].detail = ("Private Brev tunnel configured; connectivity/model not yet verified. "
+                "Source processing requires explicit Brev consent. Evidence/OCR uses its separately listed provider."
+                if self.settings.text_configured else "BREV_NIM_MODEL missing. No inference or hosted fallback.")
         result.append(ProviderStatus(name="Tiger Data / PostgreSQL",
             configured=self.settings.database_url.startswith("postgresql"),
             mode="live" if self.settings.database_url.startswith("postgresql") else "offline", model=None,
@@ -80,11 +88,11 @@ class Providers:
             else "Private local files; Spaces is not configured."))
         return result
 
-    def request(self, name: str, method: str, url: str, **kwargs) -> httpx.Response:
+    def request(self, name: str, method: str, url: str, *, trust_env: bool = True, **kwargs) -> httpx.Response:
         for attempt in range(self.settings.provider_retries + 1):
             try:
                 with httpx.Client(timeout=httpx.Timeout(self.settings.provider_timeout_seconds, connect=10),
-                                  transport=self.transport, follow_redirects=False) as client:
+                                  transport=self.transport, follow_redirects=False, trust_env=trust_env) as client:
                     response = client.request(method, url, **kwargs)
                 if response.status_code >= 400:
                     if (response.status_code in (408, 429) or response.status_code >= 500) and attempt < self.settings.provider_retries:
@@ -101,26 +109,34 @@ class Providers:
         raise ProviderError(f"{name} unavailable")
 
     def _nvidia(self, instruction: str, data: dict, schema: dict | None = None, max_tokens: int = 8192) -> str:
-        if not self.settings.nvidia_api_key:
-            raise ProviderError("NVIDIA_API_KEY is not configured. Upload is retained; no extraction was performed.")
-        body: dict[str, Any] = {"model": self.settings.nvidia_model, "temperature": 0, "max_tokens": max_tokens,
+        brev = self.settings.text_provider == "brev"
+        if not self.settings.text_configured:
+            setting = "BREV_NIM_MODEL" if brev else "NVIDIA_API_KEY"
+            raise ProviderError(f"{setting} is not configured. Upload is retained; no extraction was performed.")
+        body: dict[str, Any] = {"model": self.settings.text_model, "temperature": 0, "max_tokens": max_tokens,
             "stream": False, "messages": [{"role": "system", "content": SYSTEM + "\n" + instruction},
                 {"role": "user", "content": json.dumps(data, ensure_ascii=False)}]}
-        if schema:
+        if schema and not brev:
             body["response_format"] = {"type": "json_object"}
             body["guided_json"] = schema
-        response = self.request("NVIDIA Nemotron", "POST", f"{self.settings.nvidia_base_url.rstrip('/')}/chat/completions",
-            headers={"Authorization": f"Bearer {self.settings.nvidia_api_key}"}, json=body)
+        # NIM backends differ in constrained-decoding syntax. Brev uses the schema
+        # already in the prompt and the same strict local validation, with no fallback.
+        base_url = self.settings.brev_nim_base_url if brev else self.settings.nvidia_base_url
+        headers = {} if brev else {"Authorization": f"Bearer {self.settings.nvidia_api_key}"}
+        response = self.request(self.text_name, "POST", f"{base_url.rstrip('/')}/chat/completions",
+            headers=headers, json=body, trust_env=not brev)
         try:
             choice = response.json()["choices"][0]
             if choice.get("finish_reason") == "length":
-                raise ProviderError("NVIDIA output was truncated. Split the document into smaller files.")
+                raise ProviderError(f"{self.text_name} output was truncated. Split the document into smaller files.")
+            if brev and choice.get("finish_reason") != "stop":
+                raise ProviderError("Brev output was incomplete or refused. Nothing was compiled.")
             text = choice["message"]["content"]
             if not isinstance(text, str):
                 raise ValueError()
             return text
         except (KeyError, IndexError, TypeError, ValueError) as exc:
-            raise ProviderError("NVIDIA returned an invalid response envelope.") from exc
+            raise ProviderError(f"{self.text_name} returned an invalid response envelope.") from exc
 
     def extract(self, document: Document, scenario: Scenario) -> ExtractionResult:
         text_size = sum(len(page.text) for page in document.pages)
@@ -135,7 +151,7 @@ class Providers:
         try:
             result = ExtractionResult.model_validate_json(raw)
         except ValidationError as exc:
-            raise ProviderError("NVIDIA returned an invalid extraction schema. Nothing was compiled.") from exc
+            raise ProviderError(f"{self.text_name} returned an invalid extraction schema. Nothing was compiled.") from exc
         # A model cannot grant itself review, evidence validity, or approval.
         for rule in result.rules:
             rule.consequential = True
@@ -336,7 +352,7 @@ class Providers:
             if not status.configured:
                 continue
             try:
-                if status.name == "NVIDIA Nemotron":
+                if status.name == self.text_name:
                     self._nvidia('Return {"ok":true} for this synthetic connection test.', {"synthetic": True}, max_tokens=32)
                 elif status.name == self.evidence_name:
                     prompt = 'Synthetic connection test. Return {"ok":true}.'

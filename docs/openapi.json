@@ -234,6 +234,17 @@
             ],
             "title": "Consent Provider"
           },
+          "consent_text_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Text Provider"
+          },
           "file": {
             "contentMediaType": "application/octet-stream",
             "title": "File",
@@ -593,6 +604,21 @@
             "default": false,
             "title": "Consent",
             "type": "boolean"
+          },
+          "consent_text_provider": {
+            "anyOf": [
+              {
+                "enum": [
+                  "nvidia",
+                  "brev"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Text Provider"
           },
           "use_provider": {
             "default": false,

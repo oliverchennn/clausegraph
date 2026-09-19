@@ -296,8 +296,12 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
 
     @app.post("/api/documents", response_model=UploadResponse, status_code=201)
     async def upload(request: Request, workspace: Session, file: UploadFile = File(...), consent: bool = Form(False),
-                     consent_provider: str | None = Form(None)):
+                     consent_provider: str | None = Form(None), consent_text_provider: str | None = Form(None)):
         settings = request.app.state.settings
+        if consent and (consent_text_provider != settings.text_provider
+                        and (consent_text_provider is not None or settings.text_provider == "brev")):
+            await file.close()
+            raise HTTPException(409, "Text provider changed or Brev consent is missing. Review the processing destination before uploading.")
         if consent and consent_provider is not None and consent_provider != settings.evidence_provider:
             await file.close()
             raise HTTPException(409, "Evidence provider changed. Refresh the workspace and review processing consent again.")
@@ -338,7 +342,8 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
                         target.status, target.error = "uploaded", None
                     updated = data_store.mutate(workspace.session_id, retry, expected_revision=workspace.revision,
                         enqueue={"document_id": duplicate.id, "payload": {"consent": True,
-                        "original_key": key, "document_version": duplicate.version, "evidence_provider": settings.evidence_provider}})
+                        "original_key": key, "document_version": duplicate.version, "evidence_provider": settings.evidence_provider,
+                        "text_provider": settings.text_provider, "processing_route": settings.processing_route}})
                     active = updated.jobs[0]
                     duplicate = next(item for item in updated.documents if item.id == duplicate.id)
             return UploadResponse(document=duplicate, job=active, duplicate=True)
@@ -364,7 +369,8 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
             updated = data_store.mutate(workspace.session_id, apply, expected_revision=workspace.revision,
                 original=(document.id, document.version, key), enqueue={"document_id": document.id,
                     "payload": {"consent": True, "original_key": key, "document_version": document.version,
-                        "evidence_provider": settings.evidence_provider}} if consent else None,
+                        "evidence_provider": settings.evidence_provider, "text_provider": settings.text_provider,
+                        "processing_route": settings.processing_route}} if consent else None,
                 supersede_document_id=previous.id if previous else None)
         except Exception:
             await run_in_threadpool(request.app.state.originals.delete, key)
@@ -584,6 +590,9 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         if body.use_provider:
             if not body.consent:
                 raise HTTPException(403, "Consent is required before sending source facts for external draft generation.")
+            selected = request.app.state.settings.text_provider
+            if body.consent_text_provider != selected and (body.consent_text_provider is not None or selected == "brev"):
+                raise HTTPException(409, "Text provider changed or Brev consent is missing. Review the processing destination before generating a draft.")
             draft = request.app.state.providers.draft(action.title, source_quotes,
                 {"description": action.description, "requested_date": action.recommended_date.isoformat()})
         return DraftResponse(action_id=action_id, subject=f"Request: {action.title}", body=draft, sent=False)

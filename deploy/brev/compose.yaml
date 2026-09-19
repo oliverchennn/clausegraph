@@ -1,0 +1,23 @@
+# Run only on an explicitly provisioned GPU VM. This does not create a Brev VM.
+name: clausegraph-nim
+services:
+  nemotron:
+    image: ${NIM_IMAGE:?Set the pinned Nemotron NIM image supported by your GPU}
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: 16gb
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      NGC_API_KEY: ${NGC_API_KEY:-}
+    volumes:
+      - nim-cache:/opt/nim/.cache
+    restart: "no"
+volumes:
+  nim-cache:

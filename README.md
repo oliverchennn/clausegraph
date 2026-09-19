@@ -82,6 +82,8 @@ CI checks schema drift, lint, types, engine/API tests, a production build and br
 
 ## Providers and deployment
 
+For hosted NVIDIA key setup and optional private Brev GPU inference, see [NVIDIA and Brev setup](docs/NVIDIA_BREV.md). Hosted inference stays the default; Brev is opt-in backend/CLI support, with browser consent integration assigned separately to Developer B.
+
 The synthetic demo makes no model calls. Real uploads can extract native PDF/text/CSV locally. External extraction, evidence checking and scanned-page transcription default to NVIDIA and require consent plus only `NVIDIA_API_KEY`: Lightning extracts, while `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` checks evidence and reads scanned pages. Set `EVIDENCE_PROVIDER=gemini` and `GEMINI_API_KEY` only to explicitly opt into Google verification/OCR. No OpenAI key is needed and there is no automatic paid-provider fallback. See [the model decision](docs/decisions/003-nvidia-evidence-default.md) for SteelHacks/free-endpoint sources and tradeoffs.
 
 NVIDIA image processing accepts at most four source pages per request; split larger scans. Native PDF text limits are unchanged. Both model passes can make correlated mistakes: agreement never replaces exact-source checks or human review. Missing credentials and failed verification remain visible and do not silently switch to fixtures. ElevenLabs speech is optional and requires fact confirmation. Model IDs/base URLs are configurable; check account availability using `python scripts/smoke_providers.py` (configured calls consume quota and may consume provider credits).

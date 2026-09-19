@@ -41,8 +41,8 @@ def evaluate(*, live: bool = False, provider: Providers | None = None) -> dict:
     corpus = json.loads((ROOT / "fixtures/evals/semantic-clauses.json").read_text(encoding="utf-8"))
     if live:
         provider = provider or Providers(Settings())
-        if not provider.settings.nvidia_api_key:
-            raise ProviderError("NVIDIA_API_KEY missing; no live evaluation performed and no fixture fallback.")
+        if not provider.settings.text_configured:
+            raise ProviderError("Text provider configuration missing; no live evaluation performed and no fixture fallback.")
     scenario = Scenario(id="synthetic-eval", title="Synthetic extraction evaluation", start_date=date(2026, 9, 1),
                         opening_balance_cents=0, events=[], actions=[])
     rows = []
@@ -74,7 +74,8 @@ def evaluate(*, live: bool = False, provider: Providers | None = None) -> dict:
         rows.append(row)
     return {
         "mode": "live_nemotron" if live else "synthetic_fixture_gate_eval",
-        "model": provider.settings.nvidia_model if live else None,
+        "provider": provider.text_name if live else None,
+        "model": provider.settings.text_model if live else None,
         "model_accuracy_measured": live,
         "case_count": len(rows),
         "structured_exact_count": sum(row["structured_fields_exact"] for row in rows),
@@ -87,7 +88,7 @@ def evaluate(*, live: bool = False, provider: Providers | None = None) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--live", action="store_true", help="Send only the five synthetic clauses to NVIDIA; consumes quota.")
+    parser.add_argument("--live", action="store_true", help="Send five synthetic clauses to the configured NVIDIA/Brev text model; consumes quota/compute.")
     parser.add_argument("--consent-external", action="store_true", help="Authorize external processing of synthetic evaluation text.")
     args = parser.parse_args()
     if args.live and not args.consent_external:
