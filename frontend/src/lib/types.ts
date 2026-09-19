@@ -17,3 +17,5 @@ export type JobStatus = components["schemas"]["JobStatus"];
 export type ApprovalStatus = components["schemas"]["ApprovalStatus"];
 export type VerificationRequest = components["schemas"]["VerificationRequest"];
 export type VerificationResult = components["schemas"]["VerificationResult"];
+export type ReviewQueue = components["schemas"]["ReviewQueue"];
+export type ReviewQueueItem = components["schemas"]["ReviewQueueItem"];
