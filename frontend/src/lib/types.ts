@@ -14,3 +14,5 @@ export type DraftResponse = components["schemas"]["DraftResponse"];
 export type ProviderStatus = components["schemas"]["ProviderStatus"];
 export type JobStatus = components["schemas"]["JobStatus"];
 export type ApprovalStatus = components["schemas"]["ApprovalStatus"];
+export type VerificationRequest = components["schemas"]["VerificationRequest"];
+export type VerificationResult = components["schemas"]["VerificationResult"];
