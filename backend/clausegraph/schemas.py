@@ -1,5 +1,5 @@
 """Canonical public contracts. Integration owner controls interface changes."""
-from datetime import date, datetime
+from datetime import date as Date, datetime
 from enum import Enum
 from typing import Annotated, Literal
 
@@ -67,7 +67,7 @@ class Rule(Contract):
     parties: list[str] = Field(default_factory=list)
     conditions: list[Condition] = Field(default_factory=list)
     amount_cents: int | None = Field(default=None, ge=0)
-    due_date: date | None = None
+    due_date: Date | None = None
     dependencies: list[str] = Field(default_factory=list)
     review_status: ReviewStatus = ReviewStatus.pending
     approval_status: ApprovalStatus = ApprovalStatus.not_required
@@ -82,7 +82,7 @@ class Rule(Contract):
 class FinancialEvent(Contract):
     id: str
     title: str
-    date: date
+    date: Date
     amount_cents: Annotated[int, Field(ge=0, strict=True)]
     direction: Literal["income", "expense"]
     kind: Literal["actual", "projected"] = "projected"
@@ -96,7 +96,7 @@ class Effect(Contract):
     operation: Literal["shift", "remove", "add", "accelerate"]
     target_event_id: str | None = None
     event: FinancialEvent | None = None
-    date: date | None = None
+    date: Date | None = None
     offset_days: int | None = None
 
     @model_validator(mode="after")
@@ -117,9 +117,9 @@ class Action(Contract):
     kind: Literal["shift", "cancel", "claim", "request", "keep"]
     source_rule_ids: list[str]
     effects: list[Effect] = Field(default_factory=list)
-    earliest_date: date
-    latest_date: date
-    recommended_date: date
+    earliest_date: Date
+    latest_date: Date
+    recommended_date: Date
     requires: list[str] = Field(default_factory=list)
     excludes: list[str] = Field(default_factory=list)
     approval_status: ApprovalStatus = ApprovalStatus.not_required
@@ -163,7 +163,7 @@ class DependencyGraph(Contract):
 class Scenario(Contract):
     id: str
     title: str
-    start_date: date
+    start_date: Date
     horizon_days: int = Field(default=60, ge=1, le=366)
     opening_balance_cents: Annotated[int, Field(ge=0, le=10000000000, strict=True)]
     events: list[FinancialEvent]
@@ -175,16 +175,16 @@ class PlanRequest(Contract):
     opening_balance_cents: Annotated[int | None, Field(default=None, ge=0, strict=True)]
     horizon_days: int | None = Field(default=None, ge=1, le=366)
     approval_overrides: dict[str, ApprovalStatus] = Field(default_factory=dict)
-    action_dates: dict[str, date] = Field(default_factory=dict)
+    action_dates: dict[str, Date] = Field(default_factory=dict)
     force_action_ids: list[str] = Field(default_factory=list)
     exclude_action_ids: list[str] = Field(default_factory=list)
     include_conditional: bool = False
-    income_date: date | None = None
+    income_date: Date | None = None
     income_cents: Annotated[int | None, Field(default=None, ge=0, strict=True)]
 
 
 class DailyBalance(Contract):
-    date: date
+    date: Date
     balance_cents: int
     income_cents: int
     expense_cents: int
@@ -195,14 +195,14 @@ class Simulation(Contract):
     daily: list[DailyBalance]
     minimum_balance_cents: int
     ending_balance_cents: int
-    first_shortfall_date: date | None
+    first_shortfall_date: Date | None
     additional_cash_required_cents: int
     beyond_horizon: list[FinancialEvent] = Field(default_factory=list)
 
 
 class PlannedAction(Contract):
     action_id: str
-    execution_date: date
+    execution_date: Date
     order: int
     explanation: str
     source_rule_ids: list[str]
@@ -259,8 +259,9 @@ class RuleReview(Contract):
     review_status: ReviewStatus
     approval_status: ApprovalStatus | None = None
     amount_cents: int | None = Field(default=None, ge=0)
-    due_date: date | None = None
+    due_date: Date | None = None
     note: str | None = None
+    conditions: list[Condition] | None = None
 
 
 class ExtractionResult(Contract):
@@ -278,7 +279,7 @@ class UploadResponse(Contract):
 
 class IntakeRequest(Contract):
     opening_balance_cents: Annotated[int, Field(ge=0, strict=True)]
-    start_date: date
+    start_date: Date
     horizon_days: int = Field(default=60, ge=1, le=366)
     events: list[FinancialEvent]
     essential_service_ids: list[str] = Field(default_factory=list)
