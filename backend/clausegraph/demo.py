@@ -67,7 +67,7 @@ def load_demo() -> tuple[Scenario, list[Document], list[Rule]]:
              due_date=START + timedelta(days=18), parties=["Alex Morgan"]),
         rule("rule-income", "Expected final paycheck", 5,
              "An expected final paycheck of $900.00 will be deposited September 21, 2026.",
-             kind="benefit", amount_cents=90000, due_date=START + timedelta(days=20), parties=["Juniper Studio", "Alex Morgan"]),
+             kind="obligation", amount_cents=90000, due_date=START + timedelta(days=20), parties=["Juniper Studio", "Alex Morgan"]),
         Rule(id="rule-assistance", title="Assistance eligibility unconfirmed", kind="benefit",
              evidence=evidence(6, "Applicants may request a one-time $300.00 emergency assistance grant. Payment depends on eligibility review and written approval. No eligibility decision, payment date, or approval has been issued for Alex Morgan."),
              parties=["Community Bridge", "Alex Morgan"], amount_cents=30000,
