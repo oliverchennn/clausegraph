@@ -1,0 +1,16 @@
+.worktrees/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+.env
+.env.*.local
+node_modules/
+.next/
+frontend/out/
+playwright-report/
+test-results/
+data/
+*.db
+.sites-runtime/
