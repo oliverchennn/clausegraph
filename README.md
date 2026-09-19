@@ -6,7 +6,7 @@ An evidence-backed emergency cash planner: uploaded clauses become reviewed rule
 
 The MVP demonstrates a complete chain from **source clause → reviewed rule → dependency graph → constrained action schedule → cash projection**. Its novelty is reasoning over interacting clauses; its intended impact is helping people bridge cash timing gaps while preserving essentials; its technical depth is the evidence-gated rule compiler and deterministic solver. The synthetic demo moves minimum cash from −$400 to $50 without changing ending cash or claiming savings.
 
-See [HACKATHON_MVP.md](docs/HACKATHON_MVP.md) for the assessed feature gaps, delivery order and acceptance criteria. The next recommended additions are a decision trace and side-by-side comparisons, with bounded stress testing as a stretch goal. These additions are proposed; the existing demo and current live-provider limitations are documented below.
+The dashboard now makes that chain judge-visible: “Why this plan?” traces each selected action through source, rule and exact before/after ledger events, while safe side-by-side previews compare the baseline, recorded plan and a candidate without overwriting history. See [HACKATHON_MVP.md](docs/HACKATHON_MVP.md) for acceptance criteria and the remaining bounded-stress stretch goal. Current live-provider limitations are documented below.
 
 ## Run locally
 
@@ -47,6 +47,8 @@ Six documents in `fixtures/` are synthetic. Day 0 is September 1, 2026. The scen
 | Phone cancellation alone, accelerating device debt | −$820 | $80 |
 
 The device's original $480 debt is relocated from day 80, not duplicated. Assistance without eligibility, approval and payment timing stays unresolved. The chart depicts projections, while ledger records separately track actual events.
+
+Use **Why this plan?** to show the $450 installment moving from September 13 to September 26. Then choose **Compare option alone** on phone cancellation: the candidate shows −$820 minimum/$80 ending beside the untouched $50/$500 recorded plan. Scenario controls also support a non-persistent approval/date/cash preview. Applying any candidate is a separate explicit choice and still executes no real-world action.
 
 Create a fresh demo via `python scripts/demo_session.py`. Reset only a selected session using `python scripts/demo_session.py --reset-session TOKEN` or the UI. This replaces that session's data; other sessions remain private. See [the three-minute script](docs/DEMO.md).
 

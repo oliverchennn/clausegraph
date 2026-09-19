@@ -209,6 +209,20 @@ class PlannedAction(Contract):
     conditional: bool = False
 
 
+class EventChange(Contract):
+    operation: Literal["shift", "remove", "add", "accelerate", "fee"]
+    before: FinancialEvent | None = None
+    after: FinancialEvent | None = None
+
+
+class DecisionTrace(Contract):
+    action_id: str
+    execution_date: Date
+    source_rule_ids: list[str]
+    source_document_ids: list[str]
+    changes: list[EventChange] = Field(default_factory=list)
+
+
 class PlanResult(Contract):
     id: str
     revision: int = 1
@@ -218,6 +232,7 @@ class PlanResult(Contract):
     baseline: Simulation
     proposed: Simulation
     actions: list[PlannedAction]
+    decision_traces: list[DecisionTrace] = Field(default_factory=list)
     excluded_actions: dict[str, str] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)
     objective_proven: bool = False

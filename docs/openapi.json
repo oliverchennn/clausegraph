@@ -286,6 +286,49 @@
         "title": "DailyBalance",
         "type": "object"
       },
+      "DecisionTrace": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/EventChange"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "execution_date": {
+            "format": "date",
+            "title": "Execution Date",
+            "type": "string"
+          },
+          "source_document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Document Ids",
+            "type": "array"
+          },
+          "source_rule_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Rule Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "action_id",
+          "execution_date",
+          "source_rule_ids",
+          "source_document_ids"
+        ],
+        "title": "DecisionTrace",
+        "type": "object"
+      },
       "DeleteResponse": {
         "additionalProperties": false,
         "properties": {
@@ -532,6 +575,47 @@
           "operation"
         ],
         "title": "Effect",
+        "type": "object"
+      },
+      "EventChange": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinancialEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinancialEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operation": {
+            "enum": [
+              "shift",
+              "remove",
+              "add",
+              "accelerate",
+              "fee"
+            ],
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "title": "EventChange",
         "type": "object"
       },
       "Evidence": {
@@ -1036,6 +1120,13 @@
           },
           "baseline": {
             "$ref": "#/components/schemas/Simulation"
+          },
+          "decision_traces": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionTrace"
+            },
+            "title": "Decision Traces",
+            "type": "array"
           },
           "excluded_actions": {
             "additionalProperties": {
@@ -2274,6 +2365,50 @@
           }
         ],
         "summary": "Plan"
+      }
+    },
+    "/api/plan/preview": {
+      "post": {
+        "description": "Return a side-effect-free scenario result for comparison.",
+        "operationId": "preview_plan_api_plan_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Preview Plan"
       }
     },
     "/api/providers": {

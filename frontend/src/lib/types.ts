@@ -6,6 +6,7 @@ export type Rule = components["schemas"]["Rule"];
 export type Action = components["schemas"]["Action"];
 export type FinancialEvent = components["schemas"]["FinancialEvent"];
 export type PlanResult = components["schemas"]["PlanResult"];
+export type Simulation = components["schemas"]["Simulation"];
 export type PlanRequest = components["schemas"]["PlanRequest"];
 export type RuleReview = components["schemas"]["RuleReview"];
 export type IntakeRequest = components["schemas"]["IntakeRequest"];

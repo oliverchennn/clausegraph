@@ -1,6 +1,6 @@
 # Hackathon MVP priorities
 
-Updated 2026-09-19 after reviewing AGENTS.md, all lane handoffs, architecture, demo, deployment and sponsor records, and the current engine/API/UI. This is a product assessment and implementation roadmap. Features marked proposed are not implemented by this documentation change. These priorities reflect the user's requested emphasis, not a verified official judging rubric.
+Updated 2026-09-19 after reviewing AGENTS.md, all lane handoffs, architecture, demo, deployment and sponsor records, and the current engine/API/UI. This is a product assessment and implementation roadmap. P1a/P1b are now implemented and regression-tested; later priorities remain proposed. These priorities reflect the user's requested emphasis, not a verified official judging rubric.
 
 ## Product thesis and demo promise
 
@@ -35,18 +35,18 @@ Effort below is relative implementation risk, not a time promise. Preserve the e
 
 | Order | Deliverable | Status | Utility / demo value | Effort and owner |
 |---|---|---|---|---|
-| P0 | Rehearsed synthetic flow plus a recorded live extraction check when credentials/consent are available | Synthetic flow implemented; live workflow unverified | Establishes that both the decision engine and the claimed model integration work | Small rehearsal; live-provider uncertainty. Integration/API |
-| P1a | Decision trace linking clauses, changed events and the cash chart | Proposed; source graph and balances exist | Makes novelty and technical depth immediately inspectable | Medium. Frontend + engine, integration for contracts |
-| P1b | Side-by-side alternatives that preserve the primary plan | Proposed; individual comparison and history exist | Helps users choose and gives judges an instant before/after | Medium. Frontend + API, integration for contracts |
+| P0 | Rehearsed synthetic flow plus a recorded live extraction check when credentials/consent are available | Synthetic flow browser-tested; live workflow unverified | Establishes that both the decision engine and the claimed model integration work | Live-provider uncertainty remains. Integration/API |
+| P1a | Decision trace linking clauses, changed events and the cash outcome | Implemented and tested | Makes novelty and technical depth immediately inspectable | Complete for selected-action source/rule/event/outcome traces |
+| P1b | Side-by-side alternatives that preserve the primary plan | Implemented and tested | Helps users choose and gives judges an instant before/after | Complete for scenario controls and option-alone previews |
 | P2a | Bounded plan stress test | Proposed; individual what-if inputs exist | Adds a useful answer to “Will this still work if payday moves?” | Medium/high. Engine + API + frontend |
 | P2b | Prioritized review queue with a specific next step | Proposed; rules, blockers and review controls exist | Makes a blocked plan actionable without inventing eligibility | Medium. Frontend first; engine for structured blockers |
 | P3 | Revision-aware history and change summary | Proposed UI; history endpoint exists | Explains what changed after new evidence or an approval change | Small/medium for inspection; larger for safe restoration. Frontend/API |
 
-**Recommended hackathon scope: complete P0 and P1a/P1b, then freeze features and rehearse.** If time remains, implement P2a as the single stretch feature. P2b/P3 can follow; none is required to finish the existing MVP. Credential delays should not prevent local P1 work, but do prevent claiming live extraction has been verified.
+**Recommended hackathon scope: feature-freeze P1a/P1b and rehearse.** If time remains after a real consented provider check, implement P2a as the single stretch feature. P2b/P3 can follow; none is required to finish the MVP. Credential delays do not affect the synthetic demo, but do prevent claiming live extraction has been verified.
 
 ## P1a: Follow a decision from source to cash
 
-Add a “Why this plan?” view focused on a selected action. Highlight its source documents, rules, dependencies and affected events; expose the exact evidence drawer from that view. Selecting an affected date on the chart should show its income/expense events and evidence links. Include an accessible event list so the explanation works without navigating the graph.
+The dashboard now includes a “Why this plan?” view for every selected action. It connects source documents and reviewed rules to execution date, typed before/after ledger changes and the resulting minimum cash. The exact evidence drawer is reachable from the trace, and its accessible event text works without navigating the full graph. Chart-date drill-down remains a possible refinement, not a blocker for the implemented causal trace.
 
 Show the installment at its original date and its new date with the same amount. For phone cancellation, show the removed $60 payment and the $480 debt moved from its future date. Retain future obligations visibly. Derive explanations and amounts from server-side event transformations, not generated financial reasoning.
 
@@ -61,9 +61,9 @@ Acceptance:
 
 ## P1b: Compare alternatives without losing the plan
 
-Pin the recorded plan beside a candidate. Show minimum and ending cash, first shortfall, required cash diagnostic, selected actions, future obligations and assumptions. For the synthetic story, offer recorded approval, denied approval and forced phone cancellation with explicit labels. The baseline ledger with no actions is a separate comparator from the optimized plan.
+The dashboard now pins the baseline and recorded plan beside a non-persistent candidate. It shows minimum and ending cash, first shortfall, required cash diagnostic, selected actions, future obligations and changed assumptions. Scenario controls can preview denied approval; action cards can preview one option alone. The baseline ledger with no actions is a separate comparator from the optimized plan.
 
-Current `POST /api/plan` persists its result as `workspace.plan`. The dashboard's “Compare this option” also constructs a fresh request rather than carrying forward all current assumptions. A client-only second card would therefore leave reload/persistence behavior misleading. Add an explicit preview calculation path that preserves the active plan; share optimization, authorization and revision checks with normal planning. Bind previews to the input revision and invalidate stale comparisons after review, intake, upload or deletion. Apply a candidate only through an explicit user choice. Regenerate OpenAPI/types for interface changes.
+`POST /api/plan` persists its result as `workspace.plan`; `POST /api/plan/preview` shares the same optimization, authorization, cache and revision key without writing the workspace or history. The UI carries forward current assumptions, makes option-alone exclusions explicit, invalidates stale comparisons after a revision change, and persists a candidate only through “Use this preview as plan.” OpenAPI and generated TypeScript contracts include the preview route and decision traces.
 
 Acceptance:
 
@@ -121,4 +121,4 @@ Stop feature work once the chosen flow is coherent. Run checks appropriate to im
 
 Bank aggregation, automated payments/cancellations/applications/messages, broad benefits discovery, generalized recurring-event engines, multi-user case management, new model providers and infrastructure rewrites add scope without improving the central demonstration enough. Keep existing audio optional. Authentication recovery, retention operations, rate limits and deployment hardening belong on the path to a public real-data release; the local synthetic demo does not establish production readiness.
 
-Review checkpoint: existing demo/engine/graph tests passed **57 tests in 2.51s** on 2026-09-19. No runtime code, shared contracts, dependencies or external services were changed during this assessment. See [handoffs/integration.md](handoffs/integration.md) for the full handoff and earlier broader validation.
+Implementation checkpoint on 2026-09-19: **142 backend tests passed, 1 PostgreSQL test skipped**, Ruff/typecheck/lint/production build passed, clean `npm ci` passed, and the real-API Chromium suite passed **2 tests** covering desktop and 390px mobile. No live provider call was made. See [handoffs/integration.md](handoffs/integration.md) for exact commands, contract changes and remaining limitations.

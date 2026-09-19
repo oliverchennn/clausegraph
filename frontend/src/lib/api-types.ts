@@ -242,6 +242,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plan/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Plan
+         * @description Return a side-effect-free scenario result for comparison.
+         */
+        post: operations["preview_plan_api_plan_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/providers": {
         parameters: {
             query?: never;
@@ -477,6 +497,22 @@ export interface components {
             /** Income Cents */
             income_cents: number;
         };
+        /** DecisionTrace */
+        DecisionTrace: {
+            /** Action Id */
+            action_id: string;
+            /** Changes */
+            changes?: components["schemas"]["EventChange"][];
+            /**
+             * Execution Date
+             * Format: date
+             */
+            execution_date: string;
+            /** Source Document Ids */
+            source_document_ids: string[];
+            /** Source Rule Ids */
+            source_rule_ids: string[];
+        };
         /** DeleteResponse */
         DeleteResponse: {
             /** Deleted */
@@ -576,6 +612,16 @@ export interface components {
             operation: "shift" | "remove" | "add" | "accelerate";
             /** Target Event Id */
             target_event_id?: string | null;
+        };
+        /** EventChange */
+        EventChange: {
+            after?: components["schemas"]["FinancialEvent"] | null;
+            before?: components["schemas"]["FinancialEvent"] | null;
+            /**
+             * Operation
+             * @enum {string}
+             */
+            operation: "shift" | "remove" | "add" | "accelerate" | "fee";
         };
         /** Evidence */
         Evidence: {
@@ -769,6 +815,8 @@ export interface components {
             actions: components["schemas"]["PlannedAction"][];
             assumptions?: components["schemas"]["PlanRequest"];
             baseline: components["schemas"]["Simulation"];
+            /** Decision Traces */
+            decision_traces?: components["schemas"]["DecisionTrace"][];
             /** Excluded Actions */
             excluded_actions?: {
                 [key: string]: string;
@@ -1407,6 +1455,39 @@ export interface operations {
         };
     };
     plan_api_plan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_plan_api_plan_preview_post: {
         parameters: {
             query?: never;
             header?: never;

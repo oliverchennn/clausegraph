@@ -2,6 +2,30 @@
 
 Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegraph`. Root owns canonical schemas, fixtures, manifests/locks, generated types, migrations, CI and deployment. The original README-only repository is now a working local vertical slice. No cloud resources were provisioned. The user published the integration branch and merged PR #1 before opening PR #2.
 
+## Latest change: auditable judge flow and safe comparisons (2026-09-19)
+
+Branch: `codex/judge-flow`, macOS checkout. Implemented the top two priorities from `HACKATHON_MVP.md` without adding a provider or weakening evidence/approval gates.
+
+Changed contracts and behavior:
+
+- `PlanResult.decision_traces` contains one typed trace per selected action. Each trace identifies source rules/documents and exact before/after `FinancialEvent` values for shift, accelerate, remove, add and fee effects. Trace construction reuses the engine's validated `_action_changes`; the frontend never recomputes money.
+- `POST /api/plan/preview` shares optimizer, authorization, revision and bounded-cache behavior with persisted planning but performs no workspace/history/daily-series write. `POST /api/plan` remains the only planning route that persists.
+- The overview includes an accessible “Why this plan?” source → clause → action → ledger → outcome chain with direct evidence access.
+- Scenario controls and action cards open a three-column baseline/recorded/candidate comparison. Option comparison explicitly excludes every other option, so the synthetic cancellation candidate is honestly cancellation alone (−$820 minimum/$80 ending). A preview is applied only through a separate explicit action and never executes a real-world request.
+- Regenerated OpenAPI and TypeScript contracts. `npm install` repaired missing macOS optional transitive dependency entries in `package-lock.json`; a subsequent clean `npm ci` succeeds.
+
+Exact checks from the final implementation pass:
+
+- Python 3.12 `-m pytest backend/tests -q`: **142 passed, 1 skipped in 3.12s**. The skip remains the explicit PostgreSQL test without `POSTGRES_TEST_URL`; two upstream TestClient/AnyIO deprecation warnings remain.
+- `python -m ruff check backend`: **passed**.
+- OpenAPI export and `npm run generate:types`: **passed**.
+- Clean `npm ci`: **passed** (444 packages); `npm install` audit reported zero vulnerabilities.
+- `npm run typecheck`, `npm run lint`, `npm run build`: **passed**; `/` first-load JS **140 kB**.
+- Real-API Chromium `npm run test:e2e`: **2 passed in 12.9s** after installing the matching Playwright browser. Coverage includes the causal trace, non-persistent denied-approval preview, cancellation-alone comparison, reload preservation and existing desktop/mobile/privacy workflows.
+- Manual localhost visual inspection confirmed the desktop trace/comparison hierarchy. The browser test confirms no horizontal overflow at 390 px.
+
+Remaining limitations: no live NVIDIA/Gemini/ElevenLabs call, PostgreSQL service, cloud storage or deployment was exercised. Decision trace UI focuses on selected actions rather than chart-point drill-down. Preview results bind to the current revision and disappear client-side after reload; previews are intentionally not retained as history. Bounded multi-case stress testing, review prioritization and a history browser remain future work. No payments, cancellations, applications or messages are executed.
+
 ## Latest change: reconcile squash-merge history for PR #2 (2026-09-19)
 
 Branch: `codex/integration`. The user's latest commit `34014a2` was clean and already published; no work was lost. PR #1 had squash-merged integration through `29e7426` into `main` as `b547df2`. Those two commits have the identical Git tree `df51c7f0d00a0c7283a912573e22f67b9b2c3c6b`, but different ancestry. Continuing the old integration branch caused PR #2 to compare from the original repository commit and report duplicate add/add conflicts.
