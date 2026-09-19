@@ -1,5 +1,9 @@
 # ClauseGraph resume / delivery checkpoint
 
+## Current synchronization checkpoint
+
+PR #4's integration branch now combines `origin/main` at9b6a7e4 (auditable decision traces, nonmutating previews and the graph cycle refactor) with ClauseGraph Verify. The missing graph-builder export was restored without changing the incoming cycle functions. Main's repaired optional-dependency lockfile passes a clean npm ci. Local checks:206 backend tests passed,1 PostgreSQL skip,5 browser tests passed, plus lint/types/build. See [the latest integration handoff](handoffs/integration.md) for exact commands and the preserved backup branch. The records below describe prior checkpoints.
+
 ## Latest: ClauseGraph Verify
 
 Bounded fixed-plan verification is implemented on `codex/integration`; do not restart scaffolding or treat it as proposed stretch work. Read [handoffs/verification.md](handoffs/verification.md) for current contracts, lane commits, exact 204-test / 5-browser-test validation, sponsor status and limitations. API/UI expose declared uncertainty, SAFE/UNSAFE/UNKNOWN, exact counterexamples and evidence-linked cash overlays without changing the saved nominal plan. `python scripts/verify_demo.py` demonstrates the eight-case failure, proves no safe schedule exists for that declared model, and verifies the fixed schedule with hypothetical extra opening cash. `python scripts/eval_nemotron.py` is a local fixture gate evaluation, not live model accuracy. General robust synthesis and live cloud validation remain deferred. The following sections are historical delivery records.

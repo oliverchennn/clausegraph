@@ -148,6 +148,26 @@ def test_demo_plan_approval_invalidation_cache_and_history(api):
     assert len(client.get("/api/history", headers=headers).json()) == 2
 
 
+def test_plan_preview_is_side_effect_free_and_keeps_recorded_plan(api):
+    client, store, _, _ = api
+    headers, workspace = start(client)
+    recorded = client.post("/api/plan", headers=headers, json={}).json()
+    preview = client.post("/api/plan/preview", headers=headers, json={
+        "force_action_ids": ["cancel-phone"],
+        "exclude_action_ids": ["shift-payment", "claim-assistance"],
+    })
+    assert preview.status_code == 200, preview.text
+    candidate = preview.json()
+    assert candidate["revision"] == workspace["revision"]
+    assert candidate["proposed"]["minimum_balance_cents"] == -82000
+    assert candidate["proposed"]["ending_balance_cents"] == 8000
+    assert [item["action_id"] for item in candidate["decision_traces"]] == ["cancel-phone"]
+    assert client.get("/api/workspace", headers=headers).json()["plan"]["id"] == recorded["id"]
+    assert [item["id"] for item in client.get("/api/history", headers=headers).json()] == [recorded["id"]]
+    with store.engine.connect() as connection:
+        assert connection.execute(select(func.count()).select_from(daily_balances)).scalar() == 120
+
+
 def test_workspace_chart_reads_persisted_series(api):
     client, store, _, _ = api
     headers, workspace = start(client)

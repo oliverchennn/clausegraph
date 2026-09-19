@@ -163,6 +163,26 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
                 if key[0] == session_id:
                     del request.app.state.plan_cache[key]
 
+    def solve_plan(body: PlanRequest, request: Request, workspace: Workspace) -> PlanResult:
+        """Solve or reuse an immutable result; callers decide whether to persist it."""
+        from clausegraph.engine import optimize
+        key = (workspace.session_id, workspace.revision,
+            json.dumps(body.model_dump(mode="json"), sort_keys=True))
+        with request.app.state.plan_cache_lock:
+            cached = request.app.state.plan_cache.get(key)
+        if cached and time.monotonic() - cached[0] < 600:
+            return cached[1].model_copy(deep=True)
+        try:
+            result = optimize(workspace.scenario, workspace.rules, body, revision=workspace.revision)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        with request.app.state.plan_cache_lock:
+            request.app.state.plan_cache[key] = (time.monotonic(), result.model_copy(deep=True))
+            request.app.state.plan_cache.move_to_end(key)
+            while len(request.app.state.plan_cache) > 128:
+                request.app.state.plan_cache.popitem(last=False)
+        return result
+
     def original_bytes(request: Request, workspace: Workspace, document: Document) -> bytes:
         key = request.app.state.store.original_key(workspace.session_id, document.id, document.version)
         if key:
@@ -258,25 +278,15 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
 
     @app.post("/api/plan", response_model=PlanResult)
     def plan(body: PlanRequest, request: Request, workspace: Session):
-        from clausegraph.engine import optimize
-        key = (workspace.session_id, workspace.revision, json.dumps(body.model_dump(mode="json"), sort_keys=True))
-        with request.app.state.plan_cache_lock:
-            cached = request.app.state.plan_cache.get(key)
-        if cached and time.monotonic() - cached[0] < 600:
-            result = cached[1].model_copy(deep=True)
-        else:
-            try:
-                result = optimize(workspace.scenario, workspace.rules, body, revision=workspace.revision)
-            except ValueError as exc:
-                raise HTTPException(422, str(exc)) from exc
+        result = solve_plan(body, request, workspace)
         request.app.state.store.mutate(workspace.session_id, lambda current: setattr(current, "plan", result),
             expected_revision=workspace.revision, invalidate=False)
-        with request.app.state.plan_cache_lock:
-            request.app.state.plan_cache[key] = (time.monotonic(), result.model_copy(deep=True))
-            request.app.state.plan_cache.move_to_end(key)
-            while len(request.app.state.plan_cache) > 128:
-                request.app.state.plan_cache.popitem(last=False)
         return result
+
+    @app.post("/api/plan/preview", response_model=PlanResult)
+    def preview_plan(body: PlanRequest, request: Request, workspace: Session):
+        """Return a side-effect-free scenario result for comparison."""
+        return solve_plan(body, request, workspace)
 
     @app.post("/api/documents", response_model=UploadResponse, status_code=201)
     async def upload(request: Request, workspace: Session, file: UploadFile = File(...), consent: bool = Form(False),

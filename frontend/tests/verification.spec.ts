@@ -59,9 +59,16 @@ test("fixed-plan verification exposes a counterexample, proves bounded safety, a
   expect(unchanged.revision).toBe(initial.revision);
   expect(unchanged.plan.actions).toEqual(initial.plan.actions);
 
-  // A new nominal plan invalidates the prior bounded result even at the same input revision.
+  // A preview leaves both the recorded plan and its bounded verification intact.
   await page.getByLabel("Scenario available cash").fill("2100.00");
-  await page.getByRole("button", { name: "Recalculate scenario" }).click();
+  await page.getByRole("button", { name: "Preview side by side" }).click();
+  await expect(page.getByTestId("candidate-minimum")).toHaveText("$150");
+  await expect(page.getByTestId("minimum-balance")).toContainText("$50");
+  await expect(result.getByText("Verified Safe", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("verification-worst-balance")).toHaveText("$50");
+
+  // Applying the preview invalidates verification, even at the same input revision.
+  await page.getByRole("button", { name: "Use this preview as plan" }).click();
   await expect(page.getByTestId("minimum-balance")).toContainText("$150");
   await expect(result).not.toBeVisible();
   await panel.getByRole("button", { name: "Verify fixed plan" }).click();

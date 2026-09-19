@@ -11,8 +11,8 @@ from ortools.sat.python import cp_model
 from .extraction import action_evidence_blocker, event_evidence_blocker, rule_blocker
 from .graph import dependency_issues
 from .schemas import (
-    Action, ApprovalStatus, DailyBalance, FinancialEvent, PlanRequest, PlanResult,
-    PlannedAction, ReviewStatus, Rule, Scenario, Simulation,
+    Action, ApprovalStatus, DailyBalance, DecisionTrace, EventChange, FinancialEvent,
+    PlanRequest, PlanResult, PlannedAction, ReviewStatus, Rule, Scenario, Simulation,
 )
 
 
@@ -99,6 +99,31 @@ def _action_changes(scenario: Scenario, action: Action, execution: date) -> tupl
             raise ValueError("Action fee identifier collides with an existing event.")
         replacements.append(FinancialEvent(id=fee_id, title=f"{action.title} fee", date=execution, amount_cents=action.fee_cents, direction="expense", source_rule_ids=action.source_rule_ids))
     return removed, replacements
+
+
+def _decision_trace(scenario: Scenario, action: Action, execution: date,
+                    rules: list[Rule]) -> DecisionTrace:
+    """Describe the exact source-to-ledger changes used by a selected action."""
+    original = {event.id: event for event in scenario.events}
+    _, additions = _action_changes(scenario, action, execution)
+    added = {event.id: event for event in additions}
+    changes: list[EventChange] = []
+    for effect in action.effects:
+        if effect.operation == "add":
+            changes.append(EventChange(operation="add", after=added[effect.event.id]))
+        elif effect.operation == "remove":
+            changes.append(EventChange(operation="remove", before=original[effect.target_event_id]))
+        else:
+            changes.append(EventChange(operation=effect.operation,
+                before=original[effect.target_event_id], after=added[effect.target_event_id]))
+    fee = added.get(f"action-fee:{action.id}")
+    if fee is not None:
+        changes.append(EventChange(operation="fee", after=fee))
+    rule_map = {rule.id: rule for rule in rules}
+    documents = sorted({evidence.document_id for rule_id in action.source_rule_ids
+        if rule_id in rule_map for evidence in rule_map[rule_id].evidence})
+    return DecisionTrace(action_id=action.id, execution_date=execution,
+        source_rule_ids=action.source_rule_ids, source_document_ids=documents, changes=changes)
 
 
 def _materialize(scenario: Scenario, selected: dict[str, date]) -> list[FinancialEvent]:
@@ -306,8 +331,8 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
     baseline = simulate(scenario)
     excluded, conditional_actions = _gates(scenario, rules, request)
 
-    def result(state, status, proposed=baseline, planned=None, proven=False):
-        return PlanResult(id=str(uuid4()), revision=revision, state=state, solver_status=status, solver_wall_time_seconds=round(time.monotonic() - started, 6), baseline=baseline, proposed=proposed, actions=planned or [], excluded_actions=excluded, warnings=warnings, objective_proven=proven, generated_at=datetime.now(timezone.utc), assumptions=request.model_copy(deep=True))
+    def result(state, status, proposed=baseline, planned=None, traces=None, proven=False):
+        return PlanResult(id=str(uuid4()), revision=revision, state=state, solver_status=status, solver_wall_time_seconds=round(time.monotonic() - started, 6), baseline=baseline, proposed=proposed, actions=planned or [], decision_traces=traces or [], excluded_actions=excluded, warnings=warnings, objective_proven=proven, generated_at=datetime.now(timezone.utc), assumptions=request.model_copy(deep=True))
 
     if len(scenario.actions) > MAX_ACTIONS:
         warnings.append(f"Planner limit is {MAX_ACTIONS} actions. Narrow the scenario before solving.")
@@ -466,6 +491,7 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
         ordered.append(selected_id)
         remaining_ids.remove(selected_id)
     planned = [PlannedAction(action_id=aid, execution_date=best[aid], order=index + 1, explanation=("Conditional on third-party approval. " if aid in conditional_actions else "") + actions[aid].description, source_rule_ids=actions[aid].source_rule_ids, conditional=aid in conditional_actions) for index, aid in enumerate(ordered)]
+    traces = [_decision_trace(scenario, actions[aid], best[aid], rules) for aid in ordered]
     if unresolved_ledger:
         state = "unresolved"
     elif any(action.conditional for action in planned):
@@ -479,4 +505,4 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
         warnings.append("Additional cash required is a shortfall diagnostic, not an assumed income event." if proven else "The displayed cash gap belongs to this candidate; a global minimum cash requirement has not been proven.")
     if proposed.beyond_horizon:
         warnings.append("Future obligations remain on the ledger beyond the displayed horizon; deferrals are not savings.")
-    return result(state, last_status, proposed, planned, proven)
+    return result(state, last_status, proposed, planned, traces, proven)

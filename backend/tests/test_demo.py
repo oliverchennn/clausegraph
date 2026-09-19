@@ -53,6 +53,16 @@ def test_complete_demo_acceptance():
     assert [action.action_id for action in plan.actions] == ["shift-payment"]
     assert plan.state == "confirmed"
     assert plan.objective_proven
+    assert len(plan.decision_traces) == 1
+    trace = plan.decision_traces[0]
+    assert trace.action_id == "shift-payment"
+    assert trace.source_rule_ids == ["rule-shift", "rule-loan"]
+    assert trace.source_document_ids == ["doc-3"]
+    assert len(trace.changes) == 1
+    assert trace.changes[0].operation == "shift"
+    assert trace.changes[0].before.date == START + timedelta(days=12)
+    assert trace.changes[0].after.date == START + timedelta(days=25)
+    assert trace.changes[0].before.amount_cents == trace.changes[0].after.amount_cents == 45000
     scenario.actions[0].approval_status = "denied"
     rules[5].approval_status = "denied"
     denied = optimize(scenario, rules)
@@ -69,3 +79,18 @@ def test_cancelling_phone_relocates_device_debt_once():
     assert result.ending_balance_cents == 8000
     assert not result.beyond_horizon
     assert sum(day.expense_cents for day in result.daily) == 282000
+
+
+def test_forced_cancellation_trace_exposes_removed_service_and_accelerated_debt():
+    from clausegraph.engine import optimize
+    scenario, _, rules = load_demo()
+    request = PlanRequest(force_action_ids=["cancel-phone"],
+        exclude_action_ids=["shift-payment", "claim-assistance"])
+    plan = optimize(scenario, rules, request)
+    assert plan.proposed.minimum_balance_cents == -82000
+    assert plan.proposed.ending_balance_cents == 8000
+    assert [trace.action_id for trace in plan.decision_traces] == ["cancel-phone"]
+    remove, accelerate = plan.decision_traces[0].changes
+    assert remove.operation == "remove" and remove.before.id == "phone" and remove.after is None
+    assert accelerate.operation == "accelerate" and accelerate.before.id == "device"
+    assert accelerate.after.date == plan.actions[0].execution_date

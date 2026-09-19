@@ -9,6 +9,20 @@ test("complete synthetic plan, evidence, approval, scenario, document and privac
   await expect(page.getByTestId("ending-balance")).toHaveText("$500");
   await expect(page.getByTestId("action-claim-assistance")).toContainText("Not in plan");
   await expect(page.getByText("Device principal", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Why this plan?" })).toBeVisible();
+  await expect(page.getByTestId("trace-change")).toContainText("$450 Installment moves from Sep 13 to Sep 26");
+  await expect(page.getByTestId("decision-trace")).toContainText("03-payment-shift-approval.txt");
+
+  // A denied-approval what-if is previewed beside the recorded plan without persisting it.
+  await page.getByLabel("Payment extension approval assumption").selectOption("denied");
+  const deniedPreviewResponse = page.waitForResponse(response => response.url().endsWith("/api/plan/preview") && response.request().method() === "POST");
+  await page.getByRole("button", { name: "Preview side by side" }).click();
+  const deniedPreview = await (await deniedPreviewResponse).json();
+  expect(deniedPreview.proposed.minimum_balance_cents).toBe(-40000);
+  await expect(page.getByTestId("active-minimum")).toHaveText("$50");
+  await expect(page.getByTestId("candidate-minimum")).toHaveText("-$400");
+  await page.getByRole("button", { name: "Keep recorded plan" }).click();
+  await page.getByLabel("Payment extension approval assumption").selectOption("recorded");
 
   // Read the precise clause, then persist a real denial rather than a hypothetical assumption.
   await page.getByTestId("action-shift-payment").getByRole("button", { name: "View evidence" }).click();
@@ -25,7 +39,7 @@ test("complete synthetic plan, evidence, approval, scenario, document and privac
 
   // An assumption is distinctly conditional and survives a browser reload.
   await page.getByLabel("Payment extension approval assumption").selectOption("approved");
-  await page.getByRole("button", { name: "Recalculate scenario" }).click();
+  await page.getByRole("button", { name: "Save as recorded plan" }).click();
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
   await expect(page.getByText("This scenario relies on approval assumptions.")).toBeVisible();
   await page.reload();
@@ -45,13 +59,18 @@ test("complete synthetic plan, evidence, approval, scenario, document and privac
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
 
   // Forcing cancellation exposes the accelerated existing device debt in the actual solver result.
-  const comparisonResponse = page.waitForResponse(response => response.url().endsWith("/api/plan") && response.request().method() === "POST");
-  await page.getByTestId("action-cancel-phone").getByRole("button", { name: "Compare this option" }).click();
+  const comparisonResponse = page.waitForResponse(response => response.url().endsWith("/api/plan/preview") && response.request().method() === "POST");
+  await page.getByTestId("action-cancel-phone").getByRole("button", { name: "Compare option alone" }).click();
   const comparison = await (await comparisonResponse).json();
   expect(comparison.proposed.minimum_balance_cents).toBeLessThan(0);
   expect(comparison.proposed.ending_balance_cents).toBe(8000);
-  await expect(page.getByTestId("ending-balance")).toHaveText("$80");
-  await page.getByRole("button", { name: "Recalculate scenario" }).click();
+  await expect(page.getByTestId("scenario-comparison")).toBeVisible();
+  await expect(page.getByTestId("candidate-minimum")).toHaveText("-$820");
+  await expect(page.getByTestId("candidate-ending")).toHaveText("$80");
+  await expect(page.getByTestId("active-ending")).toHaveText("$500");
+  await expect(page.getByTestId("ending-balance")).toHaveText("$500");
+  await page.reload();
+  await expect(page.getByTestId("scenario-comparison")).not.toBeVisible();
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
 
   await page.getByTestId("action-shift-payment").getByRole("button", { name: "Draft request" }).click();

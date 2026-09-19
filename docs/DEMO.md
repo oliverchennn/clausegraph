@@ -4,7 +4,7 @@ Use only the prominently labeled synthetic demo. No model calls or cloud credent
 
 ## 0:00–0:35 — source to nominal plan
 
-Show the $2,000 opening cash and six synthetic sources. The baseline minimum is −$400. Open the approved installment shift and its exact quote, page/version, separate evidence/review/approval states and execution deadline. CP-SAT moves the $450 installment to September 26: minimum $50, ending $500. This is timing relief, not savings. The unresolved assistance benefit remains excluded.
+Show the $2,000 opening cash and six synthetic sources. The baseline minimum is −$400. In **Why this plan?**, follow the source → clause → action → ledger effect chain and open its exact quote, page/version, separate evidence/review/approval states and execution deadline. CP-SAT moves the same $450 installment from September 13 to September 26: minimum $50, ending $500. This is timing relief, not savings. The unresolved assistance benefit remains excluded.
 
 ## 0:35–1:20 — declare what could change
 
@@ -25,6 +25,8 @@ For the broader model, show the already-run output of `python scripts/verify_dem
 Show `python scripts/eval_nemotron.py`: five native-text synthetic gate cases, including deliberately wrong date/amount candidates that are rejected. This is a local reproducibility check, not live Nemotron accuracy. Nemotron's role is prose → typed rule candidates, followed by source/human/approval gates; it never computes the money or verification result. The sponsor truth table labels missing/unverified services honestly. End with source review and a human action checklist; the app executes no payments, cancellations, applications or messages.
 
 ## Rehearsal commands and caveats
+
+The integrated side-by-side preview is a useful optional detour: **Compare option alone** on phone cancellation shows baseline, recorded plan and cancellation-only candidate (−$820 minimum/$80 ending). **Keep recorded plan** and reload preserve the saved plan; **Use this preview as plan** explicitly applies it and invalidates any prior Verify result. **Preview side by side** also compares cash/payday/approval controls without changing recorded approvals. Verification always checks the saved plan rather than an unsaved preview.
 
 - `python scripts/verify_demo.py` — complete synthetic verification, no-safe-schedule proof, and hypothetical cash diagnostic.
 - `python scripts/eval_nemotron.py` — five offline semantic gate cases, zero external calls.

@@ -8,6 +8,8 @@ The MVP demonstrates a complete chain from **source clause → reviewed rule →
 
 See [HACKATHON_MVP.md](docs/HACKATHON_MVP.md) for current scope and [the verification handoff](docs/handoffs/verification.md) for semantics and checks. Nominal CP-SAT planning and fixed-plan verification are separate operations. Verification exhaustively enumerates all dates, integer-cent amounts and approval outcomes in the declared model using the existing accounting/evidence gates. SAFE means only that every case passed within the displayed horizon; limits or unresolved facts yield UNKNOWN unless a concrete failure already proves UNSAFE. General robust schedule synthesis remains deferred.
 
+The integrated dashboard also includes “Why this plan?” source/rule/event traces and side-by-side previews. Previews leave the recorded plan and its verification unchanged until explicitly applied.
+
 ## Run locally
 
 Requires Python 3.12 and Node.js 22+. From the repository root:
@@ -47,6 +49,8 @@ Six documents in `fixtures/` are synthetic. Day 0 is September 1, 2026. The scen
 | Phone cancellation alone, accelerating device debt | −$820 | $80 |
 
 The device's original $480 debt is relocated from day 80, not duplicated. Assistance without eligibility, approval and payment timing stays unresolved. The chart depicts projections, while ledger records separately track actual events.
+
+Use **Why this plan?** to show the $450 installment moving from September 13 to September 26. Then choose **Compare option alone** on phone cancellation: the candidate shows −$820 minimum/$80 ending beside the untouched $50/$500 recorded plan. Scenario controls also support a non-persistent approval/date/cash preview. Applying any candidate is a separate explicit choice and still executes no real-world action.
 
 Create a fresh demo via `python scripts/demo_session.py`. Reset only a selected session using `python scripts/demo_session.py --reset-session TOKEN` or the UI. This replaces that session's data; other sessions remain private. See [the three-minute script](docs/DEMO.md).
 
