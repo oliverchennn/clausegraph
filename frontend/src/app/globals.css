@@ -116,6 +116,53 @@ h1 { font-size: 29px; font-weight: 650; letter-spacing: -1px; }
 .chart-legend > span { display: flex; align-items: center; gap: 6px; }
 .legend-line { width: 15px; height: 0; border-top: 2px solid #5779e7; }
 .legend-line.baseline { border-top: 2px dashed #b6aab8; }
+.legend-line.counterexample { border-top: 2px dashed #be4d49; }
+.chart-legend { flex-wrap: wrap; }
+.verification-panel { margin-top: 22px; padding: 22px; }
+.verification-panel h2 { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.verification-panel > .helper { margin: 9px 0 16px; }
+.verification-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.verification-fields .form-grid { gap: 14px; }
+.verification-presets, .verification-submit { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.verification-presets { margin: -5px 0 12px; }
+.verification-presets > span, .verification-submit > span { color: #7b8496; font-size: 10px; }
+.verification-presets .button { font-size: 10px; min-height: 29px; padding: 5px 7px; }
+.verification-schedule, .verification-assumptions { margin-top: 16px; font-size: 11px; color: #67758c; }
+.verification-schedule summary, .verification-assumptions summary { cursor: pointer; font-weight: 600; }
+.verification-action { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.verification-action > div > span { display: flex; align-items: center; gap: 5px; font-size: 10px; margin-top: 3px; }
+.verification-result { margin-top: 20px; padding: 18px; border: 1px solid #e2e7f0; border-radius: 8px; background: #fafbfe; overflow-wrap: anywhere; }
+.verification-safe { border-color: #d3e8df; background: #f8fcfa; }
+.verification-unsafe { border-color: #eed7d4; background: #fffbfa; }
+.verification-unknown { border-color: #ecdfc6; background: #fefbf5; }
+.verification-statement { margin: 13px 0 8px; font-size: 12px; }
+.verification-properties { margin-top: 8px; }
+.verification-metrics { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; margin: 19px 0; }
+.verification-metrics span { display: block; color: #718097; font-size: 10px; }
+.verification-metrics strong { display: block; font-size: 22px; font-weight: 600; margin-top: 4px; }
+.verification-facts { margin: 14px 0; font-size: 10px; }
+.verification-facts > div { display: grid; grid-template-columns: 100px minmax(0,1fr); gap: 10px; padding: 5px 0; }
+.verification-facts dt { color: #7b8496; }
+.verification-facts dd { margin: 0; }
+.verification-assumptions ul, .counterexample-assignment { padding-left: 16px; }
+.verification-assumptions li { margin: 9px 0; }
+.verification-assumptions li span { display: block; margin-top: 3px; font-size: 10px; }
+.verification-assumptions p { margin-top: 8px; }
+.counterexample { border-top: 1px solid #eddeda; margin-top: 20px; padding-top: 18px; }
+.counterexample h3 { font-size: 13px; }
+.counterexample-assignment { font-size: 11px; margin: 12px 0; }
+.counterexample-failure { background: #fbecea; color: #99443f; border-radius: 6px; padding: 12px; font-size: 11px; }
+.counterexample-failure > span { display: block; font-size: 15px; margin-top: 4px; }
+.counterexample-reason { margin: 14px 0; font-size: 11px; }
+.counterexample-reason p { margin: 5px 0; }
+.counterexample-events { list-style: none; padding: 0; margin: 12px 0 0; }
+.counterexample-events > li { padding: 12px 0; border-top: 1px solid #ece5e3; }
+.counterexample-event-main { display: flex; gap: 9px; align-items: baseline; flex-wrap: wrap; font-size: 11px; }
+.counterexample-event-main time { color: #7c8595; font-size: 10px; }
+.counterexample-event-main > span { margin-left: auto; font-variant-numeric: tabular-nums; }
+.counterexample-event-detail { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 7px; font-size: 9px; color: #7b8496; }
+.verification-warnings { padding-left: 16px; margin-bottom: 0; font-size: 10px; color: #8d7350; }
+@media (max-width: 600px) { .verification-panel { padding: 17px 14px; } .verification-result { padding: 14px 11px; } .verification-fields .form-grid { grid-template-columns: minmax(0,1fr); gap: 0; } .verification-action { align-items: flex-start; flex-direction: column; } .verification-facts > div { grid-template-columns: 80px minmax(0,1fr); gap: 7px; } .verification-metrics strong { font-size: 20px; } .verification-submit .button { width: 100%; } }
 .projection-label { margin-left: auto; font-size: 8px; color: #abb3c1; }
 .cash-chart { width: 100%; height: 272px; padding: 0 10px 0 0; }
 .chart-loading { display: flex; align-items: center; justify-content: center; gap: 10px; color: #929bb1; font-size: 11px; }

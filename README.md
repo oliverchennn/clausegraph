@@ -1,12 +1,14 @@
-# ClauseGraph
+# ClauseGraph Verify
 
-An evidence-backed emergency cash planner: uploaded clauses become reviewed rules, a dependency graph and a deterministic action plan. It never sends requests, applies for benefits, cancels services or moves money.
+An evidence-backed emergency cash planner: uploaded clauses become reviewed rules, a dependency graph and a deterministic action plan. Verify the saved action schedule against every case in explicitly declared bounded uncertainties, or inspect the concrete counterexample that breaks it. It never sends requests, applies for benefits, cancels services or moves money.
 
 ## Hackathon focus
 
 The MVP demonstrates a complete chain from **source clause → reviewed rule → dependency graph → constrained action schedule → cash projection**. Its novelty is reasoning over interacting clauses; its intended impact is helping people bridge cash timing gaps while preserving essentials; its technical depth is the evidence-gated rule compiler and deterministic solver. The synthetic demo moves minimum cash from −$400 to $50 without changing ending cash or claiming savings.
 
-The dashboard now makes that chain judge-visible: “Why this plan?” traces each selected action through source, rule and exact before/after ledger events, while safe side-by-side previews compare the baseline, recorded plan and a candidate without overwriting history. See [HACKATHON_MVP.md](docs/HACKATHON_MVP.md) for acceptance criteria and the remaining bounded-stress stretch goal. Current live-provider limitations are documented below.
+See [HACKATHON_MVP.md](docs/HACKATHON_MVP.md) for current scope and [the verification handoff](docs/handoffs/verification.md) for semantics and checks. Nominal CP-SAT planning and fixed-plan verification are separate operations. Verification exhaustively enumerates all dates, integer-cent amounts and approval outcomes in the declared model using the existing accounting/evidence gates. SAFE means only that every case passed within the displayed horizon; limits or unresolved facts yield UNKNOWN unless a concrete failure already proves UNSAFE. General robust schedule synthesis remains deferred.
+
+The integrated dashboard also includes “Why this plan?” source/rule/event traces and side-by-side previews. Previews leave the recorded plan and its verification unchanged until explicitly applied.
 
 ## Run locally
 
@@ -51,6 +53,12 @@ The device's original $480 debt is relocated from day 80, not duplicated. Assist
 Use **Why this plan?** to show the $450 installment moving from September 13 to September 26. Then choose **Compare option alone** on phone cancellation: the candidate shows −$820 minimum/$80 ending beside the untouched $50/$500 recorded plan. Scenario controls also support a non-persistent approval/date/cash preview. Applying any candidate is a separate explicit choice and still executes no real-world action.
 
 Create a fresh demo via `python scripts/demo_session.py`. Reset only a selected session using `python scripts/demo_session.py --reset-session TOKEN` or the UI. This replaces that session's data; other sessions remain private. See [the three-minute script](docs/DEMO.md).
+
+In **Verify plan**, declare paycheck dates September 21–28 inclusive. The saved $50 nominal-minimum plan fails on September 26 when payday is September 27: balance −$400. The chart overlays the concrete counterexample and the timeline links to source evidence. Restricting the declared range to September 21–26 verifies all six cases; changing an assumption is not mitigation for a broader range.
+
+`python scripts/verify_demo.py` reproduces the eight-case failure, separately proves via CP-SAT that no permitted schedule can be safe at the allowed September 28 payday, and verifies the same schedule across all eight cases with $400 of **hypothetical additional opening cash**. This supplies a tight bounded cash diagnostic, not funding or a general synthesis API. Verification results and daily outcome points are stored privately in the existing database, exposed through `GET /api/verifications`, and purged on source/session deletion or demo reset.
+
+`python scripts/eval_nemotron.py` runs five synthetic semantic-compiler cases without external requests, including two intentionally faulty outputs. It measures local gates, not model accuracy. `--live --consent-external` explicitly sends this synthetic corpus to configured NVIDIA and reports actual structured extraction/citation results with no fallback. Live Nemotron evaluation remains unverified here.
 
 ## Validation
 

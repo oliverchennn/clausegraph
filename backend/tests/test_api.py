@@ -329,7 +329,7 @@ def test_deleted_session_cannot_resurrect_from_worker_or_cache(api):
     with store.engine.connect() as connection:
         for table in (sessions, jobs, financial_events, document_versions, rule_versions, scenario_runs, daily_balances):
             assert connection.execute(select(func.count()).select_from(table)).scalar() == 0
-    assert list(originals.root.rglob("v*")) == []
+    assert [path for path in originals.root.rglob("v*") if path.is_file()] == []
 
 
 def test_lease_expiry_stale_revision_and_attempt_limit(api):

@@ -268,16 +268,17 @@ def _gates(scenario: Scenario, rules: list[Rule], request: PlanRequest) -> tuple
     return excluded, conditional_actions
 
 
-def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None = None, revision: int = 1) -> PlanResult:
-    """Maximize minimum cash, then minimize fees, burden and execution dates.
+def _prepare_ledger(
+    scenario: Scenario, rules: list[Rule], request: PlanRequest,
+    *, assumed_income_ids: set[str] | None = None,
+) -> tuple[Scenario, list[str], bool]:
+    """Apply shared evidence gates while retaining every known expense.
 
-    Maximizing the minimum first strictly prefers every nonnegative plan over
-    every shortfall plan. A negative proven maximum is a cash diagnostic, not
-    an infeasible CP-SAT model or fictitious funding.
+    Callers supply an already concrete scenario. Verification can identify the
+    exact income events whose values are explicit bounded user assumptions;
+    this relaxes literal value matching only, never evidence or direction.
     """
-    started = time.monotonic()
-    request = request or PlanRequest()
-    scenario = _effective_scenario(scenario, request)
+    scenario = scenario.model_copy(deep=True)
     warnings: list[str] = []
     rule_map = {rule.id: rule for rule in rules}
     blocked_rules = {rule.id for rule in rules if rule_blocker(rule)}
@@ -296,7 +297,8 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
     warnings.extend(issue.message for issue in graph_issues if issue.code == "duplicate_obligation")
     retained = []
     for event in scenario.events:
-        bad_income_evidence = event.direction == "income" and event.kind == "projected" and event.source_rule_ids and event_evidence_blocker(event, rules, check_values=request.income_cents is None and request.income_date is None)
+        check_values = request.income_cents is None and request.income_date is None and event.id not in (assumed_income_ids or set())
+        bad_income_evidence = event.direction == "income" and event.kind == "projected" and event.source_rule_ids and event_evidence_blocker(event, rules, check_values=check_values)
         if event.direction == "income" and event.kind == "projected" and event.source_rule_ids and (bad_income_evidence or any(rid not in rule_map or rid in blocked_rules for rid in event.source_rule_ids)):
             warnings.append(f"{event.title} is excluded from the ledger because its evidence, conditions, review or approval are unresolved. Conditional income requires an explicit eligible claim action.")
         else:
@@ -312,6 +314,20 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
             unresolved_ledger = True
             warnings.append(f"Obligation {rule.title} is unresolved; its amount or date may not be fully represented in the ledger.")
     scenario.events = retained
+    return scenario, warnings, unresolved_ledger
+
+
+def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None = None, revision: int = 1) -> PlanResult:
+    """Maximize minimum cash, then minimize fees, burden and execution dates.
+
+    Maximizing the minimum first strictly prefers every nonnegative plan over
+    every shortfall plan. A negative proven maximum is a cash diagnostic, not
+    an infeasible CP-SAT model or fictitious funding.
+    """
+    started = time.monotonic()
+    request = request or PlanRequest()
+    scenario = _effective_scenario(scenario, request)
+    scenario, warnings, unresolved_ledger = _prepare_ledger(scenario, rules, request)
     baseline = simulate(scenario)
     excluded, conditional_actions = _gates(scenario, rules, request)
 

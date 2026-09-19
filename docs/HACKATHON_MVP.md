@@ -1,6 +1,22 @@
 # Hackathon MVP priorities
 
-Updated 2026-09-19 after reviewing AGENTS.md, all lane handoffs, architecture, demo, deployment and sponsor records, and the current engine/API/UI. This is a product assessment and implementation roadmap. P1a/P1b are now implemented and regression-tested; later priorities remain proposed. These priorities reflect the user's requested emphasis, not a verified official judging rubric.
+## Current delivery: ClauseGraph Verify (2026-09-19)
+
+This section supersedes the historical assessment below. The requested bounded verification workflow is implemented, rather than stretch scope: explicit user-assumed date/cent ranges and approval outcomes; exhaustive fixed-plan checking through canonical accounting/evidence gates; SAFE/UNSAFE/UNKNOWN with complete assumptions, horizon, limits, witness and proof-qualified worst cash; revision-bound API; dashboard assumptions, timeline/evidence links and chart overlay; private SQLite/PostgreSQL verification history and outcome points; reproducible semantic gate evaluation. Cent ranges are API-only; the UI exposes income dates and approval outcomes.
+
+The chain is **prose → typed candidate → source/human/approval gates → nominal CP-SAT plan → bounded model → proof or counterexample**. The verifier checks every discrete assignment in the declared Cartesian product, without probabilities or sampling. The default five-second cooperative budget and 10,000-case cap yield UNKNOWN when incomplete unless a concrete failure already proves UNSAFE. It never re-optimizes the saved actions/dates.
+
+The original $50 nominal minimum becomes −$400 on September 26 when payday is September 27. `python scripts/verify_demo.py` checks all eight September 21–28 dates, separately proves no permitted schedule can be safe at the allowed September 28 assignment, then verifies the unchanged schedule after adding $400 of hypothetical opening cash. This is a tight bounded diagnostic, not funding. The six-date September 21–26 UI preset verifies only that narrower model.
+
+The latest main-branch work is integrated: standalone decision traces and nonmutating side-by-side scenario previews coexist with fixed-plan verification and its counterexample trace. Previewing leaves the saved plan and its verification intact; explicitly applying a preview invalidates the old verification. General robust synthesis, uncertain expense timing, correlation constraints, adaptive policies and a history browser remain deferred. Daily closing balances exclude intraday liquidity; the guarantee excludes unmodeled obligations and dates beyond the displayed horizon, while future debt stays visible.
+
+No configured NVIDIA key, PostgreSQL/Tiger Data URL, Spaces service or DigitalOcean token was found. Optional Gemini is configured but unselected and untested. No live model accuracy, cloud deployment, hypertable or performance claims are made. See [the verification handoff](handoffs/verification.md), [architecture](ARCHITECTURE.md) and [revised demo](DEMO.md) for current contracts, checks and limits.
+
+## Historical pre-upgrade assessment
+
+The sections below preserve the earlier assessment and its proposed statuses. The current delivery section above is authoritative for implementation claims.
+
+Updated 2026-09-19 after reviewing AGENTS.md, all lane handoffs, architecture, demo, deployment and sponsor records, and the current engine/API/UI. This is a product assessment and implementation roadmap. Features marked proposed are not implemented by this documentation change. These priorities reflect the user's requested emphasis, not a verified official judging rubric.
 
 ## Product thesis and demo promise
 

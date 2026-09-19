@@ -347,6 +347,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verification History */
+        get: operations["verification_history_api_verifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Fixed Plan */
+        post: operations["verify_fixed_plan_api_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspace": {
         parameters: {
             query?: never;
@@ -431,6 +465,28 @@ export interface components {
          * @enum {string}
          */
         ApprovalStatus: "not_required" | "pending" | "approved" | "denied";
+        /** ApprovalUncertainty */
+        ApprovalUncertainty: {
+            /**
+             * Basis
+             * @default user_assumption
+             * @constant
+             */
+            basis: "user_assumption";
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "approval";
+            /** Outcomes */
+            outcomes: ("approved" | "denied" | "pending")[];
+            /** Rationale */
+            rationale: string;
+            /** Target Id */
+            target_id: string;
+        };
         /** AudioRequest */
         AudioRequest: {
             /**
@@ -480,6 +536,20 @@ export interface components {
             satisfied?: boolean | null;
             /** Value */
             value?: string | number | boolean | null;
+        };
+        /** Counterexample */
+        Counterexample: {
+            /** Assignment */
+            assignment: components["schemas"]["UncertaintyAssignment"][];
+            /** Balance Cents */
+            balance_cents?: number | null;
+            /** Earliest Failing Date */
+            earliest_failing_date?: string | null;
+            /** Events */
+            events?: components["schemas"]["VerificationTraceEvent"][];
+            /** Failures */
+            failures: components["schemas"]["VerificationFailure"][];
+            simulation?: components["schemas"]["Simulation"] | null;
         };
         /** DailyBalance */
         DailyBalance: {
@@ -738,6 +808,60 @@ export interface components {
             status: string;
             /** Storage */
             storage: string;
+        };
+        /** IncomeAmountUncertainty */
+        IncomeAmountUncertainty: {
+            /**
+             * Basis
+             * @default user_assumption
+             * @constant
+             */
+            basis: "user_assumption";
+            /** Event Id */
+            event_id: string;
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "income_amount";
+            /** Maximum Cents */
+            maximum_cents: number;
+            /** Minimum Cents */
+            minimum_cents: number;
+            /** Rationale */
+            rationale: string;
+        };
+        /** IncomeDateUncertainty */
+        IncomeDateUncertainty: {
+            /**
+             * Basis
+             * @default user_assumption
+             * @constant
+             */
+            basis: "user_assumption";
+            /**
+             * Earliest
+             * Format: date
+             */
+            earliest: string;
+            /** Event Id */
+            event_id: string;
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "income_date";
+            /**
+             * Latest
+             * Format: date
+             */
+            latest: string;
+            /** Rationale */
+            rationale: string;
         };
         /** IntakeRequest */
         IntakeRequest: {
@@ -1026,6 +1150,13 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** UncertaintyAssignment */
+        UncertaintyAssignment: {
+            /** Dimension Id */
+            dimension_id: string;
+            /** Value */
+            value: string | number;
+        };
         /** UploadResponse */
         UploadResponse: {
             document: components["schemas"]["Document"];
@@ -1048,6 +1179,120 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** VerificationFailure */
+        VerificationFailure: {
+            /** Action Id */
+            action_id?: string | null;
+            /** Date */
+            date?: string | null;
+            /** Message */
+            message: string;
+            /**
+             * Property
+             * @enum {string}
+             */
+            property: "nonnegative_balance" | "authorization" | "evidence" | "accounting" | "essential_services" | "dependencies";
+            /** Source Rule Ids */
+            source_rule_ids?: string[];
+        };
+        /** VerificationRequest */
+        VerificationRequest: {
+            /**
+             * Max Cases
+             * @default 10000
+             */
+            max_cases: number;
+            /** Plan Id */
+            plan_id: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Time Limit Seconds
+             * @default 5
+             */
+            time_limit_seconds: number;
+            /** Uncertainties */
+            uncertainties?: (components["schemas"]["IncomeDateUncertainty"] | components["schemas"]["IncomeAmountUncertainty"] | components["schemas"]["ApprovalUncertainty"])[];
+        };
+        /** VerificationResult */
+        VerificationResult: {
+            assumptions: components["schemas"]["VerificationRequest"];
+            /** Checked Cases */
+            checked_cases: number;
+            counterexample?: components["schemas"]["Counterexample"] | null;
+            /** Coverage Complete */
+            coverage_complete: boolean;
+            /** Dimension Count */
+            dimension_count: number;
+            /** Fixed Actions */
+            fixed_actions: components["schemas"]["PlannedAction"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /**
+             * Horizon End Exclusive
+             * Format: date
+             */
+            horizon_end_exclusive: string;
+            /**
+             * Horizon Start
+             * Format: date
+             */
+            horizon_start: string;
+            /** Id */
+            id: string;
+            /**
+             * Mode
+             * @default verify_fixed_plan
+             * @constant
+             */
+            mode: "verify_fixed_plan";
+            nominal_assumptions: components["schemas"]["PlanRequest"];
+            /** Plan Id */
+            plan_id: string;
+            /** Revision */
+            revision: number;
+            /** Runtime Seconds */
+            runtime_seconds: number;
+            /**
+             * Solver
+             * @default exhaustive_finite_model_checker
+             * @constant
+             */
+            solver: "exhaustive_finite_model_checker";
+            /**
+             * Solver Status
+             * @enum {string}
+             */
+            solver_status: "EXHAUSTED" | "TIME_LIMIT" | "CASE_LIMIT" | "INVALID_MODEL";
+            /** Statement */
+            statement: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "SAFE" | "UNSAFE" | "UNKNOWN";
+            /** Total Cases */
+            total_cases: number;
+            /** Warnings */
+            warnings?: string[];
+            worst_case?: components["schemas"]["Simulation"] | null;
+            /** Worst Case Assignment */
+            worst_case_assignment?: components["schemas"]["UncertaintyAssignment"][];
+            /**
+             * Worst Case Proven
+             * @default false
+             */
+            worst_case_proven: boolean;
+        };
+        /** VerificationTraceEvent */
+        VerificationTraceEvent: {
+            /** Action Ids */
+            action_ids?: string[];
+            event: components["schemas"]["FinancialEvent"];
         };
         /** Workspace */
         Workspace: {
@@ -1635,6 +1880,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Workspace"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verification_history_api_verifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationResult"][];
+                };
+            };
+        };
+    };
+    verify_fixed_plan_api_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerificationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationResult"];
                 };
             };
             /** @description Validation Error */

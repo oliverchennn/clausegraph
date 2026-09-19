@@ -252,3 +252,55 @@ def dependency_issues(scenario: Scenario, rules: list[Rule]) -> list[GraphIssue]
                 )
 
     return issues
+
+
+def build_graph(scenario: Scenario, rules: list[Rule], documents: list[Document]) -> DependencyGraph:
+    nodes: dict[str, GraphNode] = {}
+    edges: dict[tuple[str, str, str], GraphEdge] = {}
+
+    def node(kind: str, identifier: str, label: str, status: str):
+        key = f"{kind}:{identifier}"
+        nodes[key] = GraphNode(id=key, label=label, kind=kind, reference_id=identifier, status=status)
+        return key
+
+    def edge(source: str, target: str, relation: str, rule_ids: list[str], label: str | None = None):
+        if source not in nodes or target not in nodes:
+            return
+        key = (source, target, relation)
+        edges[key] = GraphEdge(id=f"{relation}:{source}:{target}", source=source, target=target, relation=relation, rule_ids=rule_ids, label=label)
+
+    for document in documents:
+        node("document", document.id, document.name, document.status)
+    for rule in rules:
+        node("rule", rule.id, rule.title, rule.review_status.value)
+        for party in rule.parties:
+            node("entity", party, party, "ambiguous" if rule.entity_ambiguous else "linked")
+    for action in scenario.actions:
+        node("action", action.id, action.title, action.approval_status.value)
+    for event in scenario.events:
+        node("event", event.id, event.title, event.kind)
+    for rule in rules:
+        for evidence in rule.evidence:
+            edge(f"document:{evidence.document_id}", f"rule:{rule.id}", "supports", [rule.id], f"Page {evidence.page}")
+        for party in rule.parties:
+            edge(f"entity:{party}", f"rule:{rule.id}", "supports", [rule.id])
+        for target in rule.dependencies:
+            edge(f"rule:{rule.id}", f"rule:{target}", "requires", [rule.id, target])
+        for target in rule.supersedes:
+            edge(f"rule:{rule.id}", f"rule:{target}", "supersedes", [rule.id, target])
+    for action in scenario.actions:
+        for rid in action.source_rule_ids:
+            edge(f"rule:{rid}", f"action:{action.id}", "supports", [rid])
+        for target in action.requires:
+            edge(f"action:{action.id}", f"action:{target}", "requires", action.source_rule_ids)
+        for target in action.excludes:
+            edge(f"action:{action.id}", f"action:{target}", "excludes", action.source_rule_ids)
+        for effect in action.effects:
+            target = effect.event.id if effect.operation == "add" and effect.event else effect.target_event_id
+            if effect.operation == "add" and effect.event:
+                node("event", effect.event.id, effect.event.title, "conditional")
+            edge(f"action:{action.id}", f"event:{target}", "triggers", action.source_rule_ids, effect.operation)
+    for event in scenario.events:
+        for rid in event.source_rule_ids:
+            edge(f"rule:{rid}", f"event:{event.id}", "supports", [rid])
+    return DependencyGraph(nodes=list(nodes.values()), edges=list(edges.values()), issues=dependency_issues(scenario, rules))

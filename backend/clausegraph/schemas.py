@@ -240,6 +240,125 @@ class PlanResult(Contract):
     assumptions: PlanRequest = Field(default_factory=PlanRequest)
 
 
+class UncertaintyBasis(Contract):
+    id: str = Field(min_length=1, max_length=80)
+    # The MVP deliberately accepts user declarations, not inferred source ranges.
+    basis: Literal["user_assumption"] = "user_assumption"
+    rationale: str = Field(min_length=1, max_length=1000)
+
+
+class IncomeDateUncertainty(UncertaintyBasis):
+    kind: Literal["income_date"] = "income_date"
+    event_id: str
+    earliest: Date
+    latest: Date
+
+    @model_validator(mode="after")
+    def ordered(self):
+        if self.latest < self.earliest:
+            raise ValueError("Income date bounds must be ordered.")
+        return self
+
+
+class IncomeAmountUncertainty(UncertaintyBasis):
+    kind: Literal["income_amount"] = "income_amount"
+    event_id: str
+    minimum_cents: Annotated[int, Field(ge=0, le=10000000000, strict=True)]
+    maximum_cents: Annotated[int, Field(ge=0, le=10000000000, strict=True)]
+
+    @model_validator(mode="after")
+    def ordered(self):
+        if self.maximum_cents < self.minimum_cents:
+            raise ValueError("Income amount bounds must be ordered.")
+        return self
+
+
+class ApprovalUncertainty(UncertaintyBasis):
+    kind: Literal["approval"] = "approval"
+    target_id: str
+    outcomes: list[Literal["approved", "denied", "pending"]] = Field(min_length=1, max_length=3)
+
+    @model_validator(mode="after")
+    def unique(self):
+        if len(set(self.outcomes)) != len(self.outcomes):
+            raise ValueError("Approval outcomes must be unique.")
+        return self
+
+
+Uncertainty = Annotated[IncomeDateUncertainty | IncomeAmountUncertainty | ApprovalUncertainty, Field(discriminator="kind")]
+
+
+class VerificationRequest(Contract):
+    plan_id: str
+    revision: int = Field(ge=1)
+    uncertainties: list[Uncertainty] = Field(default_factory=list, max_length=8)
+    max_cases: int = Field(default=10000, ge=1, le=10000, strict=True)
+    time_limit_seconds: float = Field(default=5, gt=0, le=10)
+
+    @model_validator(mode="after")
+    def unique_dimensions(self):
+        if len({item.id for item in self.uncertainties}) != len(self.uncertainties):
+            raise ValueError("Uncertainty dimension IDs must be unique.")
+        targets = [(item.kind, getattr(item, "event_id", getattr(item, "target_id", None))) for item in self.uncertainties]
+        if len(set(targets)) != len(targets):
+            raise ValueError("Each uncertain property may be declared only once.")
+        return self
+
+
+class UncertaintyAssignment(Contract):
+    dimension_id: str
+    value: str | int
+
+
+class VerificationFailure(Contract):
+    property: Literal["nonnegative_balance", "authorization", "evidence", "accounting", "essential_services", "dependencies"]
+    message: str
+    date: Date | None = None
+    action_id: str | None = None
+    source_rule_ids: list[str] = Field(default_factory=list)
+
+
+class VerificationTraceEvent(Contract):
+    event: FinancialEvent
+    action_ids: list[str] = Field(default_factory=list)
+
+
+class Counterexample(Contract):
+    assignment: list[UncertaintyAssignment]
+    earliest_failing_date: Date | None = None
+    balance_cents: int | None = None
+    failures: list[VerificationFailure]
+    simulation: Simulation | None = None
+    events: list[VerificationTraceEvent] = Field(default_factory=list)
+
+
+class VerificationResult(Contract):
+    id: str
+    plan_id: str
+    revision: int
+    mode: Literal["verify_fixed_plan"] = "verify_fixed_plan"
+    status: Literal["SAFE", "UNSAFE", "UNKNOWN"]
+    solver: Literal["exhaustive_finite_model_checker"] = "exhaustive_finite_model_checker"
+    solver_status: Literal["EXHAUSTED", "TIME_LIMIT", "CASE_LIMIT", "INVALID_MODEL"]
+    runtime_seconds: float
+    horizon_start: Date
+    horizon_end_exclusive: Date
+    assumptions: VerificationRequest
+    nominal_assumptions: PlanRequest
+    fixed_actions: list[PlannedAction]
+    dimension_count: int
+    total_cases: int
+    checked_cases: int
+    coverage_complete: bool
+    worst_case: Simulation | None = None
+    worst_case_assignment: list[UncertaintyAssignment] = Field(default_factory=list)
+    worst_case_proven: bool = False
+    counterexample: Counterexample | None = None
+    statement: str
+    warnings: list[str] = Field(default_factory=list)
+    generated_at: datetime
+
+
 class JobStatus(Contract):
     id: str
     status: Literal["queued", "running", "completed", "failed"]
