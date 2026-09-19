@@ -731,6 +731,7 @@ export interface components {
         PlanResult: {
             /** Actions */
             actions: components["schemas"]["PlannedAction"][];
+            assumptions?: components["schemas"]["PlanRequest"];
             baseline: components["schemas"]["Simulation"];
             /** Excluded Actions */
             excluded_actions?: {

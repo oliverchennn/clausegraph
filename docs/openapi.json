@@ -1020,6 +1020,9 @@
             "title": "Actions",
             "type": "array"
           },
+          "assumptions": {
+            "$ref": "#/components/schemas/PlanRequest"
+          },
           "baseline": {
             "$ref": "#/components/schemas/Simulation"
           },

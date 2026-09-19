@@ -222,6 +222,7 @@ class PlanResult(Contract):
     warnings: list[str] = Field(default_factory=list)
     objective_proven: bool = False
     generated_at: datetime
+    assumptions: PlanRequest = Field(default_factory=PlanRequest)
 
 
 class JobStatus(Contract):
