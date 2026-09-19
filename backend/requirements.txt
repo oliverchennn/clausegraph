@@ -1,0 +1,15 @@
+fastapi==0.141.1
+uvicorn[standard]==0.34.2
+pydantic==2.11.4
+pydantic-settings==2.9.1
+networkx==3.4.2
+ortools==9.12.4544
+httpx==0.28.1
+pypdf==6.19.0
+python-multipart==0.0.32
+SQLAlchemy==2.0.40
+psycopg[binary]==3.2.9
+boto3==1.38.13
+pytest==9.1.1
+pytest-asyncio==1.4.0
+ruff==0.11.9

@@ -1,0 +1,2 @@
+# ADR 001: Evidence-gated event transformations
+Accepted. Pydantic is the canonical schema. A bounded declarative DSL transforms identified financial events. Acceleration moves a debt event and deferral moves a payment; neither invents money. CP-SAT selects actions/dates. Review, approval, verification and confidence are independent. Provider output is never executable code. The demo runs without credentials and clearly labels synthetic evidence. Production requires external processing consent and private storage.
