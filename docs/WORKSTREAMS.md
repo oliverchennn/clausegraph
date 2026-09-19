@@ -10,3 +10,7 @@ The active shared coordination board is the agent message channel. Each lane is 
 | Frontend | frontend agent | codex/frontend / .worktrees/frontend | frontend except package.json, lockfile, generated api-types.ts; browser test; handoff | integrated; build and browser tests passing |
 
 Shared changes require a message to root before implementation. Engine/public APIs are specified in ARCHITECTURE.md. API response models generate the committed OpenAPI and TypeScript contracts. Root also owns Docker/deployment configuration and final verification. See docs/handoffs/integration.md and docs/RESUME.md for integrated status; lane handoffs preserve their narrower test scope.
+
+## Next product work
+
+Root completed the documentation assessment on 2026-09-19; no implementation lane was reopened. [HACKATHON_MVP.md](HACKATHON_MVP.md) defines the hackathon scope and acceptance criteria. Delivery order: rehearse/validate the current flow, then decision trace (frontend/engine) and side-by-side previews (frontend/API); bounded stress tests are a stretch goal. These are recommendations, not active assignments. Root coordinates any new trace/preview contracts and generated types before lane implementation. Preserve the current branch/worktree ownership and integrated delivery records.

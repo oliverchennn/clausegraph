@@ -2,6 +2,12 @@
 
 An evidence-backed emergency cash planner: uploaded clauses become reviewed rules, a dependency graph and a deterministic action plan. It never sends requests, applies for benefits, cancels services or moves money.
 
+## Hackathon focus
+
+The MVP demonstrates a complete chain from **source clause → reviewed rule → dependency graph → constrained action schedule → cash projection**. Its novelty is reasoning over interacting clauses; its intended impact is helping people bridge cash timing gaps while preserving essentials; its technical depth is the evidence-gated rule compiler and deterministic solver. The synthetic demo moves minimum cash from −$400 to $50 without changing ending cash or claiming savings.
+
+See [HACKATHON_MVP.md](docs/HACKATHON_MVP.md) for the assessed feature gaps, delivery order and acceptance criteria. The next recommended additions are a decision trace and side-by-side comparisons, with bounded stress testing as a stretch goal. These additions are proposed; the existing demo and current live-provider limitations are documented below.
+
 ## Run locally
 
 Requires Python 3.12 and Node.js 22+. From the repository root:

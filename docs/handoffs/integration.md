@@ -2,7 +2,25 @@
 
 Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegraph`. Root owns canonical schemas, fixtures, manifests/locks, generated types, migrations, CI and deployment. The original README-only repository is now a working local vertical slice. No cloud resources were provisioned or remote commits pushed.
 
-## Latest change: NVIDIA-only default (2026-09-19)
+## Latest change: hackathon MVP assessment (2026-09-19)
+
+Branch: `codex/integration`, current root checkout; baseline commit `afdc0f0`. Read all repository Markdown docs, contributor instructions and lane handoffs, then inspected canonical contracts, engine results/gates, API persistence/export, dashboard comparisons, graph/chart and existing acceptance tests. No implementation lane was reopened.
+
+Completed: added `docs/HACKATHON_MVP.md` with product positioning, implemented-versus-proposed inventory, ranked improvements, ownership/dependencies, acceptance criteria, evaluation measures and a feature-freeze scope. Added persistent hackathon priorities to AGENTS.md and linked the roadmap from README, RESUME, WORKSTREAMS and DEMO. Clarified that the UI's forced cancellation comparison can also select the payment shift; the standalone cancellation figure must not be presented as that different action set.
+
+Recommendation: rehearse/validate the existing workflow, then implement a decision trace and side-by-side previews that preserve the active plan. Bounded stress testing is the stretch goal; review prioritization and history UI follow. Existing `POST /api/plan` persists the comparison and the dashboard starts comparisons from a fresh request, so safe previews require coordinated API/UI semantics rather than only a second chart.
+
+Changed interfaces: none. Runtime code, dependency versions, fixtures and generated contracts unchanged. No new live-provider/deployment claim and no paid provisioning. All additions are documentation; feature implementation remains proposed.
+
+Checks for this assessment:
+
+- `.venv/Scripts/python.exe -m pytest backend/tests/test_demo.py backend/tests/test_engine.py backend/tests/test_graph.py -q`: **57 passed in 2.51s**.
+- `git -c safe.directory=C:/Users/vzhu0/PycharmProjects/clausegraph diff --check`: **passed**; only existing Git line-ending normalization warnings.
+- Python UTF-8 Markdown check over the seven changed/new docs: **23 relative links resolve; no trailing whitespace**. No full backend/frontend/browser rerun was performed for these Markdown-only edits; earlier broad results below remain historical.
+
+Blockers/next steps: no blocker to documentation delivery or local feature work. Live extraction remains unverified and needs server-side credentials, explicit consent and a full synthetic upload/review/plan check. Start future implementation from the scoped acceptance criteria in HACKATHON_MVP.md; coordinate new trace/preview contracts through integration and regenerate OpenAPI/types if they change.
+
+## Previous change: NVIDIA-only default (2026-09-19)
 
 User requested a free-first hackathon replacement for required Gemini. NVIDIA Nano Omni now verifies evidence and transcribes scanned pages, alongside existing Nemotron Lightning extraction, using one NVIDIA_API_KEY. Gemini remains explicit opt-in via EVIDENCE_PROVIDER=gemini; no automatic fallback or OpenAI integration. Rationale, official sources and limits: docs/decisions/003-nvidia-evidence-default.md.
 

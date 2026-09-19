@@ -1,6 +1,10 @@
 # ClauseGraph resume / delivery checkpoint
 
-The local vertical slice is implemented and integrated on `codex/integration` in `C:/Users/vzhu0/PycharmProjects/clausegraph`. Do not restart scaffolding. Read AGENTS.md and docs/handoffs/integration.md for the current verification record. Latest user-requested change: NVIDIA Nano Omni now replaces required Gemini for verification/OCR; see docs/decisions/003-nvidia-evidence-default.md. Only NVIDIA_API_KEY is required for the default document pipeline. Gemini remains explicit opt-in, no OpenAI adapter or automatic paid fallback.
+The local vertical slice is implemented and integrated on `codex/integration` in `C:/Users/vzhu0/PycharmProjects/clausegraph`. Do not restart scaffolding. Read AGENTS.md and docs/handoffs/integration.md for the current verification record. Latest runtime change: NVIDIA Nano Omni now replaces required Gemini for verification/OCR; see docs/decisions/003-nvidia-evidence-default.md. Only NVIDIA_API_KEY is required for the default document pipeline. Gemini remains explicit opt-in, no OpenAI adapter or automatic paid fallback.
+
+## Product direction (2026-09-19)
+
+The latest documentation assessment establishes a hackathon MVP focused on novelty, user impact and technical depth. Read [HACKATHON_MVP.md](HACKATHON_MVP.md) before selecting new work; AGENTS.md now carries this priority. Recommended scope: validate/rehearse the existing end-to-end flow, then add a decision trace and side-by-side previews that preserve the primary plan. Bounded stress testing is the stretch goal. These are proposed additions, not newly implemented functions. Existing backend demo/engine/graph checks were rerun: **57 passed in 2.51s**. No runtime or contract changes in this assessment.
 
 ## What works
 
