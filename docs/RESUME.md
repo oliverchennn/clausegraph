@@ -1,12 +1,12 @@
 # ClauseGraph current checkpoint
 
-## Two-developer handoff: stop after current task
+## Two-developer checkpoint: NVIDIA/Brev setup
 
-Developer A is this agent; Developer B is the friend's agent in a separate session/clone. The user clarified that the roadmap assigns future work to those two agents; it does not authorize this session to implement every task. A is finishing only the current backend queue task and publishing all work for handoff. Do not resume the whole backlog or create another B implementation agent.
+Developer A is this agent; Developer B is the friend's agent in a separate session/clone. The roadmap assigns future work to those two agents; it does not authorize this session to implement every task. The user separately requested hosted NVIDIA configuration and optional Brev preparation. A handles this backend/config/docs task only; no GPU provisioning, live processing or B implementation is included.
 
-Workflow PR5 is merged on main3799876 with all CI checks passing, including Linux/Windows/macOS clean installs. The local pre-push hook is installed in this clone; the friend's separate clone must install it independently. A's completed backend contract is [PR6](https://github.com/vzhu08/clausegraph/pull/6), code commit1adf5fb on codex/dev-a/review-queue; see [its handoff](handoffs/dev-a/review-queue.md). B's already-started UI work is preserved as [draft PR7](https://github.com/vzhu08/clausegraph/pull/7), commit0838e4b on codex/dev-b/review-guidance, for the friend's agent, with its own handoff and unrun queue tests. No new frontend feature is claimed delivered.
+Workflow PR5, backend [PR6](https://github.com/vzhu08/clausegraph/pull/6) and frontend snapshot [PR7](https://github.com/vzhu08/clausegraph/pull/7) are merged; this task starts at main4e2725a. Their task handoffs are historical records. Retire those squash-merged branches. New A branch: codex/dev-a/nvidia-brev; [current handoff](handoffs/dev-a/nvidia-brev.md). B starts its own fresh demo-polish task from main to validate and refine the UI. Previous unrun checks are not implied passing merely by merge.
 
-Read [WORKSTREAMS.md](WORKSTREAMS.md) for exact ownership, next tasks and the friend's startup sequence. B consumes the A contract only after its PR merges into main. A then reviews B's eventual PR and handles specifically identified backend changes. History, richer verification, advanced verification and feature-freeze rehearsal remain future assignments.
+Read [WORKSTREAMS.md](WORKSTREAMS.md) for ownership and the friend's startup sequence. [NVIDIA_BREV.md](NVIDIA_BREV.md) explains hosted API keys, credits and optional private text inference. Hosted mode remains the browser default. Brev backend/CLI support requires named consent; its UI is B's optional follow-up after A's contract merges. The local NVIDIA key is present but has not been validated. History, richer verification, advanced verification and feature-freeze rehearsal remain future assignments.
 
 ## Existing baseline
 
@@ -21,6 +21,8 @@ Use Python3.12, Node22.23.2/npm10.9.8. Install backend with backend/requirements
 Run python scripts/dev.py for the local stack. Do not duplicate running ports or run frontend dev/build/E2E against the same .next directory concurrently. Lane browser tests use distinct E2E_API_PORT/E2E_WEB_PORT and their own checkout. Full checks: backend pytest including PostgreSQL in CI, Ruff, OpenAPI/types drift, frontend typecheck/lint/build, browser flows, and Linux/Windows/macOS clean installs.
 
 ## Remaining limits
+
+Starting main4e2725a has two failing review-queue browser cases in [run35476332612](https://github.com/vzhu08/clausegraph/actions/runs/35476332612): review/source completion and queue error/retry/keyboard state. B's next fresh task resolves and verifies those. A's NVIDIA/Brev adapter tests do not establish frontend acceptance.
 
 Live NVIDIA extraction/OCR, audio, cloud storage and deployment are not established by offline fixture tests. Synthetic live validation needs configured server-side credentials and explicit processing consent. No billing/provisioning or public real-data release is authorized by this increment. Keep provider failures visible and source/session deletion semantics intact.
 

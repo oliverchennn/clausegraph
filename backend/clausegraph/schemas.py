@@ -462,6 +462,7 @@ class SessionCreate(Contract):
 class DraftRequest(Contract):
     use_provider: bool = False
     consent: bool = False
+    consent_text_provider: Literal["nvidia", "brev"] | None = None
 
 
 class AudioRequest(Contract):

@@ -531,6 +531,8 @@ export interface components {
             consent: boolean;
             /** Consent Provider */
             consent_provider?: string | null;
+            /** Consent Text Provider */
+            consent_text_provider?: string | null;
             /** File */
             file: string;
         };
@@ -664,6 +666,8 @@ export interface components {
              * @default false
              */
             consent: boolean;
+            /** Consent Text Provider */
+            consent_text_provider?: ("nvidia" | "brev") | null;
             /**
              * Use Provider
              * @default false

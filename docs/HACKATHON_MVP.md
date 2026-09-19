@@ -8,7 +8,7 @@ Synthetic acceptance values remain: baseline minimum/end -40000/50000 cents; app
 
 ## Required increment: review guidance and demo polish
 
-This is a split backlog: A is the user's agent, B the friend's independent agent. A finishes the current backend queue contract and stops. B takes over the draft UI, validates it and completes demo polish. Later rows require their own assigned task; do not execute the entire roadmap automatically.
+This is a split backlog: A is the user's agent, B the friend's independent agent. The backend queue and frontend snapshot have now merged; B starts a fresh task to finish browser validation and demo polish. A's separately requested current task prepares hosted NVIDIA and optional Brev configuration, without launching GPU resources or implementing B's UI. Later rows require their own assigned task; do not execute the entire roadmap automatically.
 
 Follow the ordered two-developer assignments in [WORKSTREAMS.md](WORKSTREAMS.md). Establish ownership/CI/pre-push/toolchain first, merge the read-only review queue backend contract, then ship the frontend guidance. Queue priorities: essential obligations and missing obligation facts, blockers on candidate actions, other pending review. Ranking never promises a dollar benefit. Source support, human review, conditions and third-party approval remain distinct.
 

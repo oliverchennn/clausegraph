@@ -26,6 +26,10 @@ def run_once(store: Store, originals: Originals, providers: Providers, owner: st
             raise ProviderError("External processing consent is missing; no document data was sent.")
         if job["payload"].get("evidence_provider", providers.settings.evidence_provider) != providers.settings.evidence_provider:
             raise ProviderError("Evidence provider changed after consent. Re-upload with renewed consent; no document data was sent.")
+        if (job["payload"].get("text_provider", "nvidia") != providers.settings.text_provider
+                or job["payload"].get("processing_route", providers.settings.processing_route) != providers.settings.processing_route
+                or (providers.settings.text_provider == "brev" and not job["payload"].get("processing_route"))):
+            raise ProviderError("Processing route changed after consent. Re-upload with renewed consent; no document data was sent.")
         workspace = store.get(job["session_id"])
         # Read current inputs when execution begins. Any subsequent edit invalidates this result.
         revision = workspace.revision

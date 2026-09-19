@@ -7,6 +7,8 @@ Upload validates PDF/text/CSV size/type, hashes bytes per session and records na
 
 The browser supplies `consent_provider` with uploads, checked against current server configuration before storage. New extraction jobs bind consent to the selected evidence provider; changing it before execution fails the job without sending document data. Legacy uploads that omit this optional field consent to the currently configured provider; legacy queued jobs predate this switch and used the old NVIDIA-and-Google consent notice. Re-upload with refreshed consent to retry after changing providers.
 
+Optional `TEXT_PROVIDER=brev` routes extraction/drafts to a loopback SSH tunnel using `BREV_NIM_BASE_URL` and the exact served `BREV_NIM_MODEL`; no hosted key or environment proxy is used. Evidence/OCR remains on its separately configured hosted provider. New jobs also pin text/evidence endpoints and model IDs by a non-secret routing digest. Brev uploads and provider drafts require explicit `consent_text_provider=brev`; omitted text consent remains compatible only with hosted NVIDIA. The current browser has no Brev-specific consent yet, so use hosted mode for its demo. See [setup and B's follow-up](NVIDIA_BREV.md). No automatic fallback, provisioning or GPU validation is implied.
+
 Reviewed rules compile into an allowlisted DSL: add an evidenced event, remove a specified payment, shift a specified event, or accelerate an existing obligation. Conditions support eq/gte/lte/exists, but unresolved facts block compilation. Graph edges are requires/triggers/excludes/supersedes/supports; NetworkX checks dependencies/cycles and contradictions. Extraction does not authorize execution.
 
 ## Canonical contracts and endpoints
