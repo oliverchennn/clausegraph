@@ -12,7 +12,7 @@ The integrated dashboard also includes “Why this plan?” source/rule/event tr
 
 ## Run locally
 
-Requires Python 3.12 and Node.js 22+. From the repository root:
+Requires Python 3.12, Node.js **22.23.2** and npm **10.9.8** (the toolchain from the passing CI run). Use `.nvmrc` with your version manager; Windows nvm users can run `nvm install 22.23.2` and `nvm use 22.23.2`. Check `node --version` and `npm --version` before installing. From the repository root:
 
 ```powershell
 python -m venv .venv
@@ -23,6 +23,8 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 ```
 
 On macOS/Linux, substitute `.venv/bin/python` and `test -f .env || cp .env.example .env`. Open [localhost:3000](http://localhost:3000). Local mode uses SQLite/private local files; no credentials are needed for the clearly labeled synthetic demo. Never overwrite an already-configured `.env`. The API and worker read server-side keys from it. The worker is required for uploaded-document extraction.
+
+Before contributing, read [the two-developer workflow](docs/WORKSTREAMS.md). Each task uses a fresh branch/worktree and its own handoff. After the workflow bootstrap is on main, install local checks with `python scripts/install_hooks.py` from an activated virtual environment. Only Developer A changes dependency manifests/locks; commit both together and validate with clean `npm ci`. CI repeats clean installs on Linux, Windows and macOS.
 
 To run processes separately:
 
