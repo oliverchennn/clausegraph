@@ -1,23 +1,23 @@
 # ClauseGraph resume / delivery checkpoint
 
-The local vertical slice is implemented and integrated on `codex/integration` in `C:/Users/vzhu0/PycharmProjects/clausegraph`. Do not restart scaffolding. Read AGENTS.md and docs/handoffs/integration.md for the current verification record.
+The local vertical slice is implemented and integrated on `codex/integration` in `C:/Users/vzhu0/PycharmProjects/clausegraph`. Do not restart scaffolding. Read AGENTS.md and docs/handoffs/integration.md for the current verification record. Latest user-requested change: NVIDIA Nano Omni now replaces required Gemini for verification/OCR; see docs/decisions/003-nvidia-evidence-default.md. Only NVIDIA_API_KEY is required for the default document pipeline. Gemini remains explicit opt-in, no OpenAI adapter or automatic paid fallback.
 
 ## What works
 
 - Six clearly synthetic documents; deterministic integer-cent simulation and CP-SAT optimization. Baseline minimum −40000 cents; approved shift minimum 5000 and ending 50000; denied shift minimum −40000; phone cancellation alone minimum −82000 and ending 8000.
 - Next.js responsive dashboard, cash chart, evidence/condition review, editable intake, dependency graph, approval/date/cash scenarios, conditional labels, unsent drafts, downloads, privacy controls and optional audio UI.
 - Private FastAPI bearer sessions, versioned originals, document deduplication, bounded uploads/PDF parsing, PostgreSQL-compatible leased worker, consent-gated extraction/verification, durable plan assumptions/history/chart series, deletion and conservative retained obligations.
-- Configurable real HTTP adapters for Nemotron/Gemini/ElevenLabs and private Spaces. Missing credentials are visible failures, not synthetic provider success.
+- Configurable real HTTP adapters for Nemotron extraction + Nano Omni verification/OCR, optional Gemini, ElevenLabs and private Spaces. Missing credentials are visible failures, not synthetic provider success. NVIDIA image requests use at most four locally rendered source pages; split larger scans. Jobs bind consent to the selected evidence provider.
 - README, env template, dependency locks, migrations, seed/reset CLI, local launcher, provider smoke CLI, Compose, DigitalOcean template, CI and three-minute demo.
 
 ## Current verification
 
-- Integrated backend: **118 passed, 1 skipped**; Ruff passed. PostgreSQL check skips without POSTGRES_TEST_URL. Two Starlette/AnyIO dependency deprecation warnings remain.
-- TypeScript, ESLint and production build passed. Real-API Playwright workflow and mobile overflow checks passed; final integration handoff records the exact last run.
+- Latest backend: **140 passed, 1 skipped in 12.40s**; provider-switch results are recorded in docs/handoffs/integration.md. PostgreSQL check skips without POSTGRES_TEST_URL. Two Starlette/AnyIO dependency deprecation warnings remain.
+- TypeScript, ESLint and production build passed. Real-API Playwright workflow and mobile overflow checks: **2 passed in 29.8s**.
 - Browser visually checked at desktop 1440px and mobile 390px: dashboard, evidence drawer and dependency graph; no observed console errors or horizontal overflow. Temporary viewport override restored.
 - npm audit: 0 vulnerabilities; pip audit: no known vulnerabilities; pip check: no broken requirements (run during this build).
 - Compose configuration validates. Docker daemon unavailable, so no containers or cloud deployment were executed.
-- Missing-key smoke was run against the API: NVIDIA/Gemini/ElevenLabs unavailable, local SQLite reachable, private local storage active.
+- Latest missing-key smoke: NVIDIA extraction/evidence and ElevenLabs unavailable, local SQLite reachable, private local storage active. Configured but unselected Gemini was not called. Preview restarted; API health OK and frontend HTTP 200.
 
 ## Run and restart
 
@@ -29,7 +29,7 @@ Open http://localhost:3000. This starts API port 8000, worker and frontend port 
 
 ## Remaining external validation / limitations
 
-No live sponsor credentials, Tiger Data connection or Spaces bucket are configured. No live extraction/audio/cloud-storage call has succeeded here; mocked protocol tests are not live validation. Supply credentials server-side and explicitly authorize any paid resources before deployment. Smoke calls may consume configured provider credits; use synthetic documents with explicit processing consent for a live extraction test.
+NVIDIA and ElevenLabs keys, Tiger Data connection and Spaces bucket are not configured. A Gemini key is configured but is not selected or used by the default pipeline. No live extraction/audio/cloud-storage call has succeeded here; mocked protocol tests are not live validation. Next: supply NVIDIA_API_KEY server-side, run the bounded provider smoke, then test a synthetic upload with explicit processing consent. Explicitly authorize any paid resources before deployment. Smoke calls consume configured provider quota and may consume credits.
 PostgreSQL migration/queue integration is configured in CI but not locally executed. DigitalOcean spec is a template needing repository/secrets/account validation. Account recovery, operational retention policy and production abuse controls remain prototype limitations; do not publicly process real financial data yet.
 Conservative literal/operation and entity checks can withhold valid unusual clauses for human review. Native PDF parsing has a killable time bound, not an OS memory quota. No payments, cancellations, applications or outbound messages are executed.
 

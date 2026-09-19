@@ -1,4 +1,11 @@
 # API/infrastructure/integrations handoff
+
+## Latest integration-owned provider update (2026-09-19)
+
+Root subsequently implemented the user's free-first SteelHacks model change directly on codex/integration. Default verification/OCR is NVIDIA Nano Omni (`EVIDENCE_PROVIDER=nvidia`, `NVIDIA_EVIDENCE_MODEL=nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`) using NVIDIA_API_KEY; the Gemini adapter is still explicitly selectable. No OpenAI integration or automatic fallback. Evidence model attribution, strict response/check coverage validation, local bounded PDF image rendering and provider-bound queued consent were added. Multipart upload accepts optional `consent_provider`; regenerate OpenAPI/types after touching it. New pinned libraries: pypdfium2 5.13.0 and Pillow 12.3.0. See decision003 and the integration handoff for current checks. The lane record below describes the earlier delivery, not the current default.
+
+## Original lane delivery
+
 Branch: codex/api; checkout `.worktrees/api`. Resumed implementation and completed 32 meaningful API/storage/worker/provider tests. Integration owner merges this lane; no live sponsor service is claimed tested.
 
 Completed:

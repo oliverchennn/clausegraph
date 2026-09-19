@@ -36,7 +36,14 @@ def candidate(document):
 
 def transport_handler(request):
     if request.url.path.endswith("/chat/completions"):
-        data = json.loads(json.loads(request.content)["messages"][1]["content"])
+        content = json.loads(request.content)["messages"][1]["content"]
+        if isinstance(content, list):
+            prompt = content[0]["text"]
+            data, _ = json.JSONDecoder().raw_decode(prompt[prompt.index('{"source_document"'):])
+            return httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {
+                "content": json.dumps({"checks": [{"rule_id": rule["id"], "supported": True,
+                    "reason": "Mocked NVIDIA evidence check; no live call."} for rule in data["extracted_rules"]]})}}]})
+        data = json.loads(content)
         return httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {
             "content": json.dumps(candidate(data["source_document"]))}}]})
     if ":generateContent" in request.url.path:
@@ -95,6 +102,23 @@ def test_private_sessions_health_and_provider_truth(api):
     statuses = client.post("/api/providers/smoke", headers=headers).json()
     assert all(item["mode"] == "unavailable" for item in statuses[:3])
     assert all("missing" in item["detail"].lower() for item in statuses[:3])
+
+
+def test_provider_consent_is_checked_on_upload_and_queued_execution(api):
+    client, store, providers, originals = api
+    headers, workspace = start(client, False)
+    mismatch = client.post("/api/documents", headers=headers,
+        files={"file": ("payment.txt", PAYMENT_TEXT.encode(), "text/plain")},
+        data={"consent": "true", "consent_provider": "gemini"})
+    assert mismatch.status_code == 409
+    assert store.get(workspace["session_id"]).documents == []
+    response = upload(client, headers, consent=True).json()
+    providers.settings.evidence_provider = "gemini"
+    providers.settings.gemini_api_key = "unused-test-key"
+    providers.transport = httpx.MockTransport(lambda request: pytest.fail("Provider switch must not send data"))
+    assert run_once(store, originals, providers)
+    job = store.get_job(workspace["session_id"], response["job"]["id"])
+    assert job.status == "failed" and "changed after consent" in job.error
 
 
 def test_demo_plan_approval_invalidation_cache_and_history(api):
@@ -176,10 +200,12 @@ def test_upload_validation(api, name, content, status):
     assert response.status_code == status
 
 
-def test_live_extraction_http_pipeline_and_human_review(api):
+@pytest.mark.parametrize("evidence_provider", ["nvidia", "gemini"])
+def test_live_extraction_http_pipeline_and_human_review(api, evidence_provider):
     client, store, providers, originals = api
     providers.settings.nvidia_api_key = "test-key"
-    providers.settings.gemini_api_key = "test-key"
+    providers.settings.evidence_provider = evidence_provider
+    providers.settings.gemini_api_key = "test-key" if evidence_provider == "gemini" else ""
     headers, workspace = start(client, False)
     assert intake(client, headers).status_code == 200
     response = upload(client, headers, consent=True).json()
@@ -192,6 +218,7 @@ def test_live_extraction_http_pipeline_and_human_review(api):
     assert rule["consequential"] is True
     assert rule["review_status"] == "pending" and rule["approval_status"] == "not_required"
     assert rule["evidence_status"] == "supported"
+    assert providers.evidence_model in rule["verifier_notes"]
     reviewed = client.patch(f"/api/rules/{rule['id']}", headers=headers, json={"review_status": "reviewed"})
     assert reviewed.status_code == 200, reviewed.text
     assert reviewed.json()["scenario"]["events"][0]["amount_cents"] == 12345
@@ -213,13 +240,18 @@ def test_live_extraction_http_pipeline_and_human_review(api):
 def test_verifier_failure_requires_explicit_original_confirmation(api):
     client, store, providers, originals = api
     providers.settings.nvidia_api_key = "test-key"
+    def fail_verifier(request):
+        if json.loads(request.content).get("model") == providers.settings.nvidia_evidence_model:
+            return httpx.Response(503)
+        return transport_handler(request)
+    providers.transport = httpx.MockTransport(fail_verifier)
     headers, _ = start(client, False)
     upload(client, headers, consent=True)
     run_once(store, originals, providers)
     workspace = client.get("/api/workspace", headers=headers).json()
     rule = workspace["rules"][0]
     assert rule["evidence_status"] == "disputed" and rule["review_status"] == "unresolved"
-    assert "GEMINI_API_KEY" in workspace["documents"][0]["error"]
+    assert "NVIDIA Nemotron evidence request failed" in workspace["documents"][0]["error"]
     url = f"/api/rules/{rule['id']}"
     assert client.patch(url, headers=headers, json={"review_status": "reviewed"}).status_code == 422
     assert client.patch(url, headers=headers, json={"review_status": "reviewed", "evidence_confirmed": True}).status_code == 422

@@ -261,8 +261,12 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         return result
 
     @app.post("/api/documents", response_model=UploadResponse, status_code=201)
-    async def upload(request: Request, workspace: Session, file: UploadFile = File(...), consent: bool = Form(False)):
+    async def upload(request: Request, workspace: Session, file: UploadFile = File(...), consent: bool = Form(False),
+                     consent_provider: str | None = Form(None)):
         settings = request.app.state.settings
+        if consent and consent_provider is not None and consent_provider != settings.evidence_provider:
+            await file.close()
+            raise HTTPException(409, "Evidence provider changed. Refresh the workspace and review processing consent again.")
         name = (file.filename or "document").replace("\\", "/").rsplit("/", 1)[-1][:180]
         extension = name.rsplit(".", 1)[-1].lower() if "." in name else ""
         types = {"pdf": "application/pdf", "txt": "text/plain", "csv": "text/csv"}
@@ -300,7 +304,7 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
                         target.status, target.error = "uploaded", None
                     updated = data_store.mutate(workspace.session_id, retry, expected_revision=workspace.revision,
                         enqueue={"document_id": duplicate.id, "payload": {"consent": True,
-                        "original_key": key, "document_version": duplicate.version}})
+                        "original_key": key, "document_version": duplicate.version, "evidence_provider": settings.evidence_provider}})
                     active = updated.jobs[0]
                     duplicate = next(item for item in updated.documents if item.id == duplicate.id)
             return UploadResponse(document=duplicate, job=active, duplicate=True)
@@ -325,7 +329,8 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
                 refresh_graph(current)
             updated = data_store.mutate(workspace.session_id, apply, expected_revision=workspace.revision,
                 original=(document.id, document.version, key), enqueue={"document_id": document.id,
-                    "payload": {"consent": True, "original_key": key, "document_version": document.version}} if consent else None,
+                    "payload": {"consent": True, "original_key": key, "document_version": document.version,
+                        "evidence_provider": settings.evidence_provider}} if consent else None,
                 supersede_document_id=previous.id if previous else None)
         except Exception:
             await run_in_threadpool(request.app.state.originals.delete, key)

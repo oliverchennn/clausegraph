@@ -2,7 +2,26 @@
 
 Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegraph`. Root owns canonical schemas, fixtures, manifests/locks, generated types, migrations, CI and deployment. The original README-only repository is now a working local vertical slice. No cloud resources were provisioned or remote commits pushed.
 
-## Integrated work
+## Latest change: NVIDIA-only default (2026-09-19)
+
+User requested a free-first hackathon replacement for required Gemini. NVIDIA Nano Omni now verifies evidence and transcribes scanned pages, alongside existing Nemotron Lightning extraction, using one NVIDIA_API_KEY. Gemini remains explicit opt-in via EVIDENCE_PROVIDER=gemini; no automatic fallback or OpenAI integration. Rationale, official sources and limits: docs/decisions/003-nvidia-evidence-default.md.
+
+Changed interfaces: settings add evidence_provider, nvidia_evidence_model and bounded nvidia_evidence_reasoning_budget; upload accepts optional consent_provider and new queued jobs persist the selected recipient. Browser consent identifies NVIDIA only by default; stale consent or a queued provider change fails before sending data. OpenAPI and TypeScript contracts regenerated. Provider status/review notes identify the selected model. Existing deterministic checks, human source attestation and approval gates remain intact.
+
+New source-page rendering uses pinned pypdfium2/Pillow in a killable 20-second subprocess, at most four pages/request, 1600px long edge and 2 MiB/image. Larger image sets require splitting. JSON, response completion, rule coverage and OCR page coverage are validated; errors fail closed. Same-family model agreement is not independent proof. PDF workers have time bounds, not OS memory quotas.
+
+Exact latest checks:
+
+- Backend: **140 passed, 1 skipped in 12.40s**, two existing dependency deprecation warnings. PostgreSQL test skipped without POSTGRES_TEST_URL. Includes both evidence providers, missing/malformed/duplicate checks, rendering/timeout/image provenance, no fallback and consent drift.
+- Ruff, TypeScript, ESLint and production build: **passed**; first-load JS 138 kB.
+- Real-API Playwright: **2 passed in 29.8s**; includes NVIDIA-only consent copy, full workflow and mobile overflow. Existing FORCE_COLOR/allowedDevOrigins warnings are nonfatal.
+- OpenAPI export and generated frontend types: **passed**. pip check: no broken requirements. Locked pip audit: no known vulnerabilities. No npm dependency changes; earlier npm audit found zero vulnerabilities.
+- Compose config validates; Docker daemon remains unavailable, no containers/cloud provisioned.
+- Preview restarted via scripts/dev.py: API health ok/sqlite/private-local; frontend HTTP 200. Missing-key smoke reports NVIDIA extraction/evidence and ElevenLabs unavailable. Configured but unselected Gemini is not called; no live inference or credits consumed.
+
+Next: add NVIDIA_API_KEY server-side, run the bounded provider smoke and synthetic native/scanned upload with explicit consent. Live endpoint availability and accuracy remain unverified. Do not expose keys in chat or commit .env. Local preview is left running; check ports before starting another instance.
+
+## Original integrated work
 
 - Engine lane: initial `646d0ff`, safety corrections `549c293` and `4e4b870`. Evidence-backed DSL, bounded native PDF extraction, typed dependency graph, deterministic simulation/CP-SAT, exhaustive small-case cross-checks.
 - API lane: `3a60112`, `cc245b9`, `6b22106`. Private/versioned upload and original retrieval, explicit evidence attestation/conditions/approval review, leased worker, consent-gated configurable provider adapters, durable chart/history data, cache invalidation and deletion. No metadata changes after initial migrations.
@@ -12,7 +31,7 @@ Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegrap
 - Source deletion retains known debt amount/date/essential flags under generic titles with dangling provenance and an unresolved plan; it does not manufacture cash. Model candidates cannot label bills as income or assert actual transactions.
 - Next type checking runs `next typegen && tsc --noEmit`, so fresh checkouts generate Next's route declaration before checking its generated next-env reference.
 
-## Exact checks (2026-09-19)
+## Original delivery checks (2026-09-19, before provider switch)
 
 From the root unless a frontend prefix is shown:
 

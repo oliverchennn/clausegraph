@@ -24,6 +24,8 @@ def run_once(store: Store, originals: Originals, providers: Providers, owner: st
     try:
         if not job["payload"].get("consent"):
             raise ProviderError("External processing consent is missing; no document data was sent.")
+        if job["payload"].get("evidence_provider", providers.settings.evidence_provider) != providers.settings.evidence_provider:
+            raise ProviderError("Evidence provider changed after consent. Re-upload with renewed consent; no document data was sent.")
         workspace = store.get(job["session_id"])
         # Read current inputs when execution begins. Any subsequent edit invalidates this result.
         revision = workspace.revision
@@ -64,7 +66,8 @@ def run_once(store: Store, originals: Originals, providers: Providers, owner: st
             for rule in result.rules:
                 if rule.consequential:
                     check = indexed_checks.get(rule.id)
-                    rule.verifier_notes = check.reason if check else "Gemini omitted this rule; manual review required."
+                    attribution = f"{providers.evidence_name} ({providers.evidence_model}); model check, not proof. "
+                    rule.verifier_notes = attribution + (check.reason if check else "Verifier omitted this rule; manual review required.")
                     if check is None or not check.supported:
                         rule.evidence_status = "disputed"
                         rule.review_status = ReviewStatus.unresolved

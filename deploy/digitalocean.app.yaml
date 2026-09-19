@@ -55,8 +55,17 @@ services:
       - key: NVIDIA_MODEL
         value: nvidia/nemotron-3.5-lightning-30b-a3b
         scope: RUN_TIME
+      - key: EVIDENCE_PROVIDER
+        value: nvidia
+        scope: RUN_TIME
+      - key: NVIDIA_EVIDENCE_MODEL
+        value: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
+        scope: RUN_TIME
+      - key: NVIDIA_EVIDENCE_REASONING_BUDGET
+        value: "1024"
+        scope: RUN_TIME
       - key: GEMINI_API_KEY
-        value: REPLACE_WITH_GEMINI_KEY
+        value: ""
         type: SECRET
         scope: RUN_TIME
       - key: GEMINI_MODEL

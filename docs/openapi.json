@@ -168,6 +168,17 @@
             "title": "Consent",
             "type": "boolean"
           },
+          "consent_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Provider"
+          },
           "file": {
             "contentMediaType": "application/octet-stream",
             "title": "File",

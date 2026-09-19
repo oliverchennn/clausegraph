@@ -25,7 +25,7 @@ export default defineConfig({
       url: `http://127.0.0.1:${apiPort}/api/health`,
       timeout: 60_000,
       reuseExistingServer: false,
-      env: { ENVIRONMENT: "development", DATABASE_URL: "sqlite:///./.data/e2e.db", LOCAL_STORAGE_PATH: ".data/e2e-documents", PYTHONPATH: path.join(repository, "backend"), NVIDIA_API_KEY: "", GEMINI_API_KEY: "", ELEVENLABS_API_KEY: "", SPACES_BUCKET: "", SPACES_ACCESS_KEY_ID: "", SPACES_SECRET_ACCESS_KEY: "" },
+      env: { ENVIRONMENT: "development", EVIDENCE_PROVIDER: "nvidia", DATABASE_URL: "sqlite:///./.data/e2e.db", LOCAL_STORAGE_PATH: ".data/e2e-documents", PYTHONPATH: path.join(repository, "backend"), NVIDIA_API_KEY: "", GEMINI_API_KEY: "", ELEVENLABS_API_KEY: "", SPACES_BUCKET: "", SPACES_ACCESS_KEY_ID: "", SPACES_SECRET_ACCESS_KEY: "" },
     },
     {
       command: `npm run dev -- --port ${webPort}`,

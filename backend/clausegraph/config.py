@@ -1,6 +1,7 @@
 """Server-only configuration; defaults are explicitly local development."""
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -21,6 +22,9 @@ class Settings(BaseSettings):
     nvidia_api_key: str = ""
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     nvidia_model: str = "nvidia/nemotron-3.5-lightning-30b-a3b"
+    evidence_provider: Literal["nvidia", "gemini"] = "nvidia"
+    nvidia_evidence_model: str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+    nvidia_evidence_reasoning_budget: int = Field(default=1024, ge=0, le=4096)
     gemini_api_key: str = ""
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
     gemini_model: str = "gemini-3.8-flash"
@@ -43,9 +47,9 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def production_requires_durable_services(self):
         longest_call = ((self.provider_timeout_seconds + 10) * (self.provider_retries + 1)
-                        + sum(min(2 ** attempt, 4) for attempt in range(self.provider_retries)) + 5)
+                        + sum(min(2 ** attempt, 4) for attempt in range(self.provider_retries)) + 25)
         if self.job_lease_seconds <= longest_call:
-            raise ValueError("JOB_LEASE_SECONDS must exceed one bounded provider call including retries/connect time")
+            raise ValueError("JOB_LEASE_SECONDS must exceed one bounded provider call including retries/connect time and PDF rendering")
         if self.environment == "production":
             if not self.database_url.startswith(("postgresql://", "postgresql+psycopg://")):
                 raise ValueError("Production requires PostgreSQL DATABASE_URL and explicit migrations")
