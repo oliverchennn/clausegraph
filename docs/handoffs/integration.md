@@ -1,5 +1,5 @@
 # Integration handoff
 Branch: codex/integration (existing checkout). Owns canonical schemas, migrations, fixtures, CI and lockfiles.
 Completed: inspected clean README-only repository; established contracts and assigned lanes. Isolated lane worktrees created. Six synthetic evidence documents and demo scenario added. Schema Date namespace issue corrected. Review condition confirmation field and request/response contracts added. Python and frontend dependencies installed and pinned; frontend dependency audit reports 0 vulnerabilities.
-Tests: schema/OpenAPI export passes. Full engine/API/frontend tests pending lane integration.
-Next: distribute generated frontend contracts, integrate lane commits, create database migration, run all tests and local browser QA.
+Tests: schema/OpenAPI export passes. Fixture/schema subset: 6 passed, 2 deselected. Frontend npm audit: 0 vulnerabilities. Python audit identified stale PDF/ASGI/multipart/test-runner packages; pins updated to FastAPI 0.141.1, Starlette 1.6.0, pypdf 6.19.0, python-multipart 0.0.32, pytest 9.1.1 and pytest-asyncio 1.4.0. Final audit recorded in RESUME.md. Full engine/API/frontend tests pending lane integration.
+Next: user requested pause for model downgrade. Preserve lane worktrees; see docs/RESUME.md for exact next prompt instructions. Generated API/TS need regeneration after final API integration. Root migrations created from API metadata but PostgreSQL unavailable locally (Docker daemon not running). No paid resources or live sponsor calls.

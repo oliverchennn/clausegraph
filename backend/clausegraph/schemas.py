@@ -66,7 +66,7 @@ class Rule(Contract):
     evidence: list[Evidence]
     parties: list[str] = Field(default_factory=list)
     conditions: list[Condition] = Field(default_factory=list)
-    amount_cents: int | None = Field(default=None, ge=0)
+    amount_cents: Annotated[int | None, Field(default=None, ge=0, strict=True)]
     due_date: Date | None = None
     dependencies: list[str] = Field(default_factory=list)
     review_status: ReviewStatus = ReviewStatus.pending
@@ -126,7 +126,7 @@ class Action(Contract):
     review_status: ReviewStatus = ReviewStatus.pending
     preserves_essential_services: bool = True
     service_id: str | None = None
-    fee_cents: int = Field(default=0, ge=0)
+    fee_cents: Annotated[int, Field(default=0, ge=0, strict=True)]
     burden: int = Field(default=1, ge=0)
 
 
@@ -258,7 +258,7 @@ class Workspace(Contract):
 class RuleReview(Contract):
     review_status: ReviewStatus
     approval_status: ApprovalStatus | None = None
-    amount_cents: int | None = Field(default=None, ge=0)
+    amount_cents: Annotated[int | None, Field(default=None, ge=0, strict=True)]
     due_date: Date | None = None
     note: str | None = None
     conditions: list[Condition] | None = None

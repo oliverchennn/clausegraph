@@ -12,5 +12,6 @@ frontend/out/
 playwright-report/
 test-results/
 data/
+.data/
 *.db
 .sites-runtime/
