@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-test("fixed-plan verification exposes a counterexample, proves bounded safety, and invalidates changed inputs", async ({ page }) => {
+test("fixed-plan verification exposes a counterexample, proves bounded safety, and invalidates changed inputs", async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/");
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
-  await expect(page.getByText("Nominal optimum proven", { exact: true })).toBeVisible();
+  await expect(page.locator(".solver-note")).toContainText("Nominal optimum proven");
   const initial = await page.evaluate(async () => {
     const response = await fetch("/api/workspace", { headers: { Authorization: `Bearer ${localStorage.getItem("clausegraph.session")}` } });
     return response.json();
@@ -29,6 +29,7 @@ test("fixed-plan verification exposes a counterexample, proves bounded safety, a
   await expect(page.getByRole("img", { name: /Cash projection.*Counterexample minimum/ })).toBeVisible();
   await expect(result).toContainText("8 / 8");
   await expect(result).toContainText("2026-09-21 through 2026-09-28, inclusive");
+  await panel.screenshot({ path: testInfo.outputPath("verify-unsafe.png") });
   await result.getByRole("button", { name: "Event evidence", exact: true }).first().click();
   await expect(page.getByRole("dialog").getByRole("heading", { name: "Follow the evidence" })).toBeVisible();
   await page.getByRole("button", { name: "Close dialog" }).click();
@@ -77,7 +78,7 @@ test("fixed-plan verification exposes a counterexample, proves bounded safety, a
   expect(errors).toEqual([]);
 });
 
-test("approval uncertainty stays hypothetical and invalid schedules have no cash overlay", async ({ page }) => {
+test("approval uncertainty stays hypothetical and invalid schedules have no cash overlay", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
@@ -94,6 +95,7 @@ test("approval uncertainty stays hypothetical and invalid schedules have no cash
   await expect(page.getByRole("img", { name: /Cash projection.*Counterexample minimum/ })).not.toBeVisible();
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await panel.screenshot({ path: testInfo.outputPath("verify-mobile.png") });
 });
 
 test("an incomplete real verification response remains Unknown", async ({ page }) => {

@@ -1,5 +1,9 @@
 # Integration handoff
 
+## Latest delivery: ClauseGraph Verify (2026-09-19)
+
+The current implementation, uncertainty/API contracts, shared accounting semantics, isolated lane commits, sponsor audit, exact checks and remaining limits are recorded in [verification.md](verification.md). Root integrated the engine/API/frontend lanes and delivered canonical contracts, migration003, a deterministic counterexample/impossibility/cash demo and a five-clause semantic gate eval. Final checks: 204 backend tests passed with 1 PostgreSQL skip; typecheck/lint/production build passed; 5 real-API browser tests passed. Original demo arithmetic and six evidence fixtures remain unchanged. No live sponsor or deployment result is claimed. The records below describe earlier work.
+
 Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegraph`. Root owns canonical schemas, fixtures, manifests/locks, generated types, migrations, CI and deployment. The original README-only repository is now a working local vertical slice. No cloud resources were provisioned. The user published the integration branch and merged PR #1 before opening PR #2.
 
 ## Latest change: reconcile squash-merge history for PR #2 (2026-09-19)

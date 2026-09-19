@@ -1,5 +1,9 @@
 # Work board
 
+## ClauseGraph Verify delivery lanes
+
+Root reopened isolated lanes from clean integration commit d5cd282. Engine `codex/verify-engine` / `.worktrees/verify-engine` completed 17a5743 (integrated as 151b424); API `codex/verify-api` / `.worktrees/verify-api` completed b12cec8 (integrated as d6a786b); frontend `codex/verify-frontend` / `.worktrees/verify-frontend` completed e0a3963 (integrated as a6a5cdb). Root owns uncertainty contracts, generated types, migration003, semantic eval, impossibility/cash demo, docs and final checks. Original lane checkouts are untouched. Latest work is governed by [verification handoff](handoffs/verification.md); the older assignments below are historical. No implementation agents remain assigned pending work after integration.
+
 The active shared coordination board is the agent message channel. Each lane is claimed below; checkpoints and interface proposals must also be published live to integration. Separate worktrees prevent file clobbering. Integration order: foundation/contracts -> engine+fixtures -> API+worker -> UI -> integration/CI/deployment checks.
 
 | Lane | Owner | Branch / checkout | Scope | State |

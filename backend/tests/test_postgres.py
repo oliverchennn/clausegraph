@@ -29,6 +29,17 @@ def test_postgres_migration_job_lease_and_session_isolation(tmp_path):
                           documents=documents, rules=rules, graph=DependencyGraph())
     store.create(workspace)
     try:
+        from clausegraph.engine import optimize
+        from clausegraph.schemas import VerificationRequest
+        from clausegraph.verification import verify_plan
+
+        plan = optimize(scenario, rules)
+        def save_plan(current):
+            current.plan = plan
+        store.mutate(sid, save_plan, invalidate=False)
+        verification = verify_plan(scenario, rules, plan, VerificationRequest(plan_id=plan.id, revision=1))
+        store.save_verification(sid, verification)
+        assert store.verifications(sid)[0] == verification
         job = store.enqueue(sid, documents[0].id, 1, {"synthetic": True})
         first = store.claim("worker-a")
         assert first and first["id"] == job.id

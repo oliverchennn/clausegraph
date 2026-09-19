@@ -1,5 +1,9 @@
 # ClauseGraph resume / delivery checkpoint
 
+## Latest: ClauseGraph Verify
+
+Bounded fixed-plan verification is implemented on `codex/integration`; do not restart scaffolding or treat it as proposed stretch work. Read [handoffs/verification.md](handoffs/verification.md) for current contracts, lane commits, exact 204-test / 5-browser-test validation, sponsor status and limitations. API/UI expose declared uncertainty, SAFE/UNSAFE/UNKNOWN, exact counterexamples and evidence-linked cash overlays without changing the saved nominal plan. `python scripts/verify_demo.py` demonstrates the eight-case failure, proves no safe schedule exists for that declared model, and verifies the fixed schedule with hypothetical extra opening cash. `python scripts/eval_nemotron.py` is a local fixture gate evaluation, not live model accuracy. General robust synthesis and live cloud validation remain deferred. The following sections are historical delivery records.
+
 The local vertical slice is implemented and integrated on `codex/integration` in `C:/Users/vzhu0/PycharmProjects/clausegraph`. Do not restart scaffolding. Read AGENTS.md and docs/handoffs/integration.md for the current verification record. Latest runtime change: NVIDIA Nano Omni now replaces required Gemini for verification/OCR; see docs/decisions/003-nvidia-evidence-default.md. Only NVIDIA_API_KEY is required for the default document pipeline. Gemini remains explicit opt-in, no OpenAI adapter or automatic paid fallback.
 
 ## Product direction (2026-09-19)

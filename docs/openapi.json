@@ -130,6 +130,61 @@
         "title": "ApprovalStatus",
         "type": "string"
       },
+      "ApprovalUncertainty": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "const": "user_assumption",
+            "default": "user_assumption",
+            "title": "Basis",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "approval",
+            "default": "approval",
+            "title": "Kind",
+            "type": "string"
+          },
+          "outcomes": {
+            "items": {
+              "enum": [
+                "approved",
+                "denied",
+                "pending"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Outcomes",
+            "type": "array"
+          },
+          "rationale": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "target_id": {
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rationale",
+          "target_id",
+          "outcomes"
+        ],
+        "title": "ApprovalUncertainty",
+        "type": "object"
+      },
       "AudioRequest": {
         "additionalProperties": false,
         "properties": {
@@ -247,6 +302,71 @@
           "fact"
         ],
         "title": "Condition",
+        "type": "object"
+      },
+      "Counterexample": {
+        "additionalProperties": false,
+        "properties": {
+          "assignment": {
+            "items": {
+              "$ref": "#/components/schemas/UncertaintyAssignment"
+            },
+            "title": "Assignment",
+            "type": "array"
+          },
+          "balance_cents": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance Cents"
+          },
+          "earliest_failing_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earliest Failing Date"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationTraceEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationFailure"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Simulation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "assignment",
+          "failures"
+        ],
+        "title": "Counterexample",
         "type": "object"
       },
       "DailyBalance": {
@@ -821,6 +941,112 @@
           "storage"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "IncomeAmountUncertainty": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "const": "user_assumption",
+            "default": "user_assumption",
+            "title": "Basis",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "income_amount",
+            "default": "income_amount",
+            "title": "Kind",
+            "type": "string"
+          },
+          "maximum_cents": {
+            "maximum": 10000000000.0,
+            "minimum": 0.0,
+            "title": "Maximum Cents",
+            "type": "integer"
+          },
+          "minimum_cents": {
+            "maximum": 10000000000.0,
+            "minimum": 0.0,
+            "title": "Minimum Cents",
+            "type": "integer"
+          },
+          "rationale": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rationale",
+          "event_id",
+          "minimum_cents",
+          "maximum_cents"
+        ],
+        "title": "IncomeAmountUncertainty",
+        "type": "object"
+      },
+      "IncomeDateUncertainty": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "const": "user_assumption",
+            "default": "user_assumption",
+            "title": "Basis",
+            "type": "string"
+          },
+          "earliest": {
+            "format": "date",
+            "title": "Earliest",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "income_date",
+            "default": "income_date",
+            "title": "Kind",
+            "type": "string"
+          },
+          "latest": {
+            "format": "date",
+            "title": "Latest",
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rationale",
+          "event_id",
+          "earliest",
+          "latest"
+        ],
+        "title": "IncomeDateUncertainty",
         "type": "object"
       },
       "IntakeRequest": {
@@ -1570,6 +1796,32 @@
         "title": "TranscriptResponse",
         "type": "object"
       },
+      "UncertaintyAssignment": {
+        "additionalProperties": false,
+        "properties": {
+          "dimension_id": {
+            "title": "Dimension Id",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "dimension_id",
+          "value"
+        ],
+        "title": "UncertaintyAssignment",
+        "type": "object"
+      },
       "UploadResponse": {
         "additionalProperties": false,
         "properties": {
@@ -1636,6 +1888,303 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VerificationFailure": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Id"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "property": {
+            "enum": [
+              "nonnegative_balance",
+              "authorization",
+              "evidence",
+              "accounting",
+              "essential_services",
+              "dependencies"
+            ],
+            "title": "Property",
+            "type": "string"
+          },
+          "source_rule_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Rule Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "property",
+          "message"
+        ],
+        "title": "VerificationFailure",
+        "type": "object"
+      },
+      "VerificationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "max_cases": {
+            "default": 10000,
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Max Cases",
+            "type": "integer"
+          },
+          "plan_id": {
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "time_limit_seconds": {
+            "default": 5,
+            "exclusiveMinimum": 0.0,
+            "maximum": 10.0,
+            "title": "Time Limit Seconds",
+            "type": "number"
+          },
+          "uncertainties": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "approval": "#/components/schemas/ApprovalUncertainty",
+                  "income_amount": "#/components/schemas/IncomeAmountUncertainty",
+                  "income_date": "#/components/schemas/IncomeDateUncertainty"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/IncomeDateUncertainty"
+                },
+                {
+                  "$ref": "#/components/schemas/IncomeAmountUncertainty"
+                },
+                {
+                  "$ref": "#/components/schemas/ApprovalUncertainty"
+                }
+              ]
+            },
+            "maxItems": 8,
+            "title": "Uncertainties",
+            "type": "array"
+          }
+        },
+        "required": [
+          "plan_id",
+          "revision"
+        ],
+        "title": "VerificationRequest",
+        "type": "object"
+      },
+      "VerificationResult": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "$ref": "#/components/schemas/VerificationRequest"
+          },
+          "checked_cases": {
+            "title": "Checked Cases",
+            "type": "integer"
+          },
+          "counterexample": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Counterexample"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage_complete": {
+            "title": "Coverage Complete",
+            "type": "boolean"
+          },
+          "dimension_count": {
+            "title": "Dimension Count",
+            "type": "integer"
+          },
+          "fixed_actions": {
+            "items": {
+              "$ref": "#/components/schemas/PlannedAction"
+            },
+            "title": "Fixed Actions",
+            "type": "array"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "horizon_end_exclusive": {
+            "format": "date",
+            "title": "Horizon End Exclusive",
+            "type": "string"
+          },
+          "horizon_start": {
+            "format": "date",
+            "title": "Horizon Start",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mode": {
+            "const": "verify_fixed_plan",
+            "default": "verify_fixed_plan",
+            "title": "Mode",
+            "type": "string"
+          },
+          "nominal_assumptions": {
+            "$ref": "#/components/schemas/PlanRequest"
+          },
+          "plan_id": {
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "runtime_seconds": {
+            "title": "Runtime Seconds",
+            "type": "number"
+          },
+          "solver": {
+            "const": "exhaustive_finite_model_checker",
+            "default": "exhaustive_finite_model_checker",
+            "title": "Solver",
+            "type": "string"
+          },
+          "solver_status": {
+            "enum": [
+              "EXHAUSTED",
+              "TIME_LIMIT",
+              "CASE_LIMIT",
+              "INVALID_MODEL"
+            ],
+            "title": "Solver Status",
+            "type": "string"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "SAFE",
+              "UNSAFE",
+              "UNKNOWN"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total_cases": {
+            "title": "Total Cases",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "worst_case": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Simulation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "worst_case_assignment": {
+            "items": {
+              "$ref": "#/components/schemas/UncertaintyAssignment"
+            },
+            "title": "Worst Case Assignment",
+            "type": "array"
+          },
+          "worst_case_proven": {
+            "default": false,
+            "title": "Worst Case Proven",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "plan_id",
+          "revision",
+          "status",
+          "solver_status",
+          "runtime_seconds",
+          "horizon_start",
+          "horizon_end_exclusive",
+          "assumptions",
+          "nominal_assumptions",
+          "fixed_actions",
+          "dimension_count",
+          "total_cases",
+          "checked_cases",
+          "coverage_complete",
+          "statement",
+          "generated_at"
+        ],
+        "title": "VerificationResult",
+        "type": "object"
+      },
+      "VerificationTraceEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "action_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Action Ids",
+            "type": "array"
+          },
+          "event": {
+            "$ref": "#/components/schemas/FinancialEvent"
+          }
+        },
+        "required": [
+          "event"
+        ],
+        "title": "VerificationTraceEvent",
         "type": "object"
       },
       "Workspace": {
@@ -2443,6 +2992,76 @@
           }
         },
         "summary": "Create Session"
+      }
+    },
+    "/api/verifications": {
+      "get": {
+        "operationId": "verification_history_api_verifications_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VerificationResult"
+                  },
+                  "title": "Response Verification History Api Verifications Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verification History"
+      }
+    },
+    "/api/verify": {
+      "post": {
+        "operationId": "verify_fixed_plan_api_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify Fixed Plan"
       }
     },
     "/api/workspace": {

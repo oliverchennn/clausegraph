@@ -1,25 +1,34 @@
-# Three-minute demonstration
+# Three-minute ClauseGraph Verify demonstration
 
-Use synthetic documents only. Run the API and frontend using README commands, then open the workspace. Do not imply sponsor requests happened when the interface says offline/unavailable.
+Use only the prominently labeled synthetic demo. No model calls or cloud credentials are needed for this flow. Reset a disposable synthetic session before rehearsing.
 
-Frame the demo around one question: **which documented action gets this person through the cash gap, and what could make it fail?** Show novelty through interacting clauses, impact through the change in minimum cash, and technical depth by following evidence into a permitted solver action. These are the product priorities in [HACKATHON_MVP.md](HACKATHON_MVP.md), not claims about an official judging rubric. The sequence below uses implemented features; the proposed trace/comparison/stress-test additions are not prerequisites.
+## 0:00–0:35 — source to nominal plan
 
-## 0:00–0:35 — establish the problem
-Open the labeled synthetic demo. Show $2,000 opening cash, $1,600 rent on day 7, $800 other payments before day 20, and $900 paycheck on day 20. The baseline minimum is −$400, with $500 remaining at the end. Dates use September 1, 2026 as day 0.
+Show the $2,000 opening cash and six synthetic sources. The baseline minimum is −$400. Open the approved installment shift and its exact quote, page/version, separate evidence/review/approval states and execution deadline. CP-SAT moves the $450 installment to September 26: minimum $50, ending $500. This is timing relief, not savings. The unresolved assistance benefit remains excluded.
 
-## 0:35–1:10 — follow the evidence
-Open the recommended payment-shift action and its evidence drawer. Show the exact quote, source page/version, separate reviewed/approved states, and execution deadline. The $450 installment moves to day 25; minimum cash becomes $50 and ending cash stays $500. Explain that the payment was moved, not saved. No message or cancellation is sent.
+## 0:35–1:20 — declare what could change
 
-## 1:10–1:45 — expose a bad interaction
-Inspect the phone cancellation graph and source clause. Cancelling removes a $60 payment but accelerates the existing $480 device principal. Compare that scenario: cash worsens by $420 over this horizon. The original device debt is relocated once, never duplicated. Housing, utilities and food remain protected.
+Open Verify plan. The saved action schedule and dates stay fixed. Select the projected paycheck and explicitly declare September 21–28 inclusive as a user assumption, with a rationale. No probabilities are invented. Run verification. Explain that all eight dates are checked through the same evidence gates and integer-cent financial transitions used by the planner.
 
-The current comparison forces cancellation but permits other eligible actions, including the installment shift. Show its actual selected actions and computed balances. The README's −$820 minimum is **cancellation alone**, not necessarily this optimized forced-action comparison. Recalculate using recorded assumptions before the next approval-change step.
+## 1:20–2:00 — show the exact failure
 
-## 1:45–2:20 — change an approval
-Set the installment shift approval to denied in rule review, then recalculate. The minimum returns to −$400. The shortfall diagnostic identifies the first negative date and the $400 additional cash required, without adding fictitious funding. Re-enable approved after the comparison. Pending/denied assumptions belong only in labeled conditional scenarios.
+Show Unsafe, complete coverage, solver status and −$400 worst minimum. The first deterministic counterexample is payday September 27, with the first shortfall on September 26 at −$400. Follow the counterexample chart line and event timeline back to the installment/paycheck source evidence. The nominal plan remains saved unchanged. If approval uncertainty is enabled, denied/pending outcomes fail authorization; no unauthorized cash trace is presented as a permitted plan.
 
-## 2:20–2:45 — show review and privacy
-Open the assistance guide. Eligibility and date are unresolved, so its possible $300 benefit is excluded. Demonstrate an editable fact and explicit condition review. Point out consent before external processing, the private session, and deletion controls. Upload the same synthetic document twice to show per-session deduplication.
+## 2:00–2:40 — state exactly what is proved
 
-## 2:45–3:00 — finish with an executable checklist
-Open the draft request and download the evidence summary. Narration uses ElevenLabs only when configured and explicitly requested. Sponsor status shows what is configured/live versus synthetic. The next step is a person confirming the request; the app never submits it.
+Use the September 21–26 preset and run again: Verified Safe for all six dates, within the displayed horizon and assumptions only. Say explicitly that narrowing the model does not fix the broader eight-date failure.
+
+For the broader model, show the already-run output of `python scripts/verify_demo.py`: a separate CP-SAT optimization at the allowed September 28 payday proves the best permitted schedule still reaches −$400. Thus no schedule can be safe for every date in the eight-case model. The script verifies the same fixed schedule for all eight cases after adding $400 of hypothetical opening cash, establishing a tight bounded cash diagnostic. It does not create funding, submit an action, or claim general robust synthesis.
+
+## 2:40–3:00 — distinguish the semantic model from the proof
+
+Show `python scripts/eval_nemotron.py`: five native-text synthetic gate cases, including deliberately wrong date/amount candidates that are rejected. This is a local reproducibility check, not live Nemotron accuracy. Nemotron's role is prose → typed rule candidates, followed by source/human/approval gates; it never computes the money or verification result. The sponsor truth table labels missing/unverified services honestly. End with source review and a human action checklist; the app executes no payments, cancellations, applications or messages.
+
+## Rehearsal commands and caveats
+
+- `python scripts/verify_demo.py` — complete synthetic verification, no-safe-schedule proof, and hypothetical cash diagnostic.
+- `python scripts/eval_nemotron.py` — five offline semantic gate cases, zero external calls.
+- `python scripts/eval_nemotron.py --live --consent-external` — only with an authorized configured NVIDIA key; sends the synthetic corpus and may consume quota. No live result is claimed in this delivery.
+- `npm --prefix frontend run test:e2e` — real local API browser coverage, including verification and original workflows.
+
+SAFE is bounded to the declared Cartesian product and daily closing balances over the shown horizon. Large ranges/time limits and unresolved evidence produce Unknown unless a concrete failure is found. Future obligations remain represented beyond the horizon; they are not savings. General robust synthesis, intraday settlement, correlations and hidden obligations are outside this implementation.
