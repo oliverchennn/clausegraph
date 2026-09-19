@@ -436,6 +436,8 @@ export interface components {
              * @default false
              */
             consent: boolean;
+            /** Consent Provider */
+            consent_provider?: string | null;
             /** File */
             file: string;
         };

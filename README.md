@@ -2,6 +2,12 @@
 
 An evidence-backed emergency cash planner: uploaded clauses become reviewed rules, a dependency graph and a deterministic action plan. It never sends requests, applies for benefits, cancels services or moves money.
 
+## Hackathon focus
+
+The MVP demonstrates a complete chain from **source clause → reviewed rule → dependency graph → constrained action schedule → cash projection**. Its novelty is reasoning over interacting clauses; its intended impact is helping people bridge cash timing gaps while preserving essentials; its technical depth is the evidence-gated rule compiler and deterministic solver. The synthetic demo moves minimum cash from −$400 to $50 without changing ending cash or claiming savings.
+
+See [HACKATHON_MVP.md](docs/HACKATHON_MVP.md) for the assessed feature gaps, delivery order and acceptance criteria. The next recommended additions are a decision trace and side-by-side comparisons, with bounded stress testing as a stretch goal. These additions are proposed; the existing demo and current live-provider limitations are documented below.
+
 ## Run locally
 
 Requires Python 3.12 and Node.js 22+. From the repository root:
@@ -64,7 +70,9 @@ CI checks schema drift, lint, types, engine/API tests, a production build and br
 
 ## Providers and deployment
 
-The synthetic demo makes no model calls. Real uploads can extract native PDF/text/CSV locally; external extraction requires consent and configured Nemotron/Gemini credentials. Missing credentials and failed verification are visible and do not silently switch to fixtures. ElevenLabs speech is optional and requires fact confirmation. Model IDs/base URLs are configurable; availability must be smoke-tested with your account using `python scripts/smoke_providers.py` (configured live calls may consume credits).
+The synthetic demo makes no model calls. Real uploads can extract native PDF/text/CSV locally. External extraction, evidence checking and scanned-page transcription default to NVIDIA and require consent plus only `NVIDIA_API_KEY`: Lightning extracts, while `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` checks evidence and reads scanned pages. Set `EVIDENCE_PROVIDER=gemini` and `GEMINI_API_KEY` only to explicitly opt into Google verification/OCR. No OpenAI key is needed and there is no automatic paid-provider fallback. See [the model decision](docs/decisions/003-nvidia-evidence-default.md) for SteelHacks/free-endpoint sources and tradeoffs.
+
+NVIDIA image processing accepts at most four source pages per request; split larger scans. Native PDF text limits are unchanged. Both model passes can make correlated mistakes: agreement never replaces exact-source checks or human review. Missing credentials and failed verification remain visible and do not silently switch to fixtures. ElevenLabs speech is optional and requires fact confirmation. Model IDs/base URLs are configurable; check account availability using `python scripts/smoke_providers.py` (configured calls consume quota and may consume provider credits).
 
 [SPONSORS.md](docs/SPONSORS.md) records implementation and actual live-test status. [DEPLOYMENT.md](docs/DEPLOYMENT.md) explains Tiger Data, private Spaces, migrations and the DigitalOcean App Platform template. No paid resources have been provisioned. Keep populated `.env` files and session bearer tokens private.
 

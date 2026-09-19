@@ -1,8 +1,55 @@
 # Integration handoff
 
-Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegraph`. Root owns canonical schemas, fixtures, manifests/locks, generated types, migrations, CI and deployment. The original README-only repository is now a working local vertical slice. No cloud resources were provisioned or remote commits pushed.
+Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegraph`. Root owns canonical schemas, fixtures, manifests/locks, generated types, migrations, CI and deployment. The original README-only repository is now a working local vertical slice. No cloud resources were provisioned. The user published the integration branch and merged PR #1 before opening PR #2.
 
-## Integrated work
+## Latest change: reconcile squash-merge history for PR #2 (2026-09-19)
+
+Branch: `codex/integration`. The user's latest commit `34014a2` was clean and already published; no work was lost. PR #1 had squash-merged integration through `29e7426` into `main` as `b547df2`. Those two commits have the identical Git tree `df51c7f0d00a0c7283a912573e22f67b9b2c3c6b`, but different ancestry. Continuing the old integration branch caused PR #2 to compare from the original repository commit and report duplicate add/add conflicts.
+
+Repair: preserved `34014a2` in local branch `codex/backup-integration-before-pr2-fix`, then performed a normal merge of `origin/main`. Resolved the 23 conflicts to the saved integration versions because main's entire tree is already present in the older integration ancestor. This is a history reconciliation, with no discarded main-only work and no rebase or force-push. The merge's first parent retains the user's latest commit; its second parent records main. Local `main` and the three lane worktrees are left untouched.
+
+Checks: fresh GitHub PR metadata matched both local remote-tracking SHAs. Before the documentation update, `git diff --cached --exit-code codex/backup-integration-before-pr2-fix` and `git diff --exit-code` both passed: all tracked files exactly matched the saved integration snapshot after conflict resolution. Final change from that snapshot is limited to this handoff and RESUME guidance; no runtime, dependencies or API contracts changed, so application tests are not rerun for this repair. No unresolved index entries or diff whitespace errors remain.
+
+Publishing uses an ordinary fast-forward push to the existing PR #2 branch, never a forced update. Verify GitHub reports it mergeable before merging. Future work after a squash merge should start from refreshed `origin/main`, or explicitly merge main back into a reused branch first; see [RESUME.md](../RESUME.md).
+
+## Previous change: hackathon MVP assessment (2026-09-19)
+
+Branch: `codex/integration`, current root checkout; baseline commit `afdc0f0`. Read all repository Markdown docs, contributor instructions and lane handoffs, then inspected canonical contracts, engine results/gates, API persistence/export, dashboard comparisons, graph/chart and existing acceptance tests. No implementation lane was reopened.
+
+Completed: added `docs/HACKATHON_MVP.md` with product positioning, implemented-versus-proposed inventory, ranked improvements, ownership/dependencies, acceptance criteria, evaluation measures and a feature-freeze scope. Added persistent hackathon priorities to AGENTS.md and linked the roadmap from README, RESUME, WORKSTREAMS and DEMO. Clarified that the UI's forced cancellation comparison can also select the payment shift; the standalone cancellation figure must not be presented as that different action set.
+
+Recommendation: rehearse/validate the existing workflow, then implement a decision trace and side-by-side previews that preserve the active plan. Bounded stress testing is the stretch goal; review prioritization and history UI follow. Existing `POST /api/plan` persists the comparison and the dashboard starts comparisons from a fresh request, so safe previews require coordinated API/UI semantics rather than only a second chart.
+
+Changed interfaces: none. Runtime code, dependency versions, fixtures and generated contracts unchanged. No new live-provider/deployment claim and no paid provisioning. All additions are documentation; feature implementation remains proposed.
+
+Checks for this assessment:
+
+- `.venv/Scripts/python.exe -m pytest backend/tests/test_demo.py backend/tests/test_engine.py backend/tests/test_graph.py -q`: **57 passed in 2.51s**.
+- `git -c safe.directory=C:/Users/vzhu0/PycharmProjects/clausegraph diff --check`: **passed**; only existing Git line-ending normalization warnings.
+- Python UTF-8 Markdown check over the seven changed/new docs: **23 relative links resolve; no trailing whitespace**. No full backend/frontend/browser rerun was performed for these Markdown-only edits; earlier broad results below remain historical.
+
+Blockers/next steps: no blocker to documentation delivery or local feature work. Live extraction remains unverified and needs server-side credentials, explicit consent and a full synthetic upload/review/plan check. Start future implementation from the scoped acceptance criteria in HACKATHON_MVP.md; coordinate new trace/preview contracts through integration and regenerate OpenAPI/types if they change.
+
+## Previous change: NVIDIA-only default (2026-09-19)
+
+User requested a free-first hackathon replacement for required Gemini. NVIDIA Nano Omni now verifies evidence and transcribes scanned pages, alongside existing Nemotron Lightning extraction, using one NVIDIA_API_KEY. Gemini remains explicit opt-in via EVIDENCE_PROVIDER=gemini; no automatic fallback or OpenAI integration. Rationale, official sources and limits: docs/decisions/003-nvidia-evidence-default.md.
+
+Changed interfaces: settings add evidence_provider, nvidia_evidence_model and bounded nvidia_evidence_reasoning_budget; upload accepts optional consent_provider and new queued jobs persist the selected recipient. Browser consent identifies NVIDIA only by default; stale consent or a queued provider change fails before sending data. OpenAPI and TypeScript contracts regenerated. Provider status/review notes identify the selected model. Existing deterministic checks, human source attestation and approval gates remain intact.
+
+New source-page rendering uses pinned pypdfium2/Pillow in a killable 20-second subprocess, at most four pages/request, 1600px long edge and 2 MiB/image. Larger image sets require splitting. JSON, response completion, rule coverage and OCR page coverage are validated; errors fail closed. Same-family model agreement is not independent proof. PDF workers have time bounds, not OS memory quotas.
+
+Exact latest checks:
+
+- Backend: **140 passed, 1 skipped in 12.40s**, two existing dependency deprecation warnings. PostgreSQL test skipped without POSTGRES_TEST_URL. Includes both evidence providers, missing/malformed/duplicate checks, rendering/timeout/image provenance, no fallback and consent drift.
+- Ruff, TypeScript, ESLint and production build: **passed**; first-load JS 138 kB.
+- Real-API Playwright: **2 passed in 29.8s**; includes NVIDIA-only consent copy, full workflow and mobile overflow. Existing FORCE_COLOR/allowedDevOrigins warnings are nonfatal.
+- OpenAPI export and generated frontend types: **passed**. pip check: no broken requirements. Locked pip audit: no known vulnerabilities. No npm dependency changes; earlier npm audit found zero vulnerabilities.
+- Compose config validates; Docker daemon remains unavailable, no containers/cloud provisioned.
+- Preview restarted via scripts/dev.py: API health ok/sqlite/private-local; frontend HTTP 200. Missing-key smoke reports NVIDIA extraction/evidence and ElevenLabs unavailable. Configured but unselected Gemini is not called; no live inference or credits consumed.
+
+Next: add NVIDIA_API_KEY server-side, run the bounded provider smoke and synthetic native/scanned upload with explicit consent. Live endpoint availability and accuracy remain unverified. Do not expose keys in chat or commit .env. Local preview is left running; check ports before starting another instance.
+
+## Original integrated work
 
 - Engine lane: initial `646d0ff`, safety corrections `549c293` and `4e4b870`. Evidence-backed DSL, bounded native PDF extraction, typed dependency graph, deterministic simulation/CP-SAT, exhaustive small-case cross-checks.
 - API lane: `3a60112`, `cc245b9`, `6b22106`. Private/versioned upload and original retrieval, explicit evidence attestation/conditions/approval review, leased worker, consent-gated configurable provider adapters, durable chart/history data, cache invalidation and deletion. No metadata changes after initial migrations.
@@ -12,7 +59,7 @@ Branch: `codex/integration`, checkout `C:/Users/vzhu0/PycharmProjects/clausegrap
 - Source deletion retains known debt amount/date/essential flags under generic titles with dangling provenance and an unresolved plan; it does not manufacture cash. Model candidates cannot label bills as income or assert actual transactions.
 - Next type checking runs `next typegen && tsc --noEmit`, so fresh checkouts generate Next's route declaration before checking its generated next-env reference.
 
-## Exact checks (2026-09-19)
+## Original delivery checks (2026-09-19, before provider switch)
 
 From the root unless a frontend prefix is shown:
 

@@ -75,6 +75,8 @@ test("complete synthetic plan, evidence, approval, scenario, document and privac
     await page.getByRole("button", { name: "Add documents", exact: true }).click();
     await page.getByRole("dialog").locator('input[type="file"]').setInputFiles({ name: "synthetic-browser-note.txt", mimeType: "text/plain", buffer: Buffer.from("SYNTHETIC BROWSER TEST. Review pending. No financial obligations stated.") });
     await expect(page.getByRole("checkbox", { name: "I consent to external document processing." })).not.toBeChecked();
+    await expect(page.getByRole("dialog")).toContainText("may be sent to NVIDIA for extraction and evidence checks");
+    await expect(page.getByRole("dialog")).not.toContainText("NVIDIA and Google");
     await page.getByRole("dialog").getByRole("button", { name: "Upload document" }).click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
   };
