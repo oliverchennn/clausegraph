@@ -1,0 +1,107 @@
+# Template only. Replace repository/secret placeholders in App Platform.
+# No resources are provisioned by adding this file.
+name: clausegraph
+region: nyc
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /api
+      component:
+        name: api
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /
+      component:
+        name: frontend
+services:
+  - name: frontend
+    github: &source
+      repo: YOUR_GITHUB_USER/clausegraph
+      branch: main
+      deploy_on_push: false
+    source_dir: /
+    dockerfile_path: frontend/Dockerfile
+    http_port: 3000
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    health_check:
+      http_path: /
+  - name: api
+    github: *source
+    source_dir: /
+    dockerfile_path: backend/Dockerfile
+    http_port: 8000
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    health_check:
+      http_path: /api/health
+    envs: &backend_envs
+      - key: ENVIRONMENT
+        value: production
+        scope: RUN_TIME
+      - key: DATABASE_URL
+        value: REPLACE_WITH_TIGER_DATA_POSTGRESQL_URL_WITH_SSL
+        type: SECRET
+        scope: RUN_TIME
+      - key: CORS_ORIGINS
+        value: ${APP_URL}
+        scope: RUN_TIME
+      - key: NVIDIA_API_KEY
+        value: REPLACE_WITH_NVIDIA_KEY
+        type: SECRET
+        scope: RUN_TIME
+      - key: NVIDIA_MODEL
+        value: nvidia/nemotron-3.5-lightning-30b-a3b
+        scope: RUN_TIME
+      - key: GEMINI_API_KEY
+        value: REPLACE_WITH_GEMINI_KEY
+        type: SECRET
+        scope: RUN_TIME
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+        scope: RUN_TIME
+      - key: ELEVENLABS_API_KEY
+        value: REPLACE_OR_LEAVE_BLANK
+        type: SECRET
+        scope: RUN_TIME
+      - key: ELEVENLABS_VOICE_ID
+        value: REPLACE_OR_LEAVE_BLANK
+        scope: RUN_TIME
+      - key: SPACES_ENDPOINT
+        value: https://nyc3.digitaloceanspaces.com
+        scope: RUN_TIME
+      - key: SPACES_REGION
+        value: nyc3
+        scope: RUN_TIME
+      - key: SPACES_BUCKET
+        value: REPLACE_WITH_PRIVATE_BUCKET
+        scope: RUN_TIME
+      - key: SPACES_ACCESS_KEY_ID
+        value: REPLACE_WITH_SCOPED_KEY
+        type: SECRET
+        scope: RUN_TIME
+      - key: SPACES_SECRET_ACCESS_KEY
+        value: REPLACE_WITH_SCOPED_SECRET
+        type: SECRET
+        scope: RUN_TIME
+workers:
+  - name: worker
+    github: *source
+    source_dir: /
+    dockerfile_path: backend/Dockerfile
+    run_command: python -m clausegraph.worker
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    envs: *backend_envs
+jobs:
+  - name: migrate
+    kind: PRE_DEPLOY
+    github: *source
+    source_dir: /
+    dockerfile_path: backend/Dockerfile
+    run_command: python scripts/migrate.py
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    envs: *backend_envs
