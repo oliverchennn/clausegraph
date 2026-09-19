@@ -4,7 +4,7 @@ The active shared coordination board is the agent message channel. Each lane is 
 
 | Lane | Owner | Branch / checkout | Scope | State |
 |---|---|---|---|---|
-| Integration | root | current main checkout | schemas, manifests/lockfiles, fixtures, migrations, CI, final tests | active |
+| Integration | root | codex/integration / current checkout | schemas, manifests/lockfiles, fixtures, migrations, CI, final tests | active |
 | Extraction/engine | engine agent | codex/engine / .worktrees/engine | engine.py, extraction.py, graph.py, tests/test_engine.py, tests/test_extraction.py, tests/test_graph.py, handoff | assigned |
 | API/infrastructure/integrations | API agent | codex/api / .worktrees/api | api.py, storage.py, providers.py, worker.py, config.py, tests/test_api.py, Docker/deploy, handoff | assigned |
 | Frontend | frontend agent | codex/frontend / .worktrees/frontend | frontend except package.json, lockfile, generated api-types.ts; browser test; handoff | assigned |

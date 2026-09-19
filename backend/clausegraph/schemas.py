@@ -290,3 +290,31 @@ class DraftResponse(Contract):
     subject: str
     body: str
     sent: Literal[False] = False
+
+
+class SessionCreate(Contract):
+    demo: bool = False
+
+
+class DraftRequest(Contract):
+    use_provider: bool = False
+    consent: bool = False
+
+
+class AudioRequest(Contract):
+    consent: bool = False
+
+
+class TranscriptResponse(Contract):
+    text: str
+    facts_confirmed: Literal[False] = False
+
+
+class DeleteResponse(Contract):
+    deleted: bool
+
+
+class HealthResponse(Contract):
+    status: str
+    database: str
+    storage: str
