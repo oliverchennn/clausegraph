@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "rules": [
+    {"patterns": ["docs/handoffs/dev-b/*.md"], "owner": "dev-b"},
+    {"patterns": ["frontend/package.json", "frontend/package-lock.json", "frontend/src/lib/api-types.ts", "frontend/.npmrc", "frontend/Dockerfile"], "owner": "dev-a"},
+    {"patterns": ["frontend/*"], "owner": "dev-b"},
+    {"patterns": ["backend/*", "scripts/*", "fixtures/*", "migrations/*", "docs/*", ".github/*", "deploy/*"], "owner": "dev-a"},
+    {"patterns": ["AGENTS.md", "CLAUDE.md", "README.md", "pyproject.toml", "compose.yaml", ".gitignore", ".gitattributes", ".env.example", ".nvmrc", ".node-version", ".dockerignore"], "owner": "dev-a"}
+  ]
+}

@@ -1,0 +1,11 @@
+# Developer A: workflow bootstrap
+
+Branch: codex/dev-a/review-workflow. Starting main commit:9858956 (merged PR4). Owner: A, sole backend/integration implementation agent. Allowed: A-owned workflow/scripts/tests/toolchain/shared docs only; no B frontend source or handoffs. No new runtime API dependency.
+
+Implemented: first-match path ownership; trusted-base PR checker including rename source/destination, required task handoff and conflict markers; pre-push hook that fetches main and checks the actual pushed branch/SHA against base policy and current ancestry. Installer preserves/chains existing hooks and stops without changing custom hook paths. Exact Node22.23.2/npm10.9.8 pin and Linux/Windows/macOS clean-install jobs. Shared instructions now use two developers and separate task handoffs, with one integration owner updating central docs.
+
+Checks:18 workflow tests passed in10.80s, including actual local bare-remote push, HEAD publication, preserved executable hook arguments/stdin, cross-lane rejection, stale ancestry and base-policy isolation; Ruff passed. Pinned Windows npm ci installed439 packages in50s. npm lock regeneration added engine metadata and previously implicit bundled WASM metadata; no declared package versions changed. B agent reviewed the final hook/Docker/CI changes with no remaining blocker. Initial shell mktemp and literal HEAD failures were caught by real push regression and corrected with the Python runner. Remote CI remains pending publication. Toolchain downloaded into ignored .worktrees/.toolchain, verified against nodejs.org SHA256; node--version22.23.2/npm--version10.9.8. No system-wide Node changes.
+
+Limits: the private repository's current GitHub plan rejects branch-protection setup with HTTP403; manual merges cannot be prevented. Initial bootstrap uses candidate policy because base has none; future checks execute base policy/checker. No live providers, billing changes or public visibility change. Each developer must install hooks in their own clone. Branch names classify lanes, not identities.
+
+Next: B read-only review; complete checks and merge bootstrap, then start A review-queue backend on a fresh branch. B may audit/refactor but must consume merged backend contracts before final queue wiring. Root will consolidate actual remote check results in a later A-owned delivery record.

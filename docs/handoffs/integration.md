@@ -1,4 +1,6 @@
-# Integration handoff
+# Integration history
+
+Current assignments/checkpoint are maintained in [WORKSTREAMS](../WORKSTREAMS.md) and [RESUME](../RESUME.md). Entries below are historical; new A tasks have separate handoffs under dev-a, and B tasks under dev-b. Do not append lane progress to this shared historical record.
 
 ## Latest repair: synchronize PR #4 with main (2026-09-19)
 

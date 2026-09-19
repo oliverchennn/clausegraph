@@ -1,20 +1,46 @@
-# Work board
+# Two-developer work board
 
-## ClauseGraph Verify delivery lanes
+This is the current assignment and ownership record. The original engine/API/frontend lane branches and old handoffs are historical. Start from freshly fetched main; PR4 is merged as 9858956.
 
-Root reopened isolated lanes from clean integration commit d5cd282. Engine `codex/verify-engine` / `.worktrees/verify-engine` completed 17a5743 (integrated as 151b424); API `codex/verify-api` / `.worktrees/verify-api` completed b12cec8 (integrated as d6a786b); frontend `codex/verify-frontend` / `.worktrees/verify-frontend` completed e0a3963 (integrated as a6a5cdb). Root owns uncertainty contracts, generated types, migration003, semantic eval, impossibility/cash demo, docs and final checks. Original lane checkouts are untouched. Latest work is governed by [verification handoff](handoffs/verification.md); the older assignments below are historical. No implementation agents remain assigned pending work after integration.
+## Exclusive lanes
 
-The active shared coordination board is the agent message channel. Each lane is claimed below; checkpoints and interface proposals must also be published live to integration. Separate worktrees prevent file clobbering. Integration order: foundation/contracts -> engine+fixtures -> API+worker -> UI -> integration/CI/deployment checks.
+| Developer | Owns | Task handoffs |
+|---|---|---|
+| A: backend/integration | backend, shared schemas/generated types, dependencies/locks, migrations, fixtures, scripts, CI/deployment, shared docs | One new file per task under handoffs/dev-a/ |
+| B: frontend/demo experience | frontend components/state/style/accessibility/browser tests, excluding A's manifests/generated types/.npmrc/Dockerfile | One new file per task under handoffs/dev-b/ |
 
-| Lane | Owner | Branch / checkout | Scope | State |
-|---|---|---|---|---|
-| Integration | root | codex/integration / current checkout | schemas, manifests/lockfiles, fixtures, migrations, CI, final tests | complete locally; external validation documented |
-| Extraction/engine | engine agent | codex/engine / .worktrees/engine | engine.py, extraction.py, graph.py, tests/test_engine.py, tests/test_extraction.py, tests/test_graph.py, handoff | integrated; tests passing |
-| API/infrastructure/integrations | API agent | codex/api / .worktrees/api | api.py, storage.py, providers.py, worker.py, config.py, tests/test_api.py, handoff | integrated; tests passing |
-| Frontend | frontend agent | codex/frontend / .worktrees/frontend | frontend except package.json, lockfile, generated api-types.ts; browser test; handoff | integrated; build and browser tests passing |
+The first match in [.github/ownership.json](../.github/ownership.json) controls files. One implementation agent per developer. No editing another developer's task handoff. Unassigned paths fail checks until an A-owned policy PR is merged.
 
-Shared changes require a message to root before implementation. Engine/public APIs are specified in ARCHITECTURE.md. API response models generate the committed OpenAPI and TypeScript contracts. Root also owns Docker/deployment configuration and final verification. See docs/handoffs/integration.md and docs/RESUME.md for integrated status; lane handoffs preserve their narrower test scope.
+## Ordered delivery
 
-## Next product work
+| Order | Developer A | Developer B | Gate |
+|---|---|---|---|
+| 1 | Workflow rules, base-policy CI, pre-push hook, pinned toolchain | Read-only demo audit, then install checks | Bootstrap merged and guards validated |
+| 2 | Read-only review queue API/shared blocker descriptions/generated contracts | Extract overview/review presentation while preserving behavior | Backend contract PR merged before API consumption |
+| 3 | Queue/gate regression tests; prepare synthetic provider checks | Next-review UI, evidence controls, stale-response and browser coverage | Source -> valid review -> updated plan works |
+| 4 | Fix observed backend problems and record actual validation | Loading/errors/empty states, keyboard/mobile clarity | Complete synthetic story and failure state work |
+| 5 | Full integration checks, sequential green merges, shared delivery record | Three-minute rehearsal and local fallback | Feature freeze; only demo-blocking fixes |
+| 6: later | Validate existing history/delete contracts | Read-only plan/verification history, revision labels | Separate future task |
+| 7: later | Validate existing uncertainty limits | Amount ranges and multiple uncertainty controls | Separate future task |
+| 8: later | Specify robust synthesis/correlations/expense uncertainty | Participate in UX specification | Separate design before implementation |
 
-Root implemented the judge-flow follow-up on `codex/judge-flow` on 2026-09-19. [HACKATHON_MVP.md](HACKATHON_MVP.md) records the acceptance criteria now covered by typed decision traces and side-effect-free side-by-side previews. OpenAPI/types, backend regression tests, clean frontend install/build and real-API desktop/mobile browser tests were refreshed. This judge-flow work is now merged with ClauseGraph Verify and the graph cycle refactor on codex/integration. Freeze the combined local flow and rehearse; live-provider/cloud validation remains separate. Preserve the earlier branch/worktree ownership records as historical integration evidence.
+## Active assignments
+
+- A workflow: codex/dev-a/review-workflow, base9858956; owned files from A policy only. Deliver workflow/checks/toolchain and shared roadmap. Handoff: [review-workflow](handoffs/dev-a/review-workflow.md).
+- A queue: starts on a fresh codex/dev-a/review-queue branch after workflow integration. Own backend/contracts/tests and shared feature docs; no frontend implementation edits.
+- B guidance: codex/dev-b/review-guidance, base9858956. Own frontend excluding shared files, plus `handoffs/dev-b/review-guidance.md`. Audit/refactor may proceed immediately; merge workflow and backend contract commits from main before final API wiring/validation. The handoff link becomes available when B's PR merges.
+
+## Per-task process
+
+1. Commit or preserve existing work. Fetch origin and create a new task worktree/branch from origin/main; never reuse a squash-merged branch.
+2. Record starting commit, allowed paths, required contract commit and acceptance checks in your new handoff. Use PR links and handoffs across separate developer sessions.
+3. Stay inside your lane. Shared contract/dependency changes go through A first; use separate PRs rather than a mixed-lane commit.
+4. Update only your task handoff with exact checks and limits. A consolidates shared docs; B does not append to DEMO, RESUME, HACKATHON_MVP, SPONSORS or this board.
+5. Before publishing, fetch/merge main. The pre-push hook checks ancestry, lane ownership, handoff and conflict markers. Publish with git push -u origin HEAD.
+6. Review and merge sequentially: A integrates B's reviewed green PR; A's PR gets B review first. After squash merge, retire the branch and create the next one from updated main.
+
+## Install and limits
+
+Use Python3.12, Node22.23.2 and npm10.9.8. Run python scripts/install_hooks.py from an activated virtual environment after bootstrap. Existing pre-push hooks are backed up and chained; an existing core.hooksPath causes a non-destructive stop with chaining instructions. Each clone installs independently; linked worktrees share the repository hook. With a custom hook, fetch origin/main then invoke the base branch's scripts/check_workflow.py with --require-current and each actual pushed SHA/branch; do not silently replace existing hooks.
+
+CI runs the trusted base checker/policy. During the first bootstrap only, the candidate checker is reviewed and tested because no base policy exists. A branch-name/path policy is an accidental-conflict guard, not proof of author identity. GitHub required-check enforcement is unavailable for this private repository's current plan. A must follow the agreed green-check/review rule; do not change visibility or billing.

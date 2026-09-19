@@ -1,11 +1,11 @@
 # ClauseGraph contributor contract
 
-Read this file and your lane's `docs/handoffs/*.md` before work. This repository is an executable financial decision engine. Preserve user changes.
+Read this file, docs/WORKSTREAMS.md and your assigned task handoff before work. This repository is an executable financial decision engine. Preserve user changes.
 
 ## Hackathon product priorities
 Read [docs/HACKATHON_MVP.md](docs/HACKATHON_MVP.md) before choosing or expanding feature scope. ClauseGraph is a hackathon MVP: prioritize a reliable end-to-end demonstration of **novelty, user impact and technical depth**. Make the chain from source clause to reviewed rule, dependency, permitted action and cash consequence visible. Prefer a small complete workflow over additional integrations or broad financial-app features.
 
-The existing local vertical slice, auditable decision traces, nonmutating scenario previews and ClauseGraph Verify bounded fixed-plan verification are the baseline. Preserve the separation between nominal optimization, fixed-plan verification and any future robust synthesis. Read docs/handoffs/verification.md for the verification contract, guarantees and limits, and docs/handoffs/integration.md for the latest merged state. Validate live extraction separately from the synthetic demo. Keep implemented, proposed and live-verified capabilities distinct in docs and presentations. All invariants below remain mandatory; hackathon scope does not relax financial correctness, evidence gates or consent.
+The existing local vertical slice, auditable decision traces, nonmutating scenario previews and ClauseGraph Verify bounded fixed-plan verification are the baseline. Preserve the separation between nominal optimization, fixed-plan verification and any future robust synthesis. Read docs/handoffs/verification.md for the verification contract, guarantees and limits, and docs/handoffs/integration.md for historical delivery records; docs/RESUME.md records the current checkpoint. Validate live extraction separately from the synthetic demo. Keep implemented, proposed and live-verified capabilities distinct in docs and presentations. All invariants below remain mandatory; hackathon scope does not relax financial correctness, evidence gates or consent.
 
 ## Invariants
 - All money is integer USD cents and all dates are explicit ISO dates. Only deterministic code computes money.
@@ -33,8 +33,25 @@ The existing local vertical slice, auditable decision traces, nonmutating scenar
 - Shared contracts: `python scripts/export_openapi.py`; `cd frontend && npm run generate:types`.
 - Full local stack: `docker compose up --build`.
 
-## Ownership and coordination
-Integration owner: root agent. Owns schemas, dependency manifests/lockfiles, migrations, fixtures, CI and integration. Lanes: extraction/engine, API/infrastructure/integrations, frontend. Each agent works in a separate `codex/<lane>` branch and `.worktrees/<lane>` checkout. Claim only the lane assigned on `docs/WORKSTREAMS.md`; publish live checkpoints through the agent message channel (the shared active work board), including interfaces and commit IDs. Local documents are durable records, not live synchronization. Do not change shared interfaces silently; propose to integration owner first. Do not install or change dependency versions without owner coordination.
+## Two-developer ownership
+Developer A owns backend/financial logic, canonical schemas, generated OpenAPI/TypeScript, dependencies and lockfiles, migrations, fixtures, scripts, CI/deployment and shared documentation. Developer B owns frontend presentation/state/accessibility/browser tests, except A-owned manifests, generated types, .npmrc and Dockerfile. The first matching rule in .github/ownership.json is authoritative. Unassigned paths require an A-owned policy change on main before work starts.
 
-## Mandatory handoff protocol
-Before each commit/handoff, update affected documentation and lane handoff in the same commit, record exact checks/results and remaining limitations. Regenerate changed API types with the integration owner. Include branch, completed work, changed interfaces, tests, blockers and next steps. Integration owner merges lane commits and runs complete checks. CI enforces API schema/type drift, lint, types, engine/API tests and a complete browser flow.
+Each developer has one active implementation agent at a time. Extra agents may inspect/review without writing. A owns merge coordination. B never edits A's handoffs or central progress docs; A never edits B's task handoffs. Each task has its own docs/handoffs/dev-a/<task>.md or dev-b/<task>.md. Historical lane handoffs are read-only context unless A explicitly corrects the historical record.
+
+Use fresh codex/dev-a/<task> or codex/dev-b/<task> branches from freshly fetched origin/main, with separate .worktrees/<developer>-<task> checkouts. Preserve existing worktrees and uncommitted work. Retire branches after squash merges; never restart work on codex/integration. Never force-push to repair stale ancestry.
+
+## Task and contract protocol
+A's task assignment names the allowed files, starting commit, required contract commits and acceptance checks. Record those in the task handoff before implementation. Separate developer sessions coordinate via committed handoffs and PRs; an agent message channel is supplementary, never the only source of assignments or interface decisions.
+
+Merge shared contract changes first. B merges current main before consuming generated API types; B must request contract/dependency changes from A rather than editing shared files. While waiting, B may audit or refactor behavior that does not depend on an unmerged API.
+
+Before each commit/handoff, update only your own task handoff with completed work, interfaces, exact checks/results and remaining limits. A consolidates shared roadmap/resume/architecture/demo/sponsor docs in A-owned commits. Keep implemented, proposed, fixture-tested and live-verified claims distinct.
+
+## Checks and merging
+Use Python 3.12, Node22.23.2 and npm10.9.8. Install from locks with npm ci; only A may regenerate locks. Run python scripts/install_hooks.py in your activated environment after the workflow bootstrap is merged. Existing custom hook paths require explicit chaining; the installer never overwrites them.
+
+Local pre-push fetches main, checks current ancestry, lane ownership and conflict markers against the base policy, and requires a task handoff. CI uses the base branch policy/checker, checks both sides of renames and runs complete application checks plus Linux/Windows/macOS clean installs. The first workflow PR is the only policy bootstrap.
+
+A merges green PRs sequentially after B's review (B changes require A review). Record reviewer and findings in the PR or handoff. Fetch/merge main and rerun affected checks after intervening changes. This private repository's current GitHub plan cannot enforce required checks: local hooks/CI do not prevent a deliberate manual merge. Keep it private; do not change billing or visibility.
+
+The required hackathon increment is review guidance plus demo polish and rehearsal. History and richer verification controls are ordered follow-ups, not part of this increment; advanced verification needs a separate spec. Preserve every invariant above.
