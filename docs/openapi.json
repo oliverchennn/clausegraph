@@ -1969,6 +1969,64 @@
         "summary": "Delete Document"
       }
     },
+    "/api/documents/{document_id}/original": {
+      "get": {
+        "operationId": "download_original_api_documents__document_id__original_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Download Original"
+      }
+    },
     "/api/evidence/export": {
       "get": {
         "operationId": "export_evidence_api_evidence_export_get",
@@ -2006,6 +2064,33 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/history": {
+      "get": {
+        "operationId": "scenario_history_api_history_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlanResult"
+                  },
+                  "title": "Response Scenario History Api History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Scenario History"
       }
     },
     "/api/intake": {

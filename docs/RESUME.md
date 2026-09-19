@@ -1,57 +1,41 @@
-# Resume ClauseGraph after the model switch
+# ClauseGraph resume / delivery checkpoint
 
-The user requested a pause after the immediate dependency checkpoint to save credits. Do not restart scaffolding or re-read unrelated skills. Continue the original build request when the user says resume.
+The local vertical slice is implemented and integrated on `codex/integration` in `C:/Users/vzhu0/PycharmProjects/clausegraph`. Do not restart scaffolding. Read AGENTS.md and docs/handoffs/integration.md for the current verification record.
 
-## Original request and boundaries
-The complete user brief is in `C:/Users/vzhu0/.codex/attachments/cc5944a0-5a53-4bd4-8a13-811a7cd0fe46/Pasted text.txt`. It asks for a working Next.js/TypeScript/Tailwind + FastAPI/Pydantic/NetworkX/OR-Tools evidence-backed emergency planner, six synthetic documents, exact acceptance arithmetic, live configurable Nemotron/Gemini/ElevenLabs adapters, Tiger Data PostgreSQL jobs/history, private DigitalOcean Spaces and deployment config. No paid provisioning. No automated payments, cancellations, applications or messages. Finish implementation/testing, not architecture alone.
+## What works
 
-Read AGENTS.md, ARCHITECTURE.md, WORKSTREAMS.md and lane handoffs. Sites workflow was inspected initially but deliberately not used: this user explicitly requires the repository's Next.js/FastAPI/DigitalOcean stack. Do not initialize Sites or provision hosting.
+- Six clearly synthetic documents; deterministic integer-cent simulation and CP-SAT optimization. Baseline minimum −40000 cents; approved shift minimum 5000 and ending 50000; denied shift minimum −40000; phone cancellation alone minimum −82000 and ending 8000.
+- Next.js responsive dashboard, cash chart, evidence/condition review, editable intake, dependency graph, approval/date/cash scenarios, conditional labels, unsent drafts, downloads, privacy controls and optional audio UI.
+- Private FastAPI bearer sessions, versioned originals, document deduplication, bounded uploads/PDF parsing, PostgreSQL-compatible leased worker, consent-gated extraction/verification, durable plan assumptions/history/chart series, deletion and conservative retained obligations.
+- Configurable real HTTP adapters for Nemotron/Gemini/ElevenLabs and private Spaces. Missing credentials are visible failures, not synthetic provider success.
+- README, env template, dependency locks, migrations, seed/reset CLI, local launcher, provider smoke CLI, Compose, DigitalOcean template, CI and three-minute demo.
 
-## Repository and isolated lanes
-- Main working checkout: `C:/Users/vzhu0/PycharmProjects/clausegraph`, branch `codex/integration`.
-- Engine checkout: `.worktrees/engine`, branch `codex/engine`.
-- API checkout: `.worktrees/api`, branch `codex/api`.
-- Frontend checkout: `.worktrees/frontend`, branch `codex/frontend`.
-- Each lane has its own implementation checkpoint and handoff. Read each handoff **inside its worktree** until it is integrated; root copies still contain initial assignments.
-- Engine implementation commit: `646d0ff`. Agent reports **65 tests passed in 2.15s**, Ruff passed, exact demo solve passed. No active processes.
-- API implementation commit: `3a60112`. Five modules pass py_compile only; runtime/tests/deployment files remain. Handoff calls out mandatory fixes: consequential-check bypass, caching, original download/evidence confirmation, document lineage and versioned original keys.
-- Frontend implementation commit: `6fe8a40`. Agent was interrupted to honor the pause promptly. Integration saved its existing WIP files and handoff; stylesheet is missing, and no frontend verification has run.
-- Agents were told to stop after a small checkpoint and not continue features. Reuse agents only if they still exist, otherwise spawn bounded lane tasks and preserve their files.
-- Root owns shared schemas, manifests, lockfiles, fixtures, migrations, CI and generated API types. Cherry-pick only lane implementation commits, not their copies of shared integration commits. Shared foundation commits already exist on integration.
-- Git requires a per-command safe-directory override in this sandbox: `git -c safe.directory=C:/Users/vzhu0/PycharmProjects/clausegraph ...`. Use each exact checkout path for worktree commands. Git metadata writes required escalation, already authorized as part of this workflow.
+## Current verification
 
-## Completed integration foundation
-- Canonical Pydantic contracts in `backend/clausegraph/schemas.py`, OpenAPI exporter and initial generated TS types.
-- Canonical dates use `Date` alias to prevent collision with `date` field names.
-- `RuleReview` now includes `conditions` and `evidence_confirmed`. Human approval, evidence validity, confidence and review remain separate.
-- Integer monetary inputs now strict, including fees and rule review amounts.
-- Six synthetic text/CSV documents in fixtures; `clausegraph.demo.load_demo()` returns scenario/documents/rules with exact quote offsets.
-- Day 0 = 2026-09-01, rent160000 day7, phone6000 day10, loan45000 day12, utilities12000 day15, groceries17000 day18, income90000 day20, device48000 day80.
-- Approved `shift-payment` moves installment to day25. `cancel-phone` removes6000 and relocates existing device48000 once. `claim-assistance` remains unresolved and excluded. `rule-shift` controls approval. Payroll is an employer obligation, not an unapproved benefit.
-- Expected baseline minimum -40000, ending50000; shifted minimum5000, ending50000; phone cancellation alone minimum -82000, ending8000.
-- SQL migrations in `migrations/` generated from current API-lane SQLAlchemy metadata, plus actual/projected event aggregate view. `scripts/migrate.py` applies checksum-tracked PostgreSQL migrations; SQLite dev uses metadata.
-- CI schema drift/lint/types/build/pytest/Playwright workflow, seed/reset CLI and three-minute demo script.
+- Integrated backend: **118 passed, 1 skipped**; Ruff passed. PostgreSQL check skips without POSTGRES_TEST_URL. Two Starlette/AnyIO dependency deprecation warnings remain.
+- TypeScript, ESLint and production build passed. Real-API Playwright workflow and mobile overflow checks passed; final integration handoff records the exact last run.
+- Browser visually checked at desktop 1440px and mobile 390px: dashboard, evidence drawer and dependency graph; no observed console errors or horizontal overflow. Temporary viewport override restored.
+- npm audit: 0 vulnerabilities; pip audit: no known vulnerabilities; pip check: no broken requirements (run during this build).
+- Compose configuration validates. Docker daemon unavailable, so no containers or cloud deployment were executed.
+- Missing-key smoke was run against the API: NVIDIA/Gemini/ElevenLabs unavailable, local SQLite reachable, private local storage active.
 
-## Environment and exact checks already run
-- Shared Python venv: `.venv/Scripts/python.exe` (Python 3.12.14).
-- Node v24.12.0, npm11.6.2. Root `frontend/node_modules` installed. Frontend lane may use a junction to it; preserve it.
-- Python dependency pins updated after audit: FastAPI0.141.1, Starlette1.6.0, pypdf6.19.0, python-multipart0.0.32, pytest9.1.1, pytest-asyncio1.4.0. Direct requirements + transitive constraints lock are in backend. `pip-audit` is installed only as a local check tool, not an app dependency.
-- Frontend: Next15.5.25, ESLint9.39.5, Playwright1.63.0, PostCSS8.5.28 override. Other pins in package.json/lock.
-- `npm audit`: **0 vulnerabilities**.
-- `.venv/Scripts/python.exe -m pip_audit --no-deps --disable-pip -r backend/requirements.lock --format columns`: **No known vulnerabilities found**.
-- `.venv/Scripts/python.exe -m pip check`: **No broken requirements found**.
-- `.venv/Scripts/python.exe -m pytest backend/tests/test_demo.py -q -k 'not complete_demo and not cancelling'`: **6 passed, 2 deselected**.
-- Initial canonical OpenAPI export and openapi-typescript generation passed. These generated files are provisional and must be regenerated from the final API; latest review properties are not yet all in generated types.
-- No NVIDIA/Gemini/ElevenLabs/Spaces/DATABASE_URL credential environment names were found. No live sponsor request or deployment occurred.
-- Docker CLI exists but daemon is not running. PostgreSQL integration test is added and skips without `POSTGRES_TEST_URL`; CI has PostgreSQL17 service. Do not claim Tiger Data/PostgreSQL/Spaces tested locally.
+## Run and restart
 
-## Next execution order
-1. Inspect final lane handoffs/commits and cherry-pick their implementation checkpoints into integration. Keep user data/changes untouched.
-2. Resume missing lane work from those handoffs. API/storage/worker and frontend may still be incomplete; do not present this checkpoint as a finished app.
-3. Check all schemas/interfaces agree (conditions/evidence review, original source download, session response Workspace). Regenerate OpenAPI + frontend types. Verify migration columns against storage metadata.
-4. Run meaningful engine/API/fixture tests. Engine acceptance and exhaustive enumeration are required. Validate per-session dedup, contradictory clauses/cycles, unsupported benefits, date boundaries, approval invalidation and deletion.
-5. Complete UI/API integration; typecheck, lint and production build. Run the complete browser test against the real local API, inspect desktop/mobile layouts, fix runtime failures. Start API/worker/frontend as needed, keeping secrets server-side.
-6. Finalize README exact run commands, .env.example, Docker Compose and DigitalOcean deployment configuration, docs/SPONSORS.md truthful integration/live-test matrix, docs/DEMO.md. Test credential smoke endpoint (missing status is not success). No paid resources without approval.
-7. Update all handoffs and final check results in the same commit. Report what works, remaining external validation, and exact run commands.
+Dependencies already exist in `.venv` and `frontend/node_modules`.
+```powershell
+.\.venv\Scripts\python.exe scripts/dev.py
+```
+Open http://localhost:3000. This starts API port 8000, worker and frontend port 3000. Do not start a duplicate if those ports are already serving ClauseGraph. The delivery preview is left running when available; verify current process state rather than relying on old tool session IDs. README contains fresh-install, individual-service, validation and Docker commands. Populated .env and local .data are ignored.
 
-No user-facing browser or running development server has been started by integration at this pause.
+## Remaining external validation / limitations
+
+No live sponsor credentials, Tiger Data connection or Spaces bucket are configured. No live extraction/audio/cloud-storage call has succeeded here; mocked protocol tests are not live validation. Supply credentials server-side and explicitly authorize any paid resources before deployment. Smoke calls may consume configured provider credits; use synthetic documents with explicit processing consent for a live extraction test.
+PostgreSQL migration/queue integration is configured in CI but not locally executed. DigitalOcean spec is a template needing repository/secrets/account validation. Account recovery, operational retention policy and production abuse controls remain prototype limitations; do not publicly process real financial data yet.
+Conservative literal/operation and entity checks can withhold valid unusual clauses for human review. Native PDF parsing has a killable time bound, not an OS memory quota. No payments, cancellations, applications or outbound messages are executed.
+
+## Branches and handoff
+
+Root owns contracts/locks/migrations/fixtures/CI/deployment. Engine/API/frontend lanes use separate .worktrees directories; their implementation commits are integrated. Agents completed their bounded lanes; no further delegation is required. Preserve worktrees and user files.
+Git may require a per-command `-c safe.directory=C:/Users/vzhu0/PycharmProjects/clausegraph` override due sandbox ownership. Do not set a global trust override or cherry-pick shared foundation commits again.
+Canonical schema: backend/clausegraph/schemas.py. After interface changes run `python scripts/export_openapi.py` then `npm --prefix frontend run generate:types`. Browser tests start isolated API port 8001/frontend port 3001; do not run the root dev frontend concurrently with root build/E2E because they share .next.
+The original detailed request remains at `C:/Users/vzhu0/.codex/attachments/cc5944a0-5a53-4bd4-8a13-811a7cd0fe46/Pasted text.txt`. Its explicit Next/FastAPI/DigitalOcean repository stack takes precedence over Sites; no Sites project was created.

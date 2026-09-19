@@ -10,11 +10,11 @@ Requires Python 3.12 and Node.js 22+. From the repository root:
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt -c backend/requirements.lock
 npm --prefix frontend ci
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 .\.venv\Scripts\python.exe scripts/dev.py
 ```
 
-On macOS/Linux, substitute `.venv/bin/python` and `cp .env.example .env`. Open [localhost:3000](http://localhost:3000). Local mode uses SQLite/private local files; no credentials are needed for the clearly labeled synthetic demo. Never overwrite an already-configured `.env`. The API and worker read server-side keys from it. The worker is required for uploaded-document extraction.
+On macOS/Linux, substitute `.venv/bin/python` and `test -f .env || cp .env.example .env`. Open [localhost:3000](http://localhost:3000). Local mode uses SQLite/private local files; no credentials are needed for the clearly labeled synthetic demo. Never overwrite an already-configured `.env`. The API and worker read server-side keys from it. The worker is required for uploaded-document extraction.
 
 To run processes separately:
 
