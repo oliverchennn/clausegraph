@@ -23,7 +23,7 @@ from clausegraph.schemas import (
     ApprovalStatus, AudioRequest, DeleteResponse, Document, DraftRequest, DraftResponse,
     ExtractionResult, HealthResponse, IntakeRequest, JobStatus, PlanRequest, PlanResult,
     ProviderStatus, ReviewStatus, RuleReview, Scenario, SessionCreate, TranscriptResponse,
-    UploadResponse, Workspace,
+    UploadResponse, VerificationRequest, VerificationResult, Workspace,
 )
 from clausegraph.storage import MissingSession, Originals, StaleRevision, Store, utcnow
 
@@ -209,6 +209,24 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
     @app.get("/api/history", response_model=list[PlanResult])
     def scenario_history(request: Request, workspace: Session):
         return request.app.state.store.history(workspace.session_id)
+
+    @app.post("/api/verify", response_model=VerificationResult)
+    def verify_fixed_plan(body: VerificationRequest, request: Request, workspace: Session):
+        from clausegraph.verification import verify_plan
+        if workspace.revision != body.revision:
+            raise StaleRevision()
+        if (workspace.plan is None or workspace.plan.id != body.plan_id
+                or workspace.plan.revision != body.revision):
+            raise HTTPException(409, "Verify the current saved plan. Calculate a plan, refresh, and retry.")
+        try:
+            result = verify_plan(workspace.scenario, workspace.rules, workspace.plan, body)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        return request.app.state.store.save_verification(workspace.session_id, result)
+
+    @app.get("/api/verifications", response_model=list[VerificationResult])
+    def verification_history(request: Request, workspace: Session):
+        return request.app.state.store.verifications(workspace.session_id)
 
     @app.post("/api/demo/reset", response_model=Workspace)
     def reset_demo(request: Request, workspace: Session):

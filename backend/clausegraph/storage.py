@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.pool import StaticPool
 
 from clausegraph.config import Settings
-from clausegraph.schemas import DailyBalance, JobStatus, PlanResult, Workspace
+from clausegraph.schemas import DailyBalance, JobStatus, PlanResult, VerificationResult, Workspace
 
 metadata = MetaData()
 sessions = Table(
@@ -60,6 +60,19 @@ scenario_runs = Table(
 )
 daily_balances = Table(
     "daily_balances", metadata, session_column(),
+    Column("run_id", String(128), primary_key=True), Column("series", String(16), primary_key=True),
+    Column("event_date", Date, primary_key=True), Column("balance_cents", BigInteger, nullable=False),
+    Column("income_cents", BigInteger, nullable=False), Column("expense_cents", BigInteger, nullable=False),
+    Column("kind", String(16), nullable=False),
+)
+verification_runs = Table(
+    "verification_runs", metadata, session_column(), Column("id", String(128), primary_key=True),
+    Column("plan_id", String(128), nullable=False), Column("revision", Integer, nullable=False),
+    Column("status", String(16), nullable=False), Column("payload", JSON, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+verification_points = Table(
+    "verification_points", metadata, session_column(),
     Column("run_id", String(128), primary_key=True), Column("series", String(16), primary_key=True),
     Column("event_date", Date, primary_key=True), Column("balance_cents", BigInteger, nullable=False),
     Column("income_cents", BigInteger, nullable=False), Column("expense_cents", BigInteger, nullable=False),
@@ -158,6 +171,58 @@ class Store:
             self._restore_series(session_id, plan)
         return plans
 
+    def save_verification(self, session_id: str, result: VerificationResult) -> VerificationResult:
+        """Persist against the still-active plan without changing its snapshot or revision."""
+        with self.engine.begin() as connection:
+            # A no-op conditional write acquires a row/write lock on both PostgreSQL and
+            # SQLite before the active-plan check; SELECT FOR UPDATE alone does not on SQLite.
+            locked = connection.execute(update(sessions).where(sessions.c.id == session_id,
+                sessions.c.revision == result.revision).values(revision=result.revision))
+            if locked.rowcount != 1:
+                if connection.execute(select(sessions.c.id).where(sessions.c.id == session_id)).first() is None:
+                    raise MissingSession()
+                raise StaleRevision()
+            snapshot = connection.execute(select(sessions.c.snapshot).where(
+                sessions.c.id == session_id)).scalar_one()
+            active = snapshot.get("plan")
+            if not active or active["id"] != result.plan_id or active["revision"] != result.revision:
+                raise StaleRevision()
+            connection.execute(insert(verification_runs).values(session_id=session_id, id=result.id,
+                plan_id=result.plan_id, revision=result.revision, status=result.status,
+                payload=result.model_dump(mode="json"), created_at=result.generated_at))
+            if result.worst_case and result.worst_case.daily:
+                connection.execute(insert(verification_points), [dict(session_id=session_id, run_id=result.id,
+                    series="worst_case", event_date=point.date, balance_cents=point.balance_cents,
+                    income_cents=point.income_cents, expense_cents=point.expense_cents,
+                    kind="projected") for point in result.worst_case.daily])
+        return result
+
+    def verifications(self, session_id: str) -> list[VerificationResult]:
+        # Persisted points are authoritative; missing rows fail closed instead of
+        # silently reverting to the duplicate series in the result payload.
+        with self.engine.connect() as connection:
+            payloads = connection.execute(select(verification_runs.c.payload).where(
+                verification_runs.c.session_id == session_id).order_by(
+                    verification_runs.c.created_at.desc(), verification_runs.c.id.desc()).limit(30)).scalars().all()
+            results = [VerificationResult.model_validate(payload) for payload in payloads]
+            if not results:
+                return []
+            rows = connection.execute(select(verification_points).where(
+                verification_points.c.session_id == session_id,
+                verification_points.c.run_id.in_([result.id for result in results]))
+                .order_by(verification_points.c.event_date)).mappings().all()
+            for result in results:
+                if result.worst_case is None:
+                    continue
+                points = [row for row in rows if row["run_id"] == result.id and row["series"] == "worst_case"]
+                if len(points) != len(result.worst_case.daily):
+                    raise RuntimeError("Persisted verification chart series is incomplete")
+                event_ids = {point.date: point.event_ids for point in result.worst_case.daily}
+                result.worst_case.daily = [DailyBalance(date=row["event_date"], balance_cents=row["balance_cents"],
+                    income_cents=row["income_cents"], expense_cents=row["expense_cents"],
+                    event_ids=event_ids.get(row["event_date"], [])) for row in points]
+        return results
+
     def mutate(self, session_id: str, change: Callable[[Workspace], None],
                expected_revision: int | None = None, invalidate: bool = True,
                job_guard: tuple[str, str] | None = None, job_result: dict | None = None,
@@ -187,7 +252,8 @@ class Store:
             if updated.rowcount != 1:
                 raise StaleRevision()
             if reset_history:
-                for table in (jobs, daily_balances, scenario_runs, financial_events, rule_versions, document_versions):
+                for table in (jobs, verification_points, verification_runs, daily_balances, scenario_runs,
+                              financial_events, rule_versions, document_versions):
                     connection.execute(delete(table).where(table.c.session_id == session_id))
             if purge_document_id:
                 self._purge_document_history(connection, session_id, purge_document_id, purge_rule_ids or [])
@@ -294,6 +360,8 @@ class Store:
         # Old plan narratives can contain extracted wording. Purge them on source deletion.
         connection.execute(delete(scenario_runs).where(scenario_runs.c.session_id == session_id))
         connection.execute(delete(daily_balances).where(daily_balances.c.session_id == session_id))
+        connection.execute(delete(verification_points).where(verification_points.c.session_id == session_id))
+        connection.execute(delete(verification_runs).where(verification_runs.c.session_id == session_id))
 
     def delete_session(self, session_id: str, expected_revision: int | None = None,
                        cleanup: Callable[[], None] | None = None):
@@ -306,7 +374,8 @@ class Store:
                 raise StaleRevision()
             if cleanup:
                 cleanup()
-            for table in (jobs, daily_balances, scenario_runs, financial_events, rule_versions, document_versions):
+            for table in (jobs, verification_points, verification_runs, daily_balances, scenario_runs,
+                          financial_events, rule_versions, document_versions):
                 connection.execute(delete(table).where(table.c.session_id == session_id))
             connection.execute(delete(sessions).where(sessions.c.id == session_id))
 
