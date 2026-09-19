@@ -13,6 +13,9 @@ Read AGENTS.md, ARCHITECTURE.md, WORKSTREAMS.md and lane handoffs. Sites workflo
 - API checkout: `.worktrees/api`, branch `codex/api`.
 - Frontend checkout: `.worktrees/frontend`, branch `codex/frontend`.
 - Each lane has its own implementation checkpoint and handoff. Read each handoff **inside its worktree** until it is integrated; root copies still contain initial assignments.
+- Engine implementation commit: `646d0ff`. Agent reports **65 tests passed in 2.15s**, Ruff passed, exact demo solve passed. No active processes.
+- API implementation commit: `3a60112`. Five modules pass py_compile only; runtime/tests/deployment files remain. Handoff calls out mandatory fixes: consequential-check bypass, caching, original download/evidence confirmation, document lineage and versioned original keys.
+- Frontend implementation commit: `6fe8a40`. Agent was interrupted to honor the pause promptly. Integration saved its existing WIP files and handoff; stylesheet is missing, and no frontend verification has run.
 - Agents were told to stop after a small checkpoint and not continue features. Reuse agents only if they still exist, otherwise spawn bounded lane tasks and preserve their files.
 - Root owns shared schemas, manifests, lockfiles, fixtures, migrations, CI and generated API types. Cherry-pick only lane implementation commits, not their copies of shared integration commits. Shared foundation commits already exist on integration.
 - Git requires a per-command safe-directory override in this sandbox: `git -c safe.directory=C:/Users/vzhu0/PycharmProjects/clausegraph ...`. Use each exact checkout path for worktree commands. Git metadata writes required escalation, already authorized as part of this workflow.
