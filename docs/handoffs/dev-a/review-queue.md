@@ -23,3 +23,8 @@ Initial full backend check:245 passed,1 PostgreSQL skip in31.24s. Final full bac
 ## Next assigned work
 
 Publish the completed backend PR and hand off, without starting later roadmap tasks. Leave the backend PR ready for the friend's review rather than merging it automatically. Preserve B's existing work in an explicitly draft PR; its missing contract types are an expected dependency until the backend PR is merged, not evidence of frontend acceptance. The friend's agent should review the backend contract, then take over its existing draft branch. Merge the backend contract into main before B's final API integration/checks. A later reviews the friend's green frontend PR and updates shared docs after actual delivery. GitHub's current private-repo plan cannot enforce required checks; follow the reviewed-green sequential merge rule.
+
+
+## Published handoff checkpoint
+
+Backend code commit1adf5fb is published in https://github.com/vzhu08/clausegraph/pull/6. Frontend snapshot0838e4b is published in https://github.com/vzhu08/clausegraph/pull/7 as a draft. Both feature PRs remain unmerged for the friend's review/takeover; only workflow PR5 is merged. B's draft currently lacks PR6's API/types and is expected to need that dependency before typecheck passes. This is disclosed in PR7; A will not implement or fix B's remaining UI work. Future A work starts only when assigned or when the friend reports a concrete backend issue.
