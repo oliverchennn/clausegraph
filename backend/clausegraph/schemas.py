@@ -33,6 +33,33 @@ class Evidence(Contract):
     quote: str
 
 
+class ReviewBlocker(Contract):
+    code: str
+    category: Literal["evidence", "review", "condition", "approval", "dependency", "fact", "authorization"]
+    message: str
+    next_step: str
+
+
+class ReviewQueueItem(Contract):
+    id: str
+    subject_kind: Literal["rule", "action", "event"]
+    subject_id: str
+    title: str
+    priority: Literal[0, 1, 2]
+    disposition: Literal["needs_review", "waiting", "blocked"]
+    blockers: list[ReviewBlocker]
+    rule_ids: list[str]
+    action_ids: list[str]
+    event_ids: list[str]
+    evidence: list[Evidence]
+    missing_source: bool
+
+
+class ReviewQueue(Contract):
+    revision: int
+    items: list[ReviewQueueItem]
+
+
 class DocumentPage(Contract):
     page: int = Field(ge=1)
     text: str

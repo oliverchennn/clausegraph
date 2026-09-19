@@ -1,13 +1,13 @@
 # Two-developer work board
 
-This is the current assignment and ownership record. The original engine/API/frontend lane branches and old handoffs are historical. Start from freshly fetched main; PR4 is merged as 9858956.
+This is the current assignment and ownership record. **A is your agent (this task); B is your friend's agent in a separate session/clone.** Each works only its assignment. The roadmap is a work split, not an instruction for A to execute both lanes or all future tasks. The original engine/API/frontend lane branches and old handoffs are historical. Start from freshly fetched main; PR4 is merged as 9858956.
 
 ## Exclusive lanes
 
 | Developer | Owns | Task handoffs |
 |---|---|---|
-| A: backend/integration | backend, shared schemas/generated types, dependencies/locks, migrations, fixtures, scripts, CI/deployment, shared docs | One new file per task under handoffs/dev-a/ |
-| B: frontend/demo experience | frontend components/state/style/accessibility/browser tests, excluding A's manifests/generated types/.npmrc/Dockerfile | One new file per task under handoffs/dev-b/ |
+| A: your agent — backend/integration | backend, shared schemas/generated types, dependencies/locks, migrations, fixtures, scripts, CI/deployment, shared docs | One new file per task under handoffs/dev-a/ |
+| B: your friend's agent — frontend/demo experience | frontend components/state/style/accessibility/browser tests, excluding A's manifests/generated types/.npmrc/Dockerfile | One new file per task under handoffs/dev-b/ |
 
 The first match in [.github/ownership.json](../.github/ownership.json) controls files. One implementation agent per developer. No editing another developer's task handoff. Unassigned paths fail checks until an A-owned policy PR is merged.
 
@@ -24,11 +24,24 @@ The first match in [.github/ownership.json](../.github/ownership.json) controls 
 | 7: later | Validate existing uncertainty limits | Amount ranges and multiple uncertainty controls | Separate future task |
 | 8: later | Specify robust synthesis/correlations/expense uncertainty | Participate in UX specification | Separate design before implementation |
 
-## Active assignments
+## Current handoff and next independent work
 
-- A workflow: codex/dev-a/review-workflow, base9858956; owned files from A policy only. Deliver workflow/checks/toolchain and shared roadmap. Handoff: [review-workflow](handoffs/dev-a/review-workflow.md).
-- A queue: starts on a fresh codex/dev-a/review-queue branch after workflow integration. Own backend/contracts/tests and shared feature docs; no frontend implementation edits.
-- B guidance: codex/dev-b/review-guidance, base9858956. Own frontend excluding shared files, plus `handoffs/dev-b/review-guidance.md`. Audit/refactor may proceed immediately; merge workflow and backend contract commits from main before final API wiring/validation. The handoff link becomes available when B's PR merges.
+| Owner | Current state | Next task | Do not edit |
+|---|---|---|---|
+| A: this agent | Workflow PR5 merged on main3799876. Completed the current backend/contracts/tests in [PR6](https://github.com/vzhu08/clausegraph/pull/6), code commit1adf5fb on codex/dev-a/review-queue; stopping after publication. PR remains unmerged for review. | Review B's eventual PR and fix specifically reported backend problems. Provider checks need credentials/consent; no next feature starts automatically. | B frontend source, browser tests or B handoff |
+| B: friend's agent | [Draft PR7](https://github.com/vzhu08/clausegraph/pull/7), commit0838e4b on codex/dev-b/review-guidance, contains the frontend work already started before the user clarified the split. It is a handoff, not a finished feature. | Take over the draft, review/refine queue UX, integrate the merged A contract, run types/lint/build and all browser tests, and finish keyboard/mobile/demo polish. | Schemas, generated types, manifests/locks, CI, shared docs or A handoffs |
+
+**Immediate coordination:** the friend reviews PR6; after review and green checks, A/user merges it. B then merges updated main into its existing draft branch and completes PR7. Do not merge PR7 while its contract dependency or UI validation remains incomplete. Only workflow PR5 is merged so far.
+
+A's current handoff: [review-queue](handoffs/dev-a/review-queue.md). Workflow history: [review-workflow](handoffs/dev-a/review-workflow.md). B's own handoff is docs/handoffs/dev-b/review-guidance.md on its draft branch; it lists exact changed files,5 earlier passing regression tests and the new queue tests that have NOT run. B is responsible for confirming every draft behavior; nothing in that branch is claimed delivered.
+
+### Friend's agent startup
+
+Fetch origin, then check out the existing remote codex/dev-b/review-guidance task branch in a separate clone/worktree. This continues the same task; do not create a competing frontend implementation from scratch. Read AGENTS, this board and the B task handoff. Install Node22.23.2/npm10.9.8 and the Python environment; install the local hook in that clone. Confirm the A review-queue PR is merged, then merge freshly fetched origin/main into the B branch before final contract consumption and validation. Do not copy generated types or invent a parallel response schema.
+
+B's minimum completion checks: queue navigation and evidence review, failed-save preservation, stale session/revision responses, recorded denied/pending decisions, missing/deleted sources, an empty private session, keyboard access, mobile overflow, and the existing preview/verification flows. Report exact results in B's task handoff and open/update its PR. A reviews and integrates it only after those checks pass.
+
+A's next session reads its current handoff and reviews B's reported changes; it does not resume the whole roadmap. Shared contracts stay with A, UI behavior with B. A updates shared delivery docs only after B's feature is actually integrated.
 
 ## Per-task process
 

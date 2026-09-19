@@ -34,6 +34,8 @@ The existing local vertical slice, auditable decision traces, nonmutating scenar
 - Full local stack: `docker compose up --build`.
 
 ## Two-developer ownership
+Developer A is the user's agent in this task. Developer B is the friend's agent in a separate session/clone. Do not spawn a Developer B implementation agent or do B's assigned feature work from A's session. Stop after the assigned task; the ordered roadmap is not authorization to implement the remaining backlog.
+
 Developer A owns backend/financial logic, canonical schemas, generated OpenAPI/TypeScript, dependencies and lockfiles, migrations, fixtures, scripts, CI/deployment and shared documentation. Developer B owns frontend presentation/state/accessibility/browser tests, except A-owned manifests, generated types, .npmrc and Dockerfile. The first matching rule in .github/ownership.json is authoritative. Unassigned paths require an A-owned policy change on main before work starts.
 
 Each developer has one active implementation agent at a time. Extra agents may inspect/review without writing. A owns merge coordination. B never edits A's handoffs or central progress docs; A never edits B's task handoffs. Each task has its own docs/handoffs/dev-a/<task>.md or dev-b/<task>.md. Historical lane handoffs are read-only context unless A explicitly corrects the historical record.
