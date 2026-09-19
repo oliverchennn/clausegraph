@@ -34,3 +34,21 @@ def test_cycles_ambiguous_entities_and_missing_references_are_visible():
     scenario.actions[1].requires = [scenario.actions[0].id]
     codes = {issue.code for issue in build_graph(scenario, rules, documents).issues}
     assert {"rule_cycle", "ambiguous_entity", "missing_rule", "action_cycle"} <= codes
+
+
+def test_rejected_conflicting_rule_does_not_block_the_accepted_rule():
+    scenario, documents, rules = load_demo()
+    conflict = rules[0].model_copy(deep=True)
+    conflict.id = "rejected-conflict"
+    conflict.amount_cents = 1
+    conflict.review_status = "rejected"
+    assert not any(issue.code == "contradictory_clauses" for issue in build_graph(scenario, rules + [conflict], documents).issues)
+
+
+def test_explicit_event_links_expose_conflicts_even_when_rule_titles_differ():
+    scenario, documents, rules = load_demo()
+    conflict = rules[0].model_copy(deep=True)
+    conflict.id, conflict.title, conflict.amount_cents = "other-rent", "Different label", 150000
+    scenario.events[0].source_rule_ids.append(conflict.id)
+    graph = build_graph(scenario, rules + [conflict], documents)
+    assert any(issue.code == "contradictory_clauses" for issue in graph.issues)

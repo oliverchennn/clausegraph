@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from ortools.sat.python import cp_model
 
-from .extraction import rule_blocker
+from .extraction import action_evidence_blocker, rule_blocker
 from .graph import dependency_issues
 from .schemas import (
     Action, ApprovalStatus, DailyBalance, FinancialEvent, PlanRequest, PlanResult,
@@ -22,7 +22,10 @@ MAX_OPTIONS = 10_000
 
 
 def _end(scenario: Scenario) -> date:
-    return scenario.start_date + timedelta(days=scenario.horizon_days)
+    try:
+        return scenario.start_date + timedelta(days=scenario.horizon_days)
+    except OverflowError as exc:
+        raise ValueError("The planning horizon exceeds the supported calendar.") from exc
 
 
 def _effect_date(effect, execution: date, fallback: date | None = None) -> date:
@@ -115,6 +118,9 @@ def _materialize(scenario: Scenario, selected: dict[str, date]) -> list[Financia
         targets, additions = _action_changes(scenario, action, execution)
         if targets & removed or any(event.id in appended for event in additions):
             raise ValueError("Selected actions collide on the same financial event.")
+        existing_debts = {event.obligation_id for event in appended.values() if event.obligation_id}
+        if any(event.obligation_id in existing_debts for event in additions if event.obligation_id):
+            raise ValueError("Selected actions duplicate the same obligation.")
         removed.update(targets)
         appended.update({event.id: event for event in additions})
     return [event.model_copy(deep=True) for event in scenario.events if event.id not in removed] + list(appended.values())
@@ -122,6 +128,7 @@ def _materialize(scenario: Scenario, selected: dict[str, date]) -> list[Financia
 
 def simulate(scenario: Scenario, selected: dict[str, date] | None = None) -> Simulation:
     """Account for selected effects; optimize() applies evidence/approval gates."""
+    _end(scenario)
     events = _materialize(scenario, selected or {})
     by_day: dict[date, list[FinancialEvent]] = defaultdict(list)
     for event in events:
@@ -217,7 +224,8 @@ def _gates(scenario: Scenario, rules: list[Rule], request: PlanRequest) -> tuple
             excluded[action.id] = "Action lacks a known source rule."
         elif any(rid in rule_reasons for rid in action.source_rule_ids):
             excluded[action.id] = next(rule_reasons[rid] for rid in action.source_rule_ids if rid in rule_reasons)
-        reason, conditional = _approval_gate(action.id, action.approval_status, request, required=action.kind in ("shift", "claim", "request") and not any(rule_map[rid].approval_status == ApprovalStatus.approved for rid in action.source_rule_ids if rid in rule_map))
+        needs_approval = action.kind in ("shift", "claim", "request") or any(effect.operation == "shift" for effect in action.effects)
+        reason, conditional = _approval_gate(action.id, action.approval_status, request, required=needs_approval and not any(rule_map[rid].approval_status == ApprovalStatus.approved for rid in action.source_rule_ids if rid in rule_map))
         if reason:
             excluded[action.id] = reason
         if conditional or any(rid in conditional_rules for rid in action.source_rule_ids):
@@ -248,7 +256,8 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
     warnings: list[str] = []
     rule_map = {rule.id: rule for rule in rules}
     blocked_rules = {rule.id for rule in rules if rule_blocker(rule)}
-    blocked_rules.update(rid for issue in dependency_issues(scenario, rules) if issue.blocking for rid in issue.rule_ids)
+    graph_issues = dependency_issues(scenario, rules)
+    blocked_rules.update(rid for issue in graph_issues if issue.blocking for rid in issue.rule_ids)
     for rule in rules:
         reason, conditional = _approval_gate(rule.id, rule.approval_status, request, required=rule.kind == "benefit")
         if reason or conditional:
@@ -258,22 +267,36 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
         if expanded == blocked_rules:
             break
         blocked_rules = expanded
+    unresolved_ledger = any(issue.code == "duplicate_obligation" for issue in graph_issues)
+    warnings.extend(issue.message for issue in graph_issues if issue.code == "duplicate_obligation")
     retained = []
     for event in scenario.events:
         if event.direction == "income" and event.kind == "projected" and event.source_rule_ids and any(rid not in rule_map or rid in blocked_rules for rid in event.source_rule_ids):
             warnings.append(f"{event.title} is excluded from the ledger because its evidence, conditions, review or approval are unresolved. Conditional income requires an explicit eligible claim action.")
         else:
             retained.append(event)
+            if event.direction == "expense" and event.kind == "projected" and event.date >= scenario.start_date and any(rid not in rule_map or rid in blocked_rules for rid in event.source_rule_ids):
+                unresolved_ledger = True
+                warnings.append(f"{event.title} remains in the ledger, but its source obligation requires review; the plan cannot be confirmed.")
+    for rule in rules:
+        if rule.kind == "obligation" and rule.review_status != ReviewStatus.rejected and rule.id in blocked_rules and (rule.due_date is None or rule.due_date >= scenario.start_date):
+            unresolved_ledger = True
+            warnings.append(f"Obligation {rule.title} is unresolved; its amount or date may not be fully represented in the ledger.")
     scenario.events = retained
     baseline = simulate(scenario)
     excluded, conditional_actions = _gates(scenario, rules, request)
 
     def result(state, status, proposed=baseline, planned=None, proven=False):
-        return PlanResult(id=str(uuid4()), revision=revision, state=state, solver_status=status, solver_wall_time_seconds=round(time.monotonic() - started, 6), baseline=baseline, proposed=proposed, actions=planned or [], excluded_actions=excluded, warnings=warnings, objective_proven=proven, generated_at=datetime.now(timezone.utc))
+        return PlanResult(id=str(uuid4()), revision=revision, state=state, solver_status=status, solver_wall_time_seconds=round(time.monotonic() - started, 6), baseline=baseline, proposed=proposed, actions=planned or [], excluded_actions=excluded, warnings=warnings, objective_proven=proven, generated_at=datetime.now(timezone.utc), assumptions=request.model_copy(deep=True))
 
     if len(scenario.actions) > MAX_ACTIONS:
         warnings.append(f"Planner limit is {MAX_ACTIONS} actions. Narrow the scenario before solving.")
         return result("unresolved", "UNKNOWN")
+    magnitude = scenario.opening_balance_cents + sum(event.amount_cents for event in scenario.events)
+    magnitude += sum(action.fee_cents + sum(effect.event.amount_cents for effect in action.effects if effect.event) for action in scenario.actions)
+    if magnitude > 10**12 or sum(action.burden for action in scenario.actions) > 10**12:
+        warnings.append("Scenario magnitudes exceed the solver's safe integer bound.")
+        return result("unresolved", "MODEL_INVALID")
     model = cp_model.CpModel()
     options: dict[str, list[tuple[date, cp_model.IntVar, set[str], list[FinancialEvent]]]] = {}
     chosen: dict[str, cp_model.IntVar] = {}
@@ -289,6 +312,10 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
         return result("unresolved", "INFEASIBLE")
     for aid, action in sorted(actions.items()):
         if aid in excluded:
+            continue
+        evidence_reason = action_evidence_blocker(action, rules, scenario.events)
+        if evidence_reason:
+            excluded[aid] = evidence_reason
             continue
         first = max(scenario.start_date, action.earliest_date)
         last = min(_end(scenario) - timedelta(days=1), action.latest_date)
@@ -419,7 +446,9 @@ def optimize(scenario: Scenario, rules: list[Rule], request: PlanRequest | None 
         ordered.append(selected_id)
         remaining_ids.remove(selected_id)
     planned = [PlannedAction(action_id=aid, execution_date=best[aid], order=index + 1, explanation=("Conditional on third-party approval. " if aid in conditional_actions else "") + actions[aid].description, source_rule_ids=actions[aid].source_rule_ids, conditional=aid in conditional_actions) for index, aid in enumerate(ordered)]
-    if any(action.conditional for action in planned):
+    if unresolved_ledger:
+        state = "unresolved"
+    elif any(action.conditional for action in planned):
         state = "conditional"
         warnings.append("Conditional approval assumptions do not change persisted approvals.")
     elif proposed.minimum_balance_cents < 0:

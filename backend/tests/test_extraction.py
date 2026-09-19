@@ -118,10 +118,95 @@ def test_compiler_filters_pending_benefits_even_when_otherwise_reviewed():
 
 
 def test_compiler_detects_forged_action_fee_and_unsupported_dates():
-    document, extracted = candidate()
+    document, extracted = candidate("Pay $60.00 on 2026-09-01. Cancellation removes this payment.")
     checked = validate_extraction(extracted, document)
     checked.rules[0].review_status = "reviewed"
     checked.actions = [Action(id="change", title="Change", description="Source-backed change", kind="cancel", source_rule_ids=["rule"], earliest_date=START, latest_date=START, recommended_date=START, review_status="reviewed", fee_cents=500, effects=[Effect(operation="remove", target_event_id="bill")])]
     assert not compile_rules(checked).actions
     checked.actions[0].fee_cents = 0
     assert len(compile_rules(checked).actions) == 1
+
+
+def test_money_with_invalid_precision_or_grouping_cannot_match_a_prefix():
+    assert not monetary_values("$60.123 and USD 1,234,56 and 1.234 dollars")
+
+
+def test_compiler_does_not_mix_amount_and_date_from_different_obligations():
+    document, extracted = candidate()
+    checked = validate_extraction(extracted, document)
+    first = checked.rules[0]
+    first.review_status = "reviewed"
+    other = first.model_copy(deep=True)
+    other.id, other.title = "other", "Other bill"
+    other.amount_cents = 12000
+    from datetime import timedelta
+    other.due_date = START + timedelta(days=1)
+    checked.rules.append(other)
+    checked.events = [FinancialEvent(id="bill", title="Bill", date=other.due_date, amount_cents=first.amount_cents, direction="expense", source_rule_ids=[first.id, other.id])]
+    assert not compile_rules(checked).events
+
+
+def test_bill_amount_cannot_be_misread_as_an_action_fee():
+    document, extracted = candidate("Pay $60.00 on 2026-09-01. Cancellation removes this payment with a $5.00 fee.")
+    checked = validate_extraction(extracted, document)
+    checked.rules[0].review_status = "reviewed"
+    checked.actions = [Action(id="cancel", title="Cancel", description="Cancellation", kind="cancel", source_rule_ids=["rule"], earliest_date=START, latest_date=START, recommended_date=START, review_status="reviewed", fee_cents=6000, effects=[Effect(operation="remove", target_event_id="bill")])]
+    assert not compile_rules(checked).actions
+    checked.actions[0].fee_cents = 500
+    assert len(compile_rules(checked).actions) == 1
+    checked.actions[0].fee_cents = 0
+    assert not compile_rules(checked).actions
+
+
+def test_action_cannot_invent_cancellation_from_an_ordinary_bill():
+    document, extracted = candidate()
+    checked = validate_extraction(extracted, document)
+    checked.rules[0].review_status = "reviewed"
+    checked.actions = [Action(id="cancel", title="Cancel", description="Invented cancellation", kind="cancel", source_rule_ids=["rule"], earliest_date=START, latest_date=START, recommended_date=START, review_status="reviewed", effects=[Effect(operation="remove", target_event_id="bill")])]
+    assert not compile_rules(checked).actions
+
+
+def test_native_pdf_timeout_terminates_and_joins_child(monkeypatch):
+    from clausegraph import extraction
+    calls = []
+
+    class Connection:
+        def close(self):
+            calls.append("close")
+
+        def poll(self, timeout):
+            calls.append(("poll", timeout))
+            return False
+
+    class Process:
+        pid = 10
+        alive = True
+
+        def start(self):
+            calls.append("start")
+
+        def is_alive(self):
+            return self.alive
+
+        def terminate(self):
+            calls.append("terminate")
+            self.alive = False
+
+        def join(self, timeout):
+            calls.append("join")
+
+        def close(self):
+            calls.append("process-close")
+
+    class Context:
+        def Pipe(self, duplex):
+            return Connection(), Connection()
+
+        def Process(self, **kwargs):
+            return Process()
+
+    monkeypatch.setattr(extraction.multiprocessing, "get_context", lambda _: Context())
+    with pytest.raises(ValueError, match="timed out"):
+        extract_native(b"%PDF-1.7", "slow.pdf", "application/pdf")
+    assert calls.index("terminate") < calls.index("join") < calls.index("process-close")
+    assert ("poll", extraction.PDF_PARSE_TIMEOUT_SECONDS) in calls

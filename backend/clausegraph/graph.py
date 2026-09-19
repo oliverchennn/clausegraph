@@ -57,7 +57,20 @@ def dependency_issues(scenario: Scenario, rules: list[Rule]) -> list[GraphIssue]
         if rule.evidence_status in ("disputed", "unsupported"):
             issues.append(GraphIssue(code="unsupported_evidence", message=f"Evidence for {rule.title} is {rule.evidence_status}.", rule_ids=[rule.id]))
         key = (rule.kind, " ".join(rule.title.casefold().split()), tuple(sorted(p.casefold().strip() for p in rule.parties)))
-        groups[key].append(rule)
+        if rule.review_status.value != "rejected":
+            groups[key].append(rule)
+    # Distinct labels cannot conceal disagreement about an explicitly linked obligation.
+    for event in scenario.events:
+        linked = [rule_map[rid] for rid in event.source_rule_ids if rid in rule_map and rule_map[rid].kind == "obligation" and rule_map[rid].review_status.value != "rejected"]
+        if len(linked) > 1:
+            groups[("event", event.id)].extend(linked)
+    obligations: dict[tuple[str, object], list] = defaultdict(list)
+    for event in scenario.events:
+        if event.direction == "expense" and event.obligation_id:
+            obligations[(event.obligation_id, event.date)].append(event)
+    for items in obligations.values():
+        if len(items) > 1:
+            issues.append(GraphIssue(code="duplicate_obligation", message="Multiple ledger entries identify the same obligation and due date; review is required before confirming a plan.", rule_ids=sorted({rid for event in items for rid in event.source_rule_ids})))
     for group in groups.values():
         for left, right in combinations(group, 2):
             if left.id in right.supersedes or right.id in left.supersedes:

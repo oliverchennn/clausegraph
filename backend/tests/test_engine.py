@@ -11,10 +11,15 @@ from clausegraph.schemas import Action, Condition, Effect, Evidence, FinancialEv
 
 
 def supported_rule(identifier="rule", **kwargs):
-    return Rule(id=identifier, title=identifier, kind="option", evidence=[Evidence(document_id="doc", page=1, char_start=0, char_end=9, quote="Synthetic")], evidence_status="supported", review_status="reviewed", **kwargs)
+    quote = "Synthetic: payment may be cancelled and removed, or moved to 2026-09-05 or 2026-09-06. "
+    quote += "Possible fixture amounts: " + ", ".join(f"{amount} cents" for amount in range(200))
+    quote += ". Fixture fees: " + "; ".join(f"{amount} cents fee" for amount in range(61))
+    return Rule(id=identifier, title=identifier, kind="option", evidence=[Evidence(document_id="doc", page=1, char_start=0, char_end=len(quote), quote=quote)], evidence_status="supported", review_status="reviewed", **kwargs)
 
 
 def action(identifier, effects, **kwargs):
+    if any(effect.operation == "shift" for effect in effects):
+        kwargs.setdefault("approval_status", "approved")
     return Action(id=identifier, title=identifier, description="Synthetic reviewed action", kind="cancel", source_rule_ids=["rule"], effects=effects, earliest_date=START, latest_date=START + timedelta(days=1), recommended_date=START, review_status="reviewed", **kwargs)
 
 
@@ -219,3 +224,93 @@ def test_unknown_approvals_and_income_ambiguity_are_explicit():
     with pytest.raises(ValueError, match="exactly one"):
         optimize(data, [], PlanRequest(income_date=date(2026, 9, 4)))
     assert optimize(data, [], PlanRequest(approval_overrides={"missing": "approved"})).state == "unresolved"
+
+
+def test_unreviewed_or_deleted_expense_sources_retain_money_and_prevent_confirmation():
+    data, _, rules = load_demo()
+    rules[0].review_status = "pending"
+    plan = optimize(data, rules)
+    assert plan.proposed.minimum_balance_cents == 5000
+    assert plan.state == "unresolved"
+    assert any("Rent remains" in warning for warning in plan.warnings)
+    deleted = optimize(data, [rule for rule in rules if rule.id != "rule-rent"])
+    assert deleted.proposed.ending_balance_cents == 50000
+    assert deleted.state == "unresolved"
+
+
+def test_obligation_not_yet_materialized_cannot_produce_false_confirmation():
+    data, _, rules = load_demo()
+    rules[0].review_status = "pending"
+    data.events = [event for event in data.events if event.id != "rent"]
+    plan = optimize(data, rules)
+    assert plan.state == "unresolved"
+    assert any("may not be fully represented" in warning for warning in plan.warnings)
+
+
+def test_cancellation_cannot_omit_source_acceleration_or_mutate_unrelated_loan():
+    data, _, rules = load_demo()
+    data.actions[1].effects = data.actions[1].effects[:1]
+    plan = optimize(data, rules)
+    assert "omits the debt acceleration" in plan.excluded_actions["cancel-phone"]
+    data, _, rules = load_demo()
+    data.actions[1].effects[0].target_event_id = "loan"
+    plan = optimize(data, rules)
+    assert "does not identify the target" in plan.excluded_actions["cancel-phone"]
+
+
+def test_optimization_rechecks_forged_effect_dates_and_money():
+    data, _, rules = load_demo()
+    data.actions[0].effects[0].date = START + timedelta(days=60)
+    plan = optimize(data, rules)
+    assert plan.proposed.minimum_balance_cents == -40000
+    assert "not supported" in plan.excluded_actions["shift-payment"]
+    data, _, rules = load_demo()
+    data.actions[0].effects.append(Effect(operation="add", event=event("free-money", 25, 999999, "income")))
+    assert "not supported" in optimize(data, rules).excluded_actions["shift-payment"]
+
+
+def test_conditional_rule_dependency_approval_propagates_through_reverse_order():
+    data, _, rules = load_demo()
+    prerequisite = supported_rule("authorization", approval_status="pending")
+    middle = supported_rule("middle", dependencies=["authorization"])
+    rules[5].dependencies.append("middle")
+    rules.extend([middle, prerequisite])
+    assert optimize(data, rules).proposed.minimum_balance_cents == -40000
+    conditional = optimize(data, rules, PlanRequest(include_conditional=True))
+    assert conditional.state == "conditional"
+    assert conditional.actions[0].conditional
+
+
+def test_extreme_magnitudes_return_model_invalid_instead_of_overflow():
+    data = scenario([event("bill", 1, 10**100)])
+    result = optimize(data, [])
+    assert result.solver_status == "MODEL_INVALID"
+    assert result.state == "unresolved"
+    data = scenario([], [action("large", [], burden=10**100)])
+    assert optimize(data, [supported_rule()]).solver_status == "MODEL_INVALID"
+
+
+def test_plan_assumptions_survive_json_roundtrip_and_do_not_alias_request():
+    from clausegraph.schemas import PlanResult
+    data, _, rules = load_demo()
+    request = PlanRequest(opening_balance_cents=210000, approval_overrides={"shift-payment": "denied"})
+    plan = optimize(data, rules, request)
+    request.approval_overrides.clear()
+    restored = PlanResult.model_validate_json(plan.model_dump_json())
+    assert restored.assumptions.approval_overrides == {"shift-payment": "denied"}
+    assert restored.assumptions.opening_balance_cents == 210000
+
+
+def test_duplicate_obligation_entries_are_visible_and_never_confirmed():
+    data = scenario([event("a", 1, 10, obligation_id="same"), event("b", 1, 10, obligation_id="same")])
+    plan = optimize(data, [])
+    assert plan.proposed.ending_balance_cents == 80
+    assert plan.state == "unresolved"
+    assert any("same obligation" in warning for warning in plan.warnings)
+
+
+def test_calendar_overflow_is_an_explicit_validation_error():
+    data = scenario([])
+    data.start_date = date.max
+    with pytest.raises(ValueError, match="calendar"):
+        optimize(data, [])

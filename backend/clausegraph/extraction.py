@@ -3,34 +3,86 @@ from __future__ import annotations
 
 import csv
 import io
+import multiprocessing
 import re
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import PurePath
 
 from pypdf import PdfReader
 
-from .schemas import ApprovalStatus, Document, DocumentPage, ExtractionResult, ReviewStatus, Rule
+from .schemas import Action, ApprovalStatus, Document, DocumentPage, ExtractionResult, FinancialEvent, ReviewStatus, Rule, Scenario
 
 
 MAX_NATIVE_PAGES = 200
 MAX_NATIVE_CHARACTERS = 2_000_000
+MAX_NATIVE_BYTES = 20 * 1024 * 1024
+PDF_PARSE_TIMEOUT_SECONDS = 20.0
 _NUMBER = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?"
-_MONEY = re.compile(rf"(?:\$\s*({_NUMBER})|USD\s*({_NUMBER})|({_NUMBER})\s*(?:USD|dollars?)\b|(\d+)\s*cents?\b)", re.IGNORECASE)
+_MONEY = re.compile(rf"(?:\$\s*({_NUMBER})(?![\d.,])|USD\s*({_NUMBER})(?![\d.,])|(?<![\d.,])({_NUMBER})\s*(?:USD|dollars?)\b|(?<![\d.,])(\d+)\s*cents?\b)", re.IGNORECASE)
 
 
-def extract_native(content: bytes, filename: str, media_type: str) -> list[DocumentPage]:
-    """Preserve page-local text exactly; no model, OCR, or outbound call here."""
-    suffix = PurePath(filename).suffix.casefold()
-    if suffix == ".pdf" and media_type == "application/pdf":
-        if not content.startswith(b"%PDF-"):
-            raise ValueError("The uploaded file does not have a PDF signature.")
+def _pdf_worker(content: bytes, connection):
+    """A killable process contains expensive parsing of untrusted PDF streams."""
+    try:
         reader = PdfReader(io.BytesIO(content), strict=True)
         if reader.is_encrypted:
             raise ValueError("Encrypted PDFs must be decrypted before upload.")
         if len(reader.pages) > MAX_NATIVE_PAGES:
             raise ValueError(f"Documents are limited to {MAX_NATIVE_PAGES} pages.")
-        pages = [DocumentPage(page=index + 1, text=page.extract_text() or "") for index, page in enumerate(reader.pages)]
+        pages = []
+        characters = 0
+        for index, page in enumerate(reader.pages):
+            text = page.extract_text() or ""
+            characters += len(text)
+            if characters > MAX_NATIVE_CHARACTERS:
+                raise ValueError("Extracted text exceeds the document limit.")
+            pages.append({"page": index + 1, "text": text})
+        connection.send((True, pages))
+    except Exception:
+        connection.send((False, "PDF could not be parsed within document limits; check that it is valid and unencrypted."))
+    finally:
+        connection.close()
+
+
+def _extract_pdf(content: bytes) -> list[DocumentPage]:
+    context = multiprocessing.get_context("spawn")
+    parent, child = context.Pipe(duplex=False)
+    process = context.Process(target=_pdf_worker, args=(content, child), daemon=True)
+    try:
+        process.start()
+        child.close()
+        if not parent.poll(PDF_PARSE_TIMEOUT_SECONDS):
+            raise ValueError("Native PDF extraction timed out. Split or simplify this document and retry.")
+        try:
+            succeeded, payload = parent.recv()
+        except EOFError as exc:
+            raise ValueError("Native PDF extraction stopped unexpectedly.") from exc
+        if not succeeded:
+            raise ValueError(payload)
+        return [DocumentPage.model_validate(page) for page in payload]
+    finally:
+        parent.close()
+        child.close()
+        if process.pid is not None:
+            if process.is_alive():
+                process.terminate()
+            process.join(timeout=1)
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=1)
+            process.close()
+
+
+def extract_native(content: bytes, filename: str, media_type: str) -> list[DocumentPage]:
+    """Preserve page-local text exactly; no model, OCR, or outbound call here."""
+    if len(content) > MAX_NATIVE_BYTES:
+        raise ValueError("The document exceeds the native extraction byte limit.")
+    suffix = PurePath(filename).suffix.casefold()
+    if suffix == ".pdf" and media_type == "application/pdf":
+        if not content.startswith(b"%PDF-"):
+            raise ValueError("The uploaded file does not have a PDF signature.")
+        pages = _extract_pdf(content)
     elif (suffix == ".txt" and media_type in ("text/plain", "application/octet-stream")) or (suffix == ".csv" and media_type in ("text/csv", "application/csv", "application/vnd.ms-excel", "text/plain")):
         try:
             text = content.decode("utf-8-sig")
@@ -67,7 +119,7 @@ def monetary_values(text: str) -> set[int]:
 
 
 def _date_supported(value, text: str) -> bool:
-    if value.isoformat() in text:
+    if re.search(rf"(?<!\d){value.isoformat()}(?!\d)", text):
         return True
     for token in re.findall(r"\b[A-Za-z]+\s+\d{1,2},?\s+\d{4}\b", text):
         for fmt in ("%B %d, %Y", "%B %d %Y", "%b %d, %Y", "%b %d %Y"):
@@ -110,6 +162,8 @@ def validate_extraction(result: ExtractionResult, document: Document) -> Extract
     seen: set[str] = set()
     for rule in validated.rules:
         reasons: list[str] = []
+        if len(pages) != len(document.pages):
+            reasons.append("document contains duplicate page identifiers")
         if rule.id in seen:
             reasons.append("duplicate rule identifier")
         seen.add(rule.id)
@@ -162,11 +216,83 @@ def rule_blocker(rule: Rule, *, check_approval: bool = True) -> str | None:
     return None
 
 
+def action_evidence_blocker(action: Action, rules: list[Rule], events: list[FinancialEvent] | None = None) -> str | None:
+    """Check each transformation's literals and target linkage independently of approvals.
+
+    These narrow checks do not establish semantic truth; reviewed source rules
+    and evidence verification remain separate prerequisites in both callers.
+    """
+    indexed = {rule.id: rule for rule in rules}
+    if not action.source_rule_ids or any(rid not in indexed for rid in action.source_rule_ids):
+        return "Action lacks a known source rule."
+    source_ids = set(action.source_rule_ids)
+    pending = list(source_ids)
+    while pending:
+        rule = indexed[pending.pop()]
+        for rid in rule.dependencies:
+            if rid in indexed and rid not in source_ids:
+                source_ids.add(rid)
+                pending.append(rid)
+    sources = [indexed[rid] for rid in source_ids]
+    quotes = "\n".join(evidence.quote for rule in sources for evidence in rule.evidence)
+    amounts = monetary_values(quotes) | {rule.amount_cents for rule in sources if rule.amount_cents is not None}
+    fees = set()
+    for match in _MONEY.finditer(quotes):
+        before = quotes[max(0, match.start() - 40):match.start()]
+        after = quotes[match.end():match.end() + 40]
+        if re.search(r"\bfees?\s*(?:(?:of|is|:)\s*)?$", before, re.IGNORECASE) or re.match(r"\s*(?:(?:processing|cancellation|late|service)\s+)?fees?\b", after, re.IGNORECASE):
+            fees.update(monetary_values(match.group(0)))
+    if (action.fee_cents or fees) and action.fee_cents not in fees:
+        return "The action fee is missing or not supported by a source fee clause."
+    targets = {event.id: event for event in events or []}
+    operation_cues = {
+        "remove": r"\b(?:cancel\w*|terminat\w*|remov\w*|waiv\w*)\b",
+        "shift": r"\b(?:mov\w*|shift\w*|reschedul\w*|defer\w*|extend\w*|extension)\b",
+        "accelerate": r"\b(?:accelerat\w*|becomes? due|due immediately|due on (?:the )?cancellation)\b",
+    }
+    if any(effect.operation == "remove" for effect in action.effects) and re.search(operation_cues["accelerate"], quotes, re.IGNORECASE) and not any(effect.operation == "accelerate" for effect in action.effects):
+        return "The cancellation omits the debt acceleration described by its source."
+    for effect in action.effects:
+        if effect.operation in operation_cues and not re.search(operation_cues[effect.operation], quotes, re.IGNORECASE):
+            return f"Source evidence does not describe the {effect.operation} transformation."
+        if effect.date is not None and not _date_supported(effect.date, quotes):
+            return "The effect date is not supported by an explicit source date."
+        if effect.offset_days is not None:
+            explicit_days = effect.offset_days >= 0 and re.search(rf"\b{effect.offset_days}\s+days?\b", quotes, re.IGNORECASE)
+            same_day = effect.offset_days == 0 and re.search(r"\b(?:immediately|same day|on the (?:cancellation|execution|action) date)\b", quotes, re.IGNORECASE)
+            if not explicit_days and not same_day:
+                return "The effect's relative date is not supported by the source."
+        if effect.operation == "add" and effect.event:
+            if effect.event.amount_cents not in amounts:
+                return "The added event amount is not supported by the source."
+            if effect.event.source_rule_ids and not set(effect.event.source_rule_ids).issubset(source_ids):
+                return "The added event references unrelated source rules."
+            if effect.date is None and effect.offset_days is None and not _date_supported(effect.event.date, quotes):
+                return "The added event date is not supported by an explicit source date."
+            if effect.event.kind != "projected":
+                return "An action cannot invent an actual transaction."
+            if effect.event.direction == "income" and not any(rule.kind == "benefit" for rule in sources) and not re.search(r"\b(?:income|paycheck|payroll|refund|reimbursement|grant|deposit|disburs\w*)\b", quotes, re.IGNORECASE):
+                return "The source does not identify the added event as incoming money."
+        elif events is not None:
+            target = targets.get(effect.target_event_id)
+            if target is None:
+                return "The target financial event is missing."
+            if target.source_rule_ids:
+                if not set(target.source_rule_ids).intersection(source_ids):
+                    return "The action source does not identify the target obligation."
+            elif target.amount_cents not in amounts:
+                return "The target obligation amount is not linked to the action evidence."
+    return None
+
+
 def compile_rules(result: ExtractionResult) -> ExtractionResult:
     """Return only supported executable DSL artifacts; retain rules for review."""
     compiled = result.model_copy(deep=True)
     rules = {rule.id: rule for rule in compiled.rules}
     blocked = {rule.id for rule in compiled.rules if rule_blocker(rule)}
+    from .graph import dependency_issues
+    graph_scenario = Scenario(id="compilation", title="Compilation validation", start_date=date(2000, 1, 1), opening_balance_cents=0, events=compiled.events, actions=compiled.actions)
+    blocked.update(rid for issue in dependency_issues(graph_scenario, compiled.rules) if issue.blocking for rid in issue.rule_ids)
     while True:
         expanded = blocked | {rule.id for rule in compiled.rules if any(dep not in rules or dep in blocked for dep in rule.dependencies)}
         if expanded == blocked:
@@ -186,6 +312,9 @@ def compile_rules(result: ExtractionResult) -> ExtractionResult:
     for rule in compiled.rules:
         if rule.id not in blocked:
             blocked.update(rule.supersedes)
+    for node in tuple(blocked):
+        if node in graph:
+            blocked.update(nx.ancestors(graph, node))
 
     def sources_valid(ids: list[str]) -> bool:
         return bool(ids) and all(rid in rules and rid not in blocked for rid in ids)
@@ -193,21 +322,7 @@ def compile_rules(result: ExtractionResult) -> ExtractionResult:
     actions = []
     for action in compiled.actions:
         valid = sources_valid(action.source_rule_ids) and action.review_status == ReviewStatus.reviewed and action.approval_status in (ApprovalStatus.approved, ApprovalStatus.not_required)
-        amounts = {rules[rid].amount_cents for rid in action.source_rule_ids if rid in rules}
-        quotes = "\n".join(e.quote for rid in action.source_rule_ids if rid in rules for e in rules[rid].evidence)
-        if action.fee_cents and action.fee_cents not in monetary_values(quotes):
-            valid = False
-        for effect in action.effects:
-            if effect.operation == "add" and effect.event:
-                if effect.event.amount_cents not in amounts or not _date_supported(effect.date or effect.event.date, quotes):
-                    valid = False
-            if effect.date is not None and not _date_supported(effect.date, quotes):
-                valid = False
-            if effect.offset_days is not None:
-                explicit_days = re.search(rf"\b{abs(effect.offset_days)}\s+days?\b", quotes, re.IGNORECASE)
-                same_day = effect.offset_days == 0 and re.search(r"\b(?:immediately|same day|on the (?:cancellation|execution|action) date)\b", quotes, re.IGNORECASE)
-                if not explicit_days and not same_day:
-                    valid = False
+        valid = valid and action_evidence_blocker(action, compiled.rules) is None
         if valid:
             actions.append(action)
         else:
@@ -220,5 +335,5 @@ def compile_rules(result: ExtractionResult) -> ExtractionResult:
             break
         actions = filtered
     compiled.actions = actions
-    compiled.events = [event for event in compiled.events if sources_valid(event.source_rule_ids) and event.amount_cents in {rules[rid].amount_cents for rid in event.source_rule_ids} and any(rules[rid].due_date == event.date for rid in event.source_rule_ids)]
+    compiled.events = [event for event in compiled.events if sources_valid(event.source_rule_ids) and any(rules[rid].amount_cents == event.amount_cents and rules[rid].due_date == event.date for rid in event.source_rule_ids)]
     return compiled
