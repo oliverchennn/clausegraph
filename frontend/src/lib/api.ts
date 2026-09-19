@@ -5,7 +5,7 @@ export async function request<T>(path: string, token?: string, options: RequestI
   const headers = new Headers(options.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (options.body && !(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
-  const response = await fetch(`${API}/api${path}`, { ...options, headers, cache: "no-store" });
+  const response = await fetchWithTimeout(`${API}/api${path}`, { ...options, headers, cache: "no-store" });
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: response.statusText }));
     const message = typeof error.detail === "string" ? error.detail : JSON.stringify(error.detail);
@@ -19,12 +19,43 @@ export async function requestBlob(path: string, token: string, options: RequestI
   const headers = new Headers(options.headers);
   headers.set("Authorization", `Bearer ${token}`);
   if (options.body) headers.set("Content-Type", "application/json");
-  const response = await fetch(`${API}/api${path}`, { ...options, headers });
+  const response = await fetchWithTimeout(`${API}/api${path}`, { ...options, headers });
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: response.statusText }));
     throw new Error(typeof error.detail === "string" ? error.detail : "The file could not be created.");
   }
   return response.blob();
+}
+
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  try { return await fetch(url, { ...options, signal: options.signal ?? AbortSignal.timeout(180_000) }); }
+  catch (caught) {
+    if (caught instanceof Error && caught.name === "TimeoutError") throw new Error("This request took too long. Please try again; your saved data is still available.");
+    throw caught;
+  }
+}
+
+export async function streamJob(token: string, id: string, signal: AbortSignal, onUpdate: (job: import("./types").JobStatus) => void) {
+  const response = await fetch(`${API}/api/jobs/${encodeURIComponent(id)}/events`, { headers: { Authorization: `Bearer ${token}` }, signal, cache: "no-store" });
+  if (!response.ok || !response.body) throw new Error("Live progress connection unavailable.");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  try {
+    while (!signal.aborted) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true }).replaceAll("\r\n", "\n");
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary >= 0) {
+        const event = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        const data = event.split("\n").filter(line => line.startsWith("data:")).map(line => line.slice(5).trimStart()).join("\n");
+        if (data) onUpdate(JSON.parse(data));
+        boundary = buffer.indexOf("\n\n");
+      }
+    }
+  } finally { reader.releaseLock(); }
 }
 
 export function download(blob: Blob, name: string) {
