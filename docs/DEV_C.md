@@ -6,10 +6,38 @@ C has less time and a smaller token budget than A/B. Work on **one small task pe
 
 1. Read [AGENTS](../AGENTS.md), [WORKSTREAMS](WORKSTREAMS.md), [HACKATHON_MVP](HACKATHON_MVP.md), [RESUME](RESUME.md), the relevant completed task handoff and the [verification limits](handoffs/verification.md). Use historical records for context, not current authorization.
 2. The agent inspects Git status/worktrees and task/PR state, fetches origin with pruning and preserves all existing work. Use a separate clone or a detached worktree of fetched main for read-only tasks, such as `.worktrees/dev-c-c1` created with `git worktree add --detach .worktrees/dev-c-c1 origin/main`. Record the exact commit reviewed. Do not change another developer's checkout, branch, running services or private session. If freshness cannot be verified, say so.
-3. Start **C1**. Afterward pick only one ready item below, or stop. An active assignment or unpublished push does not mean an owner's work is finished; use the named merged commit. If a prerequisite is unfinished, select another ready read-only task. A/B do not wait for C.
+3. The current user assignment is the **two-prompt queue C7 -> C8 below, with C9 only if a third prompt remains**. Start C7; do not repeat already delivered C1/C5 findings. Save the second prompt until C8 is ready instead of polling or consuming it on unrelated work. An active assignment or unpublished push does not mean an owner's work is finished; use the named merged commit. A/B do not wait for C.
 4. Return the report in the current task for the developers to share. No repository edits or commits are needed for C1–C4/C6. A consolidates shared docs when useful; B owns UI follow-ups. An optional report does not require a new issue, message to someone else or PR.
 
 C is never a mandatory reviewer. A/B keep their existing required checks and mutual review process, even when C helps. No feature, contract, merge, rehearsal or release may depend on C finishing. A/B own urgent fixes that cannot wait; C's absence is not a blocker.
+
+## Current assignment: two useful prompts, optional third
+
+The user assigned this small queue on 2026-09-20 for C's remaining two or three substantial prompts. These are concrete read-only contributions to the [expanded A/B work](HACKATHON_ASSIGNMENTS.md), not another general audit or an implementation assignment. One prompt produces one finished report, then C stops. No subagents, feature implementation, repository edits, PRs or broad test/install runs. Read only the startup instructions and the focused inputs below; follow additional references only to establish a specific finding.
+
+| Task / when | Focused work and maximum scope | Deliverable / owner |
+|---|---|---|
+| **C7: judge-story review — first prompt, ready on merged baseline `ca7cde5` or a newer recorded main; 20 minutes** | Read DEMO, current expansion assignments and the completed B demo handoff. Inspect only the existing trace/verification wording needed to check the story. Identify confusing or unsupported claims and draft a six-beat, three-minute cue outline for the expanded story. Label every new feature beat proposed until it is actually merged; do not invent screenshots, timings or human rehearsal results. | At most 3 evidence-backed wording findings, plus a compact cue outline whose allocations total 180 seconds. This is a proposed script, not measured delivery. A can adopt shared-doc wording; B can reuse cues in presenter preparation. |
+| **C8: cash-gap/uncertainty boundary review — reserve second prompt until stages 1 and 2 merge; 30 minutes** | A names the merged SHA and A/B handoffs. Inspect only the new diagnostic and uncertainty labels plus their relevant tests/contracts. Check three boundaries: hypothetical buffer versus funding, fixed-schedule minimum versus all-schedule impossibility, and incomplete enumeration versus Safe/exact minimum. Include the 10001-value inclusive cent range and one authorization-failure case in the inspection. | At most 3 findings with exact location, expected/actual, evidence and owner A/B; or scoped no-findings. Distinguish static inspection from reproduced behavior. No full engine audit or changes to tests. A/B retain their required validation and fix ownership. |
+| **C9: consequence demo check — optional third prompt, only after stage 4 merges; 20 minutes** | A/B name the final merged demo SHA. Follow just the cancellation -> accelerated existing debt -> cash/evidence path in an already prepared isolated synthetic UI, checking keyboard/mobile readability if available. Compare the final script's claim with the actual path. If setup is unavailable, inspect the matching source and label the result not browser-verified. | At most 3 discrepancies or scoped no-findings, plus the clearest one-sentence explanation of the cancellation consequence. B owns UI fixes; A owns shared-demo/financial corrections. No live providers or human-rehearsal claim. |
+
+If only two prompts remain, C7 and C8 are the entire assignment. C9 is expendable and never a release gate. If C8/C9 prerequisites have not merged, preserve the prompt and stop; do not start optional features #5/#6, poll, or fill the gap with another audit. A/B may ship before C reviews; the owner triages any later finding. This queue offloads optional editorial and focused independent review work, not A/B's required checks or mutual review.
+
+Use the short report format below with C7/C8/C9, reviewed SHA and explicit untested limits. C returns the report in its own chat for the user/owners to carry over; no outbound messages are assigned. A records accepted conclusions in shared docs and B records adopted UI changes in its own task. No C write release is granted: any later tiny implementation still needs the exact-path A assignment/B release procedure below, and is not a good use of this prompt budget by default.
+
+### Copyable prompts for C
+
+**Prompt 1, now:**
+
+> You are Developer C on ClauseGraph with only two or three substantial prompts remaining. Read AGENTS.md and the current C7 assignment in docs/DEV_C.md, plus required coordination context. Synchronize safely and record the merged snapshot; preserve other worktrees/services. Do C7 only, within 20 minutes: review the documented demo's claim clarity and produce at most three sourced wording findings plus a six-beat proposed 180-second cue outline for the expansion. Clearly mark unimplemented features as proposed and do not claim human rehearsal. Return the report here; no edits, PRs, external calls, subagents or messages. Stop and save the next prompt for C8 after stages 1/2 merge. A/B do not wait for you.
+
+**Prompt 2, once A names the merged stage 1/2 SHA:**
+
+> Perform C8 from docs/DEV_C.md only. Synchronize and verify the named merged stage 1/2 snapshot and its handoffs; if the prerequisite is missing, report that and stop. Within 30 minutes, inspect the cash-gap/uncertainty proof-label boundaries, inclusive 10001-value cent range and authorization-failure handling. Return at most three exact findings with owner, evidence and static-versus-reproduced status, or scoped no-findings. No edits, full-suite runs, setup detours, external calls or messages. Stop; A/B remain responsible for required checks.
+
+**Prompt 3, only if available after stage 4:**
+
+> Perform C9 from docs/DEV_C.md only at the named merged final-demo snapshot. Spend up to 20 minutes checking the cancellation-to-accelerated-debt explanation, source links and cash consequences, using the prepared isolated synthetic UI if available; otherwise label the review static. Return at most three exact discrepancies and a one-sentence consequence explanation, or scoped no-findings. No code/doc edits, installation work, external calls or messages. Stop; this is optional and never a release gate.
 
 ## Small task menu
 
@@ -43,7 +71,7 @@ This protocol reduces shared-file overlap without pretending that branch checks 
 ## Short report format
 
 ```text
-C task: C1 / C2 / C3 / C4 / C6
+C task: C7 / C8 / C9 (current queue), or explicitly assigned legacy C1 / C2 / C3 / C4 / C6
 Reviewed commit and prerequisite PR:
 Scope and time spent:
 Finding (at most 3): file:line or screen, steps, expected, actual, evidence
@@ -56,6 +84,6 @@ Next: owner triage or optional exact-path C5 assignment; A/B need not wait
 
 Return scoped no-findings if appropriate; do not manufacture improvements to fill a quota. A serious issue can block the affected feature on its merits, but its owner must resolve or reassign it without depending on C.
 
-## Copyable first-session prompt
+## Historical first-session prompt (superseded by C7 above)
 
 > You are Developer C on ClauseGraph, a part-time contributor with a small time/token budget. Read AGENTS.md, docs/WORKSTREAMS.md and docs/DEV_C.md plus their required context. Perform the repository's task-start synchronization yourself and preserve all existing work. Start C1 only: spend up to 20 minutes proofreading the documented synthetic demo and its visible financial/verification wording on a recorded merged-main snapshot. Return at most three exact findings using the short report format, or scoped no-findings. Do not edit repository files, implement tasks, run live providers or send messages to others. A/B never wait for your review. Stop after the report; C5 UI fixes need the separate committed A assignment/B path release described in DEV_C.md.
