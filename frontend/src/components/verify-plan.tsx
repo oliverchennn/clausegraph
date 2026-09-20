@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, FileText, ShieldCheck } from "lucide-react";
-import { Badge, Button, Field } from "@/components/ui";
+import { Badge, Button } from "@/components/ui";
 import CashGapPanel from "@/components/cash-gap-panel";
+import UncertaintyControls, { MAX_CASES, exactCaseCount, duplicateTargets } from "@/components/uncertainty-controls";
 import { humanize, money, request } from "@/lib/api";
-import type { PlanResult, VerificationRequest, VerificationResult, Workspace } from "@/lib/types";
+import type { PlanResult, Uncertainty, VerificationRequest, VerificationResult, Workspace } from "@/lib/types";
 
 type Props = {
   workspace: Workspace;
@@ -15,16 +16,20 @@ type Props = {
   onEvidence: (ruleIds: string[]) => void;
 };
 
+/**
+ * Placeholder for C12's failure view. B ships the seam so the wiring, props and
+ * selector are merged and testable; C12 replaces this body only.
+ */
+function FailureViewSlot({ verification }: { verification: VerificationResult; onEvidence: (ruleIds: string[]) => void }) {
+  if (!verification.counterexample) return null;
+  return <p className="helper" data-testid="failure-view-placeholder">
+    A failing case was found. The detailed failure view is a separate task.
+  </p>;
+}
+
 export default function VerifyPlan({ workspace, plan, result, onResult, onEvidence }: Props) {
   const incomes = workspace.scenario.events.filter(event => event.direction === "income" && event.kind !== "actual");
-  const approvalActions = plan.actions.map(item => workspace.scenario.actions.find(action => action.id === item.action_id)).filter(action => action && action.approval_status !== "not_required");
-  const savedDate = result?.assumptions.uncertainties?.find(item => item.kind === "income_date");
-  const savedApproval = result?.assumptions.uncertainties?.find(item => item.kind === "approval");
-  const [eventId, setEventId] = useState(savedDate?.event_id ?? incomes[0]?.id ?? "");
-  const [earliest, setEarliest] = useState(savedDate?.earliest ?? plan.assumptions?.income_date ?? incomes[0]?.date ?? "");
-  const [latest, setLatest] = useState(savedDate?.latest ?? plan.assumptions?.income_date ?? incomes[0]?.date ?? "");
-  const [approvalId, setApprovalId] = useState(savedApproval?.target_id ?? "");
-  const [rationale, setRationale] = useState(savedDate?.rationale ?? savedApproval?.rationale ?? "User-declared planning test; these bounds are assumptions, not a forecast.");
+  const [dimensions, setDimensions] = useState<Uncertainty[]>(() => result?.assumptions.uncertainties ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const controller = useRef<AbortController | null>(null);
@@ -43,10 +48,8 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
     const current = new AbortController();
     controller.current = current;
     setBusy(true);
-    const uncertainties: NonNullable<VerificationRequest["uncertainties"]> = [];
-    if (eventId) uncertainties.push({ id: "payday", kind: "income_date", event_id: eventId, earliest, latest, basis: "user_assumption", rationale: rationale.trim() });
-    if (approvalId) uncertainties.push({ id: "approval", kind: "approval", target_id: approvalId, outcomes: ["approved", "denied", "pending"], basis: "user_assumption", rationale: rationale.trim() });
-    const body: VerificationRequest = { plan_id: plan.id, revision: workspace.revision, uncertainties, max_cases: 10000, time_limit_seconds: 5 };
+    const uncertainties: NonNullable<VerificationRequest["uncertainties"]> = dimensions;
+    const body: VerificationRequest = { plan_id: plan.id, revision: workspace.revision, uncertainties, max_cases: MAX_CASES, time_limit_seconds: 5 };
     try {
       const checked = await request<VerificationResult>("/verify", workspace.session_id, { method: "POST", body: JSON.stringify(body), signal: current.signal });
       if (!current.signal.aborted) onResult(checked);
@@ -59,9 +62,24 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
 
   function preset(end: string) {
     clearResult();
-    setEarliest("2026-09-21");
-    setLatest(end);
+    const income = incomes.find(item => item.date === "2026-09-21") ?? incomes[0];
+    if (!income) return;
+    setDimensions([{ id: "payday", kind: "income_date", basis: "user_assumption", event_id: income.id,
+      earliest: "2026-09-21", latest: end,
+      rationale: "Synthetic example bound: the projected paycheck may arrive on any date in this inclusive range." }]);
   }
+
+  function changeDimensions(next: Uncertainty[]) {
+    clearResult();
+    setDimensions(next);
+  }
+
+  const duplicates = duplicateTargets(dimensions);
+  const caseCount = exactCaseCount(dimensions);
+  const blocked = duplicates.size > 0 || dimensions.some(item => !item.rationale.trim())
+    || dimensions.some(item => item.kind === "income_date" && item.latest < item.earliest)
+    || dimensions.some(item => item.kind === "income_amount" && item.maximum_cents < item.minimum_cents)
+    || caseCount === BigInt(0);
 
   const counterexample = result?.counterexample;
   const actionTitle = (id: string) => workspace.scenario.actions.find(action => action.id === id)?.title ?? id;
@@ -76,20 +94,14 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
     <p className="helper">Does this saved plan remain safe for every combination of the bounds you declare? Its actions and execution dates stay fixed.</p>
     <form onSubmit={event => { event.preventDefault(); void verify(); }}>
       <fieldset disabled={busy} className="verification-fields">
-        {incomes.length > 0 ? <>
-          <Field label="Projected income to vary"><select aria-label="Verification income" value={eventId} onChange={event => { clearResult(); setEventId(event.target.value); const income = incomes.find(item => item.id === event.target.value); setEarliest(plan.assumptions?.income_date ?? income?.date ?? ""); setLatest(plan.assumptions?.income_date ?? income?.date ?? ""); }}>
-            {incomes.map(income => <option key={income.id} value={income.id}>{income.title}</option>)}
-          </select></Field>
-          <div className="form-grid">
-            <Field label="Earliest payday (inclusive)"><input type="date" aria-label="Earliest verification payday" required value={earliest} onChange={event => { clearResult(); setEarliest(event.target.value); }} /></Field>
-            <Field label="Latest payday (inclusive)"><input type="date" aria-label="Latest verification payday" required min={earliest} value={latest} onChange={event => { clearResult(); setLatest(event.target.value); }} /></Field>
-          </div>
-          {workspace.mode === "synthetic" && incomes.find(income => income.id === eventId)?.date === "2026-09-21" && <div className="verification-presets"><span>Synthetic example bounds:</span><Button type="button" variant="ghost" onClick={() => preset("2026-09-28")}>Payday through Sep 28</Button><Button type="button" variant="ghost" onClick={() => preset("2026-09-26")}>Payday through Sep 26</Button></div>}
-        </> : <p className="helper">No projected income event is available to vary. Recorded income stays fixed.</p>}
-        {approvalActions.length > 0 && <Field label="Approval outcomes to vary" hint="This hypothetical set includes approved, denied, and still pending. It does not change recorded approval."><select aria-label="Verification approval outcomes" value={approvalId} onChange={event => { clearResult(); setApprovalId(event.target.value); }}><option value="">Keep recorded plan approvals</option>{approvalActions.map(action => action && <option key={action.id} value={action.id}>{action.title} · approved / denied / pending</option>)}</select></Field>}
-        <Field label="Why these bounds?" hint="User assumptions only. The verifier does not infer these ranges from the source documents."><input aria-label="Verification assumption rationale" required maxLength={1000} value={rationale} onChange={event => { clearResult(); setRationale(event.target.value); }} /></Field>
+        <UncertaintyControls workspace={workspace} dimensions={dimensions} onChange={changeDimensions} disabled={busy} />
+        {workspace.mode === "synthetic" && incomes.some(income => income.date === "2026-09-21") &&
+          <div className="verification-presets"><span>Synthetic example bounds:</span>
+            <Button type="button" variant="ghost" onClick={() => preset("2026-09-28")}>Payday through Sep 28</Button>
+            <Button type="button" variant="ghost" onClick={() => preset("2026-09-26")}>Payday through Sep 26</Button></div>}
+        {incomes.length === 0 && <p className="helper">No projected income event is available to vary. Recorded income stays fixed.</p>}
       </fieldset>
-      <div className="verification-submit"><Button type="submit" variant="primary" busy={busy} disabled={!rationale.trim() || (!!eventId && (!earliest || !latest || latest < earliest))}><ShieldCheck size={15} /> Verify fixed plan</Button><span>Up to 10,000 cases · 5-second budget</span></div>
+      <div className="verification-submit"><Button type="submit" variant="primary" busy={busy} disabled={blocked}><ShieldCheck size={15} /> Verify fixed plan</Button><span>Up to {MAX_CASES.toLocaleString("en-US")} cases · 5-second budget</span></div>
     </form>
     <details className="verification-schedule"><summary>Saved actions and dates held fixed ({plan.actions.length})</summary>{plan.actions.length ? plan.actions.map(action => <div className="verification-action" key={action.action_id}><div><strong>{actionTitle(action.action_id)}</strong><span><CalendarDays size={12} /> {action.execution_date}</span></div><button className="text-button" disabled={!action.source_rule_ids.length} onClick={() => onEvidence(action.source_rule_ids)}><FileText size={12} /> Action evidence</button></div>) : <p>The saved plan selects no actions.</p>}</details>
     {error && <div className="inline-error" role="alert">{error}</div>}
@@ -101,6 +113,14 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
       <div className="verification-metrics"><div><span>Nominal minimum</span><strong>{money(plan.proposed.minimum_balance_cents)}</strong></div><div><span>Worst-case minimum</span><strong data-testid="verification-worst-balance">{result.worst_case_proven && result.coverage_complete && result.worst_case ? money(result.worst_case.minimum_balance_cents) : "Not proven"}</strong></div></div>
       <dl className="verification-facts"><div><dt>Cases checked</dt><dd>{result.checked_cases} / {result.total_cases} · {result.dimension_count} uncertainty {result.dimension_count === 1 ? "dimension" : "dimensions"}</dd></div><div><dt>Full coverage</dt><dd>{result.coverage_complete ? "Yes · every modeled combination" : "No · bounded check incomplete"}</dd></div><div><dt>Horizon</dt><dd>{result.horizon_start} inclusive → {result.horizon_end_exclusive} exclusive</dd></div><div><dt>Solver</dt><dd>Exhaustive finite model checker · {result.solver_status} · {result.runtime_seconds.toFixed(3)}s</dd></div><div><dt>Input revision</dt><dd>{result.revision}</dd></div></dl>
       <details className="verification-assumptions" open><summary>Exact declared assumptions</summary><ul>{result.assumptions.uncertainties?.map(dimension => <li key={dimension.id}><strong>{dimension.kind === "approval" ? `${actionTitle(dimension.target_id)}: ${dimension.outcomes.join(" / ")}` : dimension.kind === "income_date" ? `${eventTitle(dimension.event_id)}: every date ${dimension.earliest} through ${dimension.latest}, inclusive` : `${eventTitle(dimension.event_id)}: every cent ${money(dimension.minimum_cents, true)} through ${money(dimension.maximum_cents, true)}, inclusive`}</strong><span>User assumption · {dimension.rationale}</span></li>)}</ul>{!result.assumptions.uncertainties?.length && <p>No uncertain dimensions declared; this checks one concrete case.</p>}<p>Everything outside these dimensions uses the saved nominal scenario. Opening cash: {money(result.nominal_assumptions.opening_balance_cents ?? workspace.scenario.opening_balance_cents)}.</p>{result.nominal_assumptions.income_date && <p>Nominal income date: {result.nominal_assumptions.income_date}.</p>}{result.nominal_assumptions.income_cents != null && <p>Nominal income amount: {money(result.nominal_assumptions.income_cents)}.</p>}{Object.entries(result.nominal_assumptions.approval_overrides ?? {}).map(([id, value]) => <p key={id}>Nominal approval assumption: {workspace.rules.find(rule => rule.id === id)?.title ?? actionTitle(id)} · {value}.</p>)}{result.nominal_assumptions.include_conditional && <p>Nominal scenario permits conditional approval assumptions; verification checks authorization separately in every case.</p>}</details>
+      {/* RELEASED TO C12 — c-uncertainty-failure-view.
+          B owns this seam and the props passed through it. C12 may replace the
+          placeholder below with its failure view and may not change surrounding
+          form, request or state handling. Typed props: { verification: VerificationResult;
+          onEvidence: (ruleIds: string[]) => void }. Stable selector: data-testid="failure-view-slot". */}
+      <div data-testid="failure-view-slot" className="failure-view-slot">
+        <FailureViewSlot verification={result} onEvidence={onEvidence} />
+      </div>
       {result.status !== "SAFE" && <CashGapPanel workspace={workspace} plan={plan} verification={result} onEvidence={onEvidence} />}
       {counterexample && <section className="counterexample" aria-labelledby="counterexample-heading">
         <h3 id="counterexample-heading">Counterexample timeline</h3>
