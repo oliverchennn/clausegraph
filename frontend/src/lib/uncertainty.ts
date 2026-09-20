@@ -7,7 +7,7 @@
  * far exceed JavaScript's exact integer range, and a rounded total must never
  * be presented as exact.
  */
-import type { Uncertainty } from "./types";
+import type { Uncertainty, Workspace } from "./types";
 
 export const MAX_DIMENSIONS = 8;
 export const MAX_CASES = 10000;
@@ -18,7 +18,7 @@ export function parseIsoDate(value: string): { year: number; month: number; day:
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return null;
   const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
-  if (month < 1 || month > 12 || day < 1) return null;
+  if (year < 1 || month < 1 || month > 12 || day < 1) return null;
   // Date.UTC maps years 0-99 onto 1900-1999, so build the check explicitly.
   const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
   const lengths = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -45,9 +45,13 @@ export function dayOrdinal(value: string): bigint | null {
 
 /** Inclusive cardinality of one dimension; zero marks an invalid draft. */
 export function dimensionSize(dimension: Uncertainty): bigint {
-  if (dimension.kind === "approval") return BigInt(new Set(dimension.outcomes).size);
+  if (dimension.kind === "approval") {
+    const outcomes = new Set(dimension.outcomes);
+    return outcomes.size === dimension.outcomes.length && [...outcomes].every(value => ["approved", "denied", "pending"].includes(value))
+      ? BigInt(outcomes.size) : BigInt(0);
+  }
   if (dimension.kind === "income_amount") {
-    if (!Number.isInteger(dimension.minimum_cents) || !Number.isInteger(dimension.maximum_cents)) return BigInt(0);
+    if (![dimension.minimum_cents, dimension.maximum_cents].every(value => Number.isSafeInteger(value) && value >= 0 && value <= 10000000000)) return BigInt(0);
     const span = BigInt(dimension.maximum_cents) - BigInt(dimension.minimum_cents) + BigInt(1);
     return span > BigInt(0) ? span : BigInt(0);
   }
@@ -90,14 +94,28 @@ export function duplicateIds(dimensions: Uncertainty[]): Set<string> {
 }
 
 /** An invalid draft has no valid count and must not be submitted. */
-export function draftBlockers(dimensions: Uncertainty[]): string[] {
+export function draftBlockers(dimensions: Uncertainty[], workspace?: Workspace): string[] {
   const blockers: string[] = [];
   if (dimensions.length > MAX_DIMENSIONS) blockers.push(`At most ${MAX_DIMENSIONS} dimensions may be declared.`);
   if (duplicateTargets(dimensions).size) blockers.push("Each property of a target may be declared only once.");
   if (duplicateIds(dimensions).size) blockers.push("Dimension identifiers must be unique.");
   for (const dimension of dimensions) {
+    if (!dimension.id.trim()) blockers.push("A dimension identifier is required.");
     if (!dimension.rationale.trim()) blockers.push(`${dimension.id}: a rationale is required.`);
     if (dimensionSize(dimension) === BigInt(0)) blockers.push(`${dimension.id}: the declared bounds are empty or invalid.`);
+    if (workspace && dimension.kind === "approval") {
+      const matches = workspace.scenario.actions.filter(action => action.id === dimension.target_id).length
+        + workspace.rules.filter(rule => rule.id === dimension.target_id).length;
+      if (matches !== 1) blockers.push(`${dimension.id}: choose an unambiguous known approval target.`);
+    } else if (workspace && dimension.kind !== "approval") {
+      const income = workspace.scenario.events.find(event => event.id === dimension.event_id);
+      if (!income || income.direction !== "income" || income.kind !== "projected" || income.date < workspace.scenario.start_date) {
+        blockers.push(`${dimension.id}: choose projected income on or after the horizon start.`);
+      }
+      if (dimension.kind === "income_date" && dimension.earliest < workspace.scenario.start_date) {
+        blockers.push(`${dimension.id}: an income date cannot precede the horizon start.`);
+      }
+    }
   }
   return blockers;
 }

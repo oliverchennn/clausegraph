@@ -2,9 +2,9 @@
 
 import { Plus, Trash2, TriangleAlert } from "lucide-react";
 import { Button, Field } from "./ui";
-import { MAX_CASES, MAX_DIMENSIONS, dimensionSize, duplicateTargets, exactCaseCount, exceedsSafeInteger, overBudget } from "@/lib/uncertainty";
+import { MAX_CASES, MAX_DIMENSIONS, dimensionSize, draftBlockers, duplicateTargets, exactCaseCount, exceedsSafeInteger, overBudget } from "@/lib/uncertainty";
 import { money } from "@/lib/api";
-import type { Action, Rule, Uncertainty, Workspace } from "@/lib/types";
+import type { Uncertainty, Workspace } from "@/lib/types";
 
 type Props = {
   workspace: Workspace;
@@ -23,11 +23,11 @@ function uniqueId(dimensions: Uncertainty[], prefix: string) {
 const RATIONALE = "User-declared planning bound; an assumption, not a forecast.";
 
 export default function UncertaintyControls({ workspace, dimensions, onChange, disabled }: Props) {
-  const incomes = workspace.scenario.events.filter(event => event.direction === "income" && event.kind !== "actual");
+  const incomes = workspace.scenario.events.filter(event => event.direction === "income" && event.kind === "projected" && event.date >= workspace.scenario.start_date);
   const approvalTargets: { id: string; title: string }[] = [
-    ...workspace.scenario.actions.filter((action: Action) => action.approval_status !== "not_required")
-      .map(action => ({ id: action.id, title: action.title })),
-    ...workspace.rules.filter((rule: Rule) => rule.approval_status !== "not_required")
+    ...workspace.scenario.actions.filter(action => !workspace.rules.some(rule => rule.id === action.id))
+      .map(action => ({ id: action.id, title: `${action.title} (action)` })),
+    ...workspace.rules.filter(rule => !workspace.scenario.actions.some(action => action.id === rule.id))
       .map(rule => ({ id: rule.id, title: `${rule.title} (rule)` })),
   ];
   const duplicates = duplicateTargets(dimensions);
@@ -52,6 +52,7 @@ export default function UncertaintyControls({ workspace, dimensions, onChange, d
     }
   }
 
+  const blockers = draftBlockers(dimensions, workspace);
   const count = exactCaseCount(dimensions);
   const above = overBudget(count);
   const huge = exceedsSafeInteger(count);
@@ -69,6 +70,7 @@ export default function UncertaintyControls({ workspace, dimensions, onChange, d
     {full && <p className="helper" role="status">Eight declared dimensions is the contract limit. Remove one to add another.</p>}
 
     {dimensions.length === 0 && <p className="helper">No declared uncertainty: verification checks the single nominal assignment.</p>}
+    {dimensions.some(item => item.kind === "approval") && <p className="helper">These are hypothetical outcomes, not recorded decisions. A target unused by the saved schedule may change only the case count.</p>}
 
     <ul className="uncertainty-list">
       {dimensions.map(dimension => {
@@ -99,10 +101,10 @@ export default function UncertaintyControls({ workspace, dimensions, onChange, d
           </div>}
 
           {dimension.kind === "income_amount" && <div className="form-grid">
-            <Field label="Minimum (cents, inclusive)"><input type="number" min={0} step={1} required disabled={disabled}
+            <Field label="Minimum (cents, inclusive)"><input type="number" min={0} max={10000000000} step={1} required disabled={disabled}
               aria-label={`Minimum cents for ${dimension.id}`} value={dimension.minimum_cents}
               onChange={event => replace(dimension.id, { ...dimension, minimum_cents: Number(event.target.value) })} /></Field>
-            <Field label="Maximum (cents, inclusive)"><input type="number" min={0} step={1} required disabled={disabled}
+            <Field label="Maximum (cents, inclusive)"><input type="number" min={0} max={10000000000} step={1} required disabled={disabled}
               aria-label={`Maximum cents for ${dimension.id}`} value={dimension.maximum_cents}
               onChange={event => replace(dimension.id, { ...dimension, maximum_cents: Number(event.target.value) })} /></Field>
           </div>}
@@ -135,12 +137,15 @@ export default function UncertaintyControls({ workspace, dimensions, onChange, d
     </ul>
 
     {/* Exact preflight count, never a rounded float. */}
-    <div className={`uncertainty-count${above ? " uncertainty-over-budget" : ""}`} data-testid="preflight-count">
+    {blockers.length > 0 ? <div className="uncertainty-count" data-testid="preflight-count" role="alert">
+      <strong>Invalid draft — no valid case count</strong>
+      <ul>{blockers.map((blocker, index) => <li key={index}>{blocker}</li>)}</ul>
+    </div> : <div className={`uncertainty-count${above ? " uncertainty-over-budget" : ""}`} data-testid="preflight-count">
       <strong>{count.toString()}</strong> case{count === BigInt(1) ? "" : "s"} in the declared model
       {huge && <span className="uncertainty-huge" data-testid="huge-count">Exact count shown; it exceeds JavaScript&rsquo;s exact integer range.</span>}
       {above && <span role="alert" data-testid="budget-warning"><TriangleAlert size={13} /> Above the {MAX_CASES}-case
-        budget. The check will stop early and report incomplete coverage — it will not return Safe.</span>}
-    </div>
+        budget. Coverage will be incomplete — it will not return Safe. A concrete failure can still prove Unsafe.</span>}
+    </div>}
   </div>;
 }
 

@@ -1,141 +1,175 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-const PAYDAY_THROUGH_28 = "Payday through Sep 28";
+async function readApi<T>(page: Page, path: string): Promise<T> {
+  return page.evaluate(async apiPath => {
+    const response = await fetch(`/api${apiPath}`, { headers: { Authorization: `Bearer ${localStorage.getItem("clausegraph.session")}` } });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  }, path);
+}
 
-async function runUnsafeVerification(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await expect(page.getByTestId("minimum-balance")).toContainText("$50");
+async function verifyEightDateFailure(page: Page) {
   const panel = page.getByTestId("verification-panel");
-  await panel.getByRole("button", { name: PAYDAY_THROUGH_28 }).click();
-  const verified = page.waitForResponse(r => r.url().endsWith("/api/verify") && r.request().method() === "POST");
+  await panel.getByRole("button", { name: "Payday through Sep 28" }).click();
+  const response = page.waitForResponse(item => item.url().endsWith("/api/verify") && item.request().method() === "POST");
   await panel.getByRole("button", { name: "Verify fixed plan" }).click();
-  expect((await (await verified).json()).status).toBe("UNSAFE");
+  expect((await (await response).json()).status).toBe("UNSAFE");
+  await expect(page.getByTestId("verification-result").getByText("Unsafe", { exact: true })).toBeVisible();
   return panel;
 }
 
-test("the diagnostic explains the buffer, its evidence and that the saved plan is untouched", async ({ page }) => {
+test("proven cash buffer compares the same schedule, links evidence, and mutates nothing", async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  const panel = await runUnsafeVerification(page);
-  const before = await page.evaluate(async () => {
-    const response = await fetch("/api/workspace", { headers: { Authorization: `Bearer ${localStorage.getItem("clausegraph.session")}` } });
-    return response.json();
-  });
+  await page.goto("/");
+  await expect(page.getByTestId("minimum-balance")).toContainText("$50");
+  const before = await readApi<{ revision: number; plan: { id: string; actions: unknown[] }; scenario: { opening_balance_cents: number } }>(page, "/workspace");
+  const panel = await verifyEightDateFailure(page);
+  const verificationsBefore = await readApi<unknown[]>(page, "/verifications");
 
-  const diagnosed = page.waitForResponse(r => r.url().endsWith("/api/cash-gap") && r.request().method() === "POST");
-  await panel.getByTestId("cash-gap-run").click();
-  const body = await (await diagnosed).json();
-  expect(body.status).toBe("PROVEN_MINIMUM");
-  expect(body.additional_opening_cash_cents).toBe(40000);
-  expect(body.minimality_proven).toBe(true);
-  expect(body.is_funding).toBe(false);
+  const response = page.waitForResponse(item => item.url().endsWith("/api/cash-gap") && item.request().method() === "POST");
+  await panel.getByRole("button", { name: "Explain cash gap" }).click();
+  const diagnostic = await (await response).json();
+  expect(diagnostic.status).toBe("PROVEN_MINIMUM");
+  expect(diagnostic.additional_opening_cash_cents).toBe(40000);
+  expect(diagnostic.lower_bound_cents).toBe(40000);
+  expect(diagnostic.minimality_proven).toBe(true);
+  expect(diagnostic.is_funding).toBe(false);
+  expect(diagnostic.limiting_date).toBe("2026-09-26");
+  expect(diagnostic.limiting_event_ids).toContain("loan");
+  expect(diagnostic.limiting_rule_ids).toContain("rule-loan");
+  expect(diagnostic.minimality_witness).toMatchObject({ tested_additional_cents: 39999, status: "UNSAFE", coverage_complete: true });
+  expect(diagnostic.baseline.fixed_actions).toEqual(before.plan.actions);
+  expect(diagnostic.funded.fixed_actions).toEqual(before.plan.actions);
+  expect(diagnostic.funded.status).toBe("SAFE");
 
-  const result = page.getByTestId("cash-gap-result");
-  await expect(page.getByTestId("cash-gap-status")).toHaveText("Proven minimum for this schedule");
-  await expect(page.getByTestId("cash-gap-amount")).toContainText("$400");
-  await expect(page.getByTestId("cash-gap-amount")).toContainText("proven minimum for this fixed schedule");
-  await expect(page.getByTestId("cash-gap-not-funding")).toContainText("not funding");
-  await expect(page.getByTestId("cash-gap-limiting-date")).toHaveText("2026-09-26");
-  // The original schedule and the same schedule under the cash assumption, side by side.
-  await expect(page.getByTestId("cash-gap-compare")).toContainText("UNSAFE");
-  await expect(page.getByTestId("cash-gap-compare")).toContainText("SAFE");
-  await expect(result).toContainText("Complete · 8 of 8 cases");
+  const result = page.getByTestId("cash-gap-diagnostic");
+  await expect(result.getByText("Proven minimum", { exact: true })).toBeVisible();
+  await expect(result).toContainText("$400.00");
+  await expect(result).toContainText("Original fixed schedule");
+  await expect(result).toContainText("Same actions and dates");
+  await expect(result).toContainText("Proven worst-case minimum -$400.00");
+  await expect(result).toContainText("Proven worst-case minimum $0.00");
+  await expect(result).toContainText("One-cent check: $399.99 was unsafe");
+  await expect(result).toContainText("Sep 26");
+  await expect(result).toContainText("Hypothetical only—not funding, income, approval or permission");
+  await expect(result.getByText(/Future obligations remain visible/)).toBeVisible();
+  await result.screenshot({ path: testInfo.outputPath("cash-gap-proven.png") });
 
-  // Evidence for the limiting date reaches the real source drawer.
-  await page.getByTestId("cash-gap-evidence").click();
+  const evidenceButton = result.getByRole("button", { name: "Open limiting evidence" });
+  await evidenceButton.focus();
+  await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog").getByRole("heading", { name: "Follow the evidence" })).toBeVisible();
+  await expect(page.getByTestId("rule-rule-loan")).toBeVisible();
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await expect(evidenceButton).toBeFocused();
 
-  // Nothing was written: same revision, same plan, no saved verification beyond the one we ran.
-  const after = await page.evaluate(async () => {
-    const response = await fetch("/api/workspace", { headers: { Authorization: `Bearer ${localStorage.getItem("clausegraph.session")}` } });
-    return response.json();
-  });
-  expect(after.revision).toBe(before.revision);
-  expect(after.plan).toEqual(before.plan);
-  expect(after.scenario.opening_balance_cents).toBe(before.scenario.opening_balance_cents);
+  const after = await readApi<typeof before>(page, "/workspace");
+  expect(after).toEqual(before);
+  expect(await readApi<unknown[]>(page, "/verifications")).toEqual(verificationsBefore);
+  await page.reload();
+  await expect(page.getByTestId("cash-gap-diagnostic")).not.toBeVisible();
+  expect(await readApi<typeof before>(page, "/workspace")).toEqual(before);
   expect(errors).toEqual([]);
 });
 
-test("a denied approval is reported as unrepairable by cash rather than as an amount", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.getByTestId("minimum-balance")).toContainText("$50");
-  const panel = page.getByTestId("verification-panel");
-  await panel.getByTestId("add-approval").click();
-  const verified = page.waitForResponse(r => r.url().endsWith("/api/verify") && r.request().method() === "POST");
-  await panel.getByRole("button", { name: "Verify fixed plan" }).click();
-  expect((await (await verified).json()).status).toBe("UNSAFE");
-
-  const diagnosed = page.waitForResponse(r => r.url().endsWith("/api/cash-gap") && r.request().method() === "POST");
-  await panel.getByTestId("cash-gap-run").click();
-  const body = await (await diagnosed).json();
-  expect(body.status).toBe("NOT_REPAIRABLE_WITH_CASH");
-  expect(body.additional_opening_cash_cents).toBeNull();
-
-  await expect(page.getByTestId("cash-gap-status")).toHaveText("Cash cannot repair this");
-  await expect(page.getByTestId("cash-gap-amount")).toContainText("No amount established");
-  await expect(page.getByTestId("cash-gap-blockers")).toContainText("authorization");
-  await expect(page.getByTestId("cash-gap-blockers")).toContainText("never repaired by adding money");
-});
-
-test("an incomplete check is labelled inconclusive and never as an exact minimum", async ({ page }) => {
-  const panel = await runUnsafeVerification(page);
-  // Force a case cutoff on the diagnostic request only; the verification above was complete.
-  await page.route("**/api/cash-gap", async route => {
-    const payload = JSON.parse(route.request().postData() || "{}");
-    await route.continue({ postData: JSON.stringify({ ...payload, max_cases: 2 }) });
-  });
-  const diagnosed = page.waitForResponse(r => r.url().endsWith("/api/cash-gap") && r.request().method() === "POST");
-  await panel.getByTestId("cash-gap-run").click();
-  const body = await (await diagnosed).json();
-  expect(body.status).toBe("INCONCLUSIVE");
-  expect(body.additional_opening_cash_cents).toBeNull();
-  expect(body.minimality_proven).toBe(false);
-
-  await expect(page.getByTestId("cash-gap-status")).toHaveText("Inconclusive · coverage stopped early");
-  await expect(page.getByTestId("cash-gap-amount")).toContainText("No amount established");
-  await expect(page.getByTestId("cash-gap-result")).toContainText("Incomplete · 2 of 8 cases checked");
-});
-
-test("a failed diagnostic is retryable and reports no amount", async ({ page }) => {
-  const panel = await runUnsafeVerification(page);
-  let recovered = false;
-  await page.route("**/api/cash-gap", async route => {
-    if (recovered) { await route.continue(); return; }
-    await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "Diagnostic unavailable." }) });
-  });
-  await panel.getByTestId("cash-gap-run").click();
-  await expect(panel.getByRole("alert")).toContainText("Diagnostic unavailable");
-  await expect(page.getByTestId("cash-gap-result")).toHaveCount(0);
-  recovered = true;
-  await panel.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByTestId("cash-gap-amount")).toContainText("$400");
-});
-
-test("changing the declared assumptions clears a stale diagnostic", async ({ page }) => {
-  const panel = await runUnsafeVerification(page);
-  await panel.getByTestId("cash-gap-run").click();
-  await expect(page.getByTestId("cash-gap-amount")).toContainText("$400");
-  // Re-verify on the narrower preset: the previous diagnostic belonged to the old result.
-  await panel.getByRole("button", { name: "Payday through Sep 26" }).click();
-  await expect(page.getByTestId("cash-gap-result")).toHaveCount(0);
-  const verified = page.waitForResponse(r => r.url().endsWith("/api/verify") && r.request().method() === "POST");
-  await panel.getByRole("button", { name: "Verify fixed plan" }).click();
-  expect((await (await verified).json()).status).toBe("SAFE");
-  // A safe fixed-plan result offers no gap to diagnose at all.
-  await expect(page.getByTestId("cash-gap")).toHaveCount(0);
-});
-
-test("the diagnostic is readable and keyboard reachable at 390px", async ({ page }) => {
+test("authorization failures and incomplete coverage never become funding claims", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  const panel = await runUnsafeVerification(page);
-  await panel.getByTestId("cash-gap-run").focus();
-  await expect(panel.getByTestId("cash-gap-run")).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page.getByTestId("cash-gap-amount")).toContainText("$400");
-  // No horizontal overflow introduced by the comparison grid at mobile width.
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(0);
-  const box = await page.getByTestId("cash-gap-result").boundingBox();
-  expect(box!.width).toBeLessThanOrEqual(390);
+  await page.goto("/");
+  const panel = page.getByTestId("verification-panel");
+  const recordedBefore = await readApi<{ scenario: { actions: { id: string; approval_status: string }[] }; rules: { id: string; approval_status: string }[] }>(page, "/workspace");
+  expect(recordedBefore.scenario.actions.find(action => action.id === "shift-payment")?.approval_status).toBe("approved");
+  expect(recordedBefore.rules.find(rule => rule.id === "rule-shift")?.approval_status).toBe("approved");
+  await panel.getByTestId("add-approval").click();
+  const verifyResponse = page.waitForResponse(item => item.url().endsWith("/api/verify") && item.request().method() === "POST");
+  await panel.getByRole("button", { name: "Verify fixed plan" }).click();
+  expect((await (await verifyResponse).json()).status).toBe("UNSAFE");
+  const blockedResponse = page.waitForResponse(item => item.url().endsWith("/api/cash-gap") && item.request().method() === "POST");
+  await panel.getByRole("button", { name: "Explain cash gap" }).click();
+  const blocked = await (await blockedResponse).json();
+  expect(blocked.status).toBe("NOT_REPAIRABLE_WITH_CASH");
+  expect(blocked.additional_opening_cash_cents).toBeNull();
+  expect(blocked.funded).toBeNull();
+  expect(blocked.blocking_properties).toContain("authorization");
+  expect(blocked.baseline.counterexample.assignment).toContainEqual({ dimension_id: "approval-1", value: "denied" });
+  let result = page.getByTestId("cash-gap-diagnostic");
+  await expect(result.getByText("Cash cannot repair", { exact: true })).toBeVisible();
+  await expect(result).toContainText("No cash amount established");
+  await expect(result).toContainText("not authorized in at least one declared case");
+  await expect(result).toContainText("Cash cannot grant permission");
+  await expect(result).not.toContainText("Recorded approval does not permit");
+  await expect(result).toContainText("No verified cash comparison");
+  await expect(result).not.toContainText("Verified-sufficient fixed-schedule buffer");
+  expect(await readApi<typeof recordedBefore>(page, "/workspace")).toEqual(recordedBefore);
+
+  await panel.getByRole("button", { name: "Remove approval-1" }).click();
+  await panel.getByRole("button", { name: "Payday through Sep 28" }).click();
+  const unsafeResponse = page.waitForResponse(item => item.url().endsWith("/api/verify") && item.request().method() === "POST");
+  await panel.getByRole("button", { name: "Verify fixed plan" }).click();
+  expect((await (await unsafeResponse).json()).status).toBe("UNSAFE");
+  await page.route("**/api/cash-gap", route => route.continue({ postData: JSON.stringify({ ...route.request().postDataJSON(), max_cases: 1 }) }));
+  const incompleteResponse = page.waitForResponse(item => item.url().endsWith("/api/cash-gap") && item.request().method() === "POST");
+  await panel.getByRole("button", { name: "Explain cash gap" }).click();
+  const incomplete = await (await incompleteResponse).json();
+  expect(incomplete.status).toBe("INCONCLUSIVE");
+  expect(incomplete.additional_opening_cash_cents).toBeNull();
+  expect(incomplete.baseline.coverage_complete).toBe(false);
+  result = page.getByTestId("cash-gap-diagnostic");
+  await expect(result.getByText("Inconclusive", { exact: true })).toBeVisible();
+  await expect(result).toContainText("No cash amount established");
+  await expect(result).toContainText("1 / 8 cases checked · incomplete coverage");
+  await expect(result).toContainText("Observed minimum $50.00; worst case not proven");
+  await expect(result).not.toContainText("invalid schedule");
+  await expect(page.getByText("Proven minimum", { exact: true })).not.toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await result.screenshot({ path: testInfo.outputPath("cash-gap-mobile-inconclusive.png") });
+});
+
+test("assumption, plan, revision, and session changes clear cash diagnostics and abort stale responses", async ({ page }) => {
+  await page.goto("/");
+  const panel = await verifyEightDateFailure(page);
+  let intercepted!: () => void;
+  let release!: () => void;
+  const interceptedPromise = new Promise<void>(resolve => { intercepted = resolve; });
+  const releasePromise = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/api/cash-gap", async route => {
+    intercepted();
+    await releasePromise;
+    await route.continue().catch(() => undefined);
+  });
+  await panel.getByRole("button", { name: "Explain cash gap" }).click();
+  await interceptedPromise;
+  await panel.getByLabel("Latest for payday").fill("2026-09-26");
+  release();
+  await expect(page.getByTestId("verification-result")).not.toBeVisible();
+  await expect(page.getByTestId("cash-gap-diagnostic")).not.toBeVisible();
+  await page.unroute("**/api/cash-gap");
+
+  await panel.getByRole("button", { name: "Payday through Sep 28" }).click();
+  await panel.getByRole("button", { name: "Verify fixed plan" }).click();
+  await expect(page.getByTestId("verification-result").getByText("Unsafe", { exact: true })).toBeVisible();
+  await panel.getByRole("button", { name: "Explain cash gap" }).click();
+  await expect(page.getByTestId("cash-gap-diagnostic")).toBeVisible();
+
+  await page.getByLabel("Scenario available cash").fill("2100.00");
+  await page.getByRole("button", { name: "Preview side by side" }).click();
+  await page.getByRole("button", { name: "Use this preview as plan" }).click();
+  await expect(page.getByTestId("cash-gap-diagnostic")).not.toBeVisible();
+
+  const changedPlanPanel = await verifyEightDateFailure(page);
+  await changedPlanPanel.getByRole("button", { name: "Explain cash gap" }).click();
+  await expect(page.getByTestId("cash-gap-diagnostic")).toBeVisible();
+  await page.getByTestId("action-shift-payment").getByRole("button", { name: /View evidence/ }).click();
+  const rule = page.getByTestId("rule-rule-shift");
+  await rule.getByLabel("Approval for Approved payment shift").selectOption("denied");
+  await rule.getByRole("button", { name: "Save review & recalculate" }).click();
+  await expect(rule.getByRole("button", { name: "Review saved" })).toBeVisible();
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await expect(page.getByTestId("cash-gap-diagnostic")).not.toBeVisible();
+
+  const previousSession = await page.evaluate(() => localStorage.getItem("clausegraph.session"));
+  await page.getByRole("button", { name: "Start my own plan" }).click();
+  await expect(page.getByText("Set up my financial picture", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("clausegraph.session"))).not.toBe(previousSession);
+  await expect(page.getByTestId("cash-gap-diagnostic")).not.toBeVisible();
 });

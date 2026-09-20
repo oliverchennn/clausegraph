@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, FileText, ShieldCheck } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
-import CashGapPanel from "@/components/cash-gap-panel";
+import CashGapDiagnosticPanel from "@/components/cash-gap-diagnostic";
 import UncertaintyControls from "@/components/uncertainty-controls";
-import { MAX_CASES, draftBlockers } from "@/lib/uncertainty";
+import { MAX_CASES, draftBlockers, exactCaseCount } from "@/lib/uncertainty";
 import { humanize, money, request } from "@/lib/api";
 import type { PlanResult, Uncertainty, VerificationRequest, VerificationResult, Workspace } from "@/lib/types";
 
@@ -21,15 +21,14 @@ type Props = {
  * Placeholder for C12's failure view. B ships the seam so the wiring, props and
  * selector are merged and testable; C12 replaces this body only.
  */
-function FailureViewSlot({ verification }: { verification: VerificationResult; onEvidence: (ruleIds: string[]) => void }) {
-  if (!verification.counterexample) return null;
-  return <p className="helper" data-testid="failure-view-placeholder">
-    A failing case was found. The detailed failure view is a separate task.
-  </p>;
+function FailureViewSlot(props: { verification: VerificationResult; onEvidence: (ruleIds: string[]) => void }) {
+  // The existing counterexample remains visible below until C12 adds its view.
+  void props;
+  return null;
 }
 
 export default function VerifyPlan({ workspace, plan, result, onResult, onEvidence }: Props) {
-  const incomes = workspace.scenario.events.filter(event => event.direction === "income" && event.kind !== "actual");
+  const incomes = workspace.scenario.events.filter(event => event.direction === "income" && event.kind === "projected" && event.date >= workspace.scenario.start_date);
   const [dimensions, setDimensions] = useState<Uncertainty[]>(() => result?.assumptions.uncertainties ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -45,6 +44,7 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
   }
 
   async function verify() {
+    if (draftBlockers(dimensions, workspace).length) return;
     clearResult();
     const current = new AbortController();
     controller.current = current;
@@ -76,7 +76,7 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
   }
 
   // An invalid draft has no valid count and cannot be submitted.
-  const blocked = draftBlockers(dimensions).length > 0;
+  const blocked = draftBlockers(dimensions, workspace).length > 0;
 
   const counterexample = result?.counterexample;
   const actionTitle = (id: string) => workspace.scenario.actions.find(action => action.id === id)?.title ?? id;
@@ -108,7 +108,7 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
       <p className="helper">Applies only to the declared bounds, recorded evidence, and horizon below. Other dates, outcomes, and uncertainties are outside this result.</p>
       <p className="helper verification-properties">Checks: nonnegative daily cash, preserved essentials, action authorization and evidence, execution windows and dependencies, and obligation accounting.</p>
       <div className="verification-metrics"><div><span>Nominal minimum</span><strong>{money(plan.proposed.minimum_balance_cents)}</strong></div><div><span>Worst-case minimum</span><strong data-testid="verification-worst-balance">{result.worst_case_proven && result.coverage_complete && result.worst_case ? money(result.worst_case.minimum_balance_cents) : "Not proven"}</strong></div></div>
-      <dl className="verification-facts"><div><dt>Cases checked</dt><dd>{result.checked_cases} / {result.total_cases} · {result.dimension_count} uncertainty {result.dimension_count === 1 ? "dimension" : "dimensions"}</dd></div><div><dt>Full coverage</dt><dd>{result.coverage_complete ? "Yes · every modeled combination" : "No · bounded check incomplete"}</dd></div><div><dt>Horizon</dt><dd>{result.horizon_start} inclusive → {result.horizon_end_exclusive} exclusive</dd></div><div><dt>Solver</dt><dd>Exhaustive finite model checker · {result.solver_status} · {result.runtime_seconds.toFixed(3)}s</dd></div><div><dt>Input revision</dt><dd>{result.revision}</dd></div></dl>
+      <dl className="verification-facts"><div><dt>Cases checked</dt><dd>{result.checked_cases} / {exactCaseCount(result.assumptions.uncertainties ?? []).toString()} · {result.dimension_count} uncertainty {result.dimension_count === 1 ? "dimension" : "dimensions"}</dd></div><div><dt>Full coverage</dt><dd>{result.coverage_complete ? "Yes · every modeled combination" : "No · bounded check incomplete"}</dd></div><div><dt>Horizon</dt><dd>{result.horizon_start} inclusive → {result.horizon_end_exclusive} exclusive</dd></div><div><dt>Solver</dt><dd>Exhaustive finite model checker · {result.solver_status} · {result.runtime_seconds.toFixed(3)}s</dd></div><div><dt>Input revision</dt><dd>{result.revision}</dd></div></dl>
       <details className="verification-assumptions" open><summary>Exact declared assumptions</summary><ul>{result.assumptions.uncertainties?.map(dimension => <li key={dimension.id}><strong>{dimension.kind === "approval" ? `${actionTitle(dimension.target_id)}: ${dimension.outcomes.join(" / ")}` : dimension.kind === "income_date" ? `${eventTitle(dimension.event_id)}: every date ${dimension.earliest} through ${dimension.latest}, inclusive` : `${eventTitle(dimension.event_id)}: every cent ${money(dimension.minimum_cents, true)} through ${money(dimension.maximum_cents, true)}, inclusive`}</strong><span>User assumption · {dimension.rationale}</span></li>)}</ul>{!result.assumptions.uncertainties?.length && <p>No uncertain dimensions declared; this checks one concrete case.</p>}<p>Everything outside these dimensions uses the saved nominal scenario. Opening cash: {money(result.nominal_assumptions.opening_balance_cents ?? workspace.scenario.opening_balance_cents)}.</p>{result.nominal_assumptions.income_date && <p>Nominal income date: {result.nominal_assumptions.income_date}.</p>}{result.nominal_assumptions.income_cents != null && <p>Nominal income amount: {money(result.nominal_assumptions.income_cents)}.</p>}{Object.entries(result.nominal_assumptions.approval_overrides ?? {}).map(([id, value]) => <p key={id}>Nominal approval assumption: {workspace.rules.find(rule => rule.id === id)?.title ?? actionTitle(id)} · {value}.</p>)}{result.nominal_assumptions.include_conditional && <p>Nominal scenario permits conditional approval assumptions; verification checks authorization separately in every case.</p>}</details>
       {/* RELEASED TO C12 — c-uncertainty-failure-view.
           B owns this seam and the props passed through it. C12 may replace the
@@ -118,16 +118,16 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
       <div data-testid="failure-view-slot" className="failure-view-slot">
         <FailureViewSlot verification={result} onEvidence={onEvidence} />
       </div>
-      {result.status !== "SAFE" && <CashGapPanel workspace={workspace} plan={plan} verification={result} onEvidence={onEvidence} />}
       {counterexample && <section className="counterexample" aria-labelledby="counterexample-heading">
         <h3 id="counterexample-heading">Counterexample timeline</h3>
         <ul className="counterexample-assignment">{counterexample.assignment.map(item => <li key={item.dimension_id}><strong>{dimensionTitle(item.dimension_id)}:</strong> {String(item.value)}</li>)}</ul>
-        <p className="counterexample-failure"><strong>{result.coverage_complete ? "Earliest failing date" : "Failing date in this case"}: {counterexample.earliest_failing_date ?? "Schedule authorization failed"}</strong>{counterexample.balance_cents != null && <span>Balance: {money(counterexample.balance_cents)}</span>}</p>
+        <p className="counterexample-failure"><strong>Failure date in this witness: {counterexample.earliest_failing_date ?? "Schedule authorization failed"}</strong>{counterexample.balance_cents != null && <span>Balance: {money(counterexample.balance_cents)}</span>}</p>
         {counterexample.failures.map((failure, index) => <div className="counterexample-reason" key={index}><Badge tone="danger">{humanize(failure.property)}</Badge><p>{failure.message}</p>{(failure.source_rule_ids?.length ?? 0) > 0 && <button className="text-button" onClick={() => onEvidence(failure.source_rule_ids ?? [])}><FileText size={12} /> Failure evidence</button>}</div>)}
         {counterexample.simulation ? <p className="helper">This concrete case appears in red on the cash chart above.</p> : <p className="helper">An invalid schedule has no permitted cash projection; no counterexample line is drawn.</p>}
         <ol className="counterexample-events">{counterexample.events?.map(({ event, action_ids }) => <li key={event.id}><div className="counterexample-event-main"><time>{event.date}</time><strong>{event.title}</strong><span>{event.direction === "income" ? "+" : "−"}{money(event.amount_cents)}</span></div><div className="counterexample-event-detail">{event.essential && <Badge>Essential retained</Badge>}{event.source_rule_ids?.length ? <button className="text-button" onClick={() => onEvidence(event.source_rule_ids ?? [])}><FileText size={12} /> Event evidence</button> : <span>Recorded financial picture</span>}{action_ids?.map(id => { const action = plan.actions.find(item => item.action_id === id); return <button className="text-button" key={id} disabled={!action?.source_rule_ids.length} onClick={() => onEvidence(action?.source_rule_ids ?? [])}>{actionTitle(id)} · action evidence</button>; })}</div></li>)}</ol>
       </section>}
       {!!result.warnings?.length && <ul className="verification-warnings">{result.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
+      {result.status !== "SAFE" && <CashGapDiagnosticPanel key={result.id} workspace={workspace} plan={plan} verification={result} onEvidence={onEvidence} />}
     </div>}
   </section>;
 }
