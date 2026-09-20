@@ -55,6 +55,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cash-gap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cash Gap
+         * @description Return a side-effect-free hypothetical-cash diagnostic for the saved fixed plan.
+         */
+        post: operations["cash_gap_api_cash_gap_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demo/reset": {
         parameters: {
             query?: never;
@@ -536,6 +556,83 @@ export interface components {
             /** File */
             file: string;
         };
+        /** CashGapDiagnostic */
+        CashGapDiagnostic: {
+            /** Additional Opening Cash Cents */
+            additional_opening_cash_cents?: number | null;
+            baseline: components["schemas"]["VerificationResult"];
+            /** Blocking Properties */
+            blocking_properties?: string[];
+            funded?: components["schemas"]["VerificationResult"] | null;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Is Funding
+             * @default false
+             * @constant
+             */
+            is_funding: false;
+            /** Limiting Date */
+            limiting_date?: string | null;
+            /** Limiting Event Ids */
+            limiting_event_ids?: string[];
+            /** Limiting Rule Ids */
+            limiting_rule_ids?: string[];
+            /** Lower Bound Cents */
+            lower_bound_cents?: number | null;
+            /**
+             * Minimality Proven
+             * @default false
+             */
+            minimality_proven: boolean;
+            minimality_witness?: components["schemas"]["MinimalityWitness"] | null;
+            /**
+             * Mode
+             * @default cash_gap_diagnostic
+             * @constant
+             */
+            mode: "cash_gap_diagnostic";
+            /** Plan Id */
+            plan_id: string;
+            /** Revision */
+            revision: number;
+            /** Statement */
+            statement: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "NOT_REQUIRED" | "PROVEN_MINIMUM" | "SUFFICIENT_NOT_PROVEN_MINIMAL" | "NOT_REPAIRABLE_WITH_CASH" | "INCONCLUSIVE";
+            /** Warnings */
+            warnings?: string[];
+        };
+        /**
+         * CashGapRequest
+         * @description Ask how much explicitly hypothetical opening cash the saved fixed schedule would need.
+         */
+        CashGapRequest: {
+            /**
+             * Max Cases
+             * @default 10000
+             */
+            max_cases: number;
+            /** Plan Id */
+            plan_id: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Time Limit Seconds
+             * @default 5
+             */
+            time_limit_seconds: number;
+            /** Uncertainties */
+            uncertainties?: (components["schemas"]["IncomeDateUncertainty"] | components["schemas"]["IncomeAmountUncertainty"] | components["schemas"]["ApprovalUncertainty"])[];
+        };
         /** Condition */
         Condition: {
             /** Fact */
@@ -925,6 +1022,23 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * MinimalityWitness
+         * @description One cent below a claimed minimum must actually fail, or minimality is not proven.
+         */
+        MinimalityWitness: {
+            /** Coverage Complete */
+            coverage_complete: boolean;
+            /** Earliest Failing Date */
+            earliest_failing_date?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "SAFE" | "UNSAFE" | "UNKNOWN";
+            /** Tested Additional Cents */
+            tested_additional_cents: number;
         };
         /** PlanRequest */
         PlanRequest: {
@@ -1492,6 +1606,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TranscriptResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cash_gap_api_cash_gap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashGapRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashGapDiagnostic"];
                 };
             };
             /** @description Validation Error */

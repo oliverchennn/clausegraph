@@ -20,7 +20,7 @@ from starlette.concurrency import run_in_threadpool
 from clausegraph.config import Settings, get_settings
 from clausegraph.providers import ProviderError, Providers
 from clausegraph.schemas import (
-    ApprovalStatus, AudioRequest, DeleteResponse, Document, DraftRequest, DraftResponse,
+    ApprovalStatus, AudioRequest, CashGapDiagnostic, CashGapRequest, DeleteResponse, Document, DraftRequest, DraftResponse,
     ExtractionResult, HealthResponse, IntakeRequest, JobStatus, PlanRequest, PlanResult,
     ProviderStatus, ReviewQueue, ReviewStatus, RuleReview, Scenario, SessionCreate, TranscriptResponse,
     UploadResponse, VerificationRequest, VerificationResult, Workspace,
@@ -249,6 +249,20 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
         return request.app.state.store.save_verification(workspace.session_id, result)
+
+    @app.post("/api/cash-gap", response_model=CashGapDiagnostic)
+    def cash_gap(body: CashGapRequest, request: Request, workspace: Session):
+        """Return a side-effect-free hypothetical-cash diagnostic for the saved fixed plan."""
+        from clausegraph.cash_gap import diagnose_cash_gap
+        if workspace.revision != body.revision:
+            raise StaleRevision()
+        if (workspace.plan is None or workspace.plan.id != body.plan_id
+                or workspace.plan.revision != body.revision):
+            raise HTTPException(409, "Diagnose the current saved plan. Calculate a plan, refresh, and retry.")
+        try:
+            return diagnose_cash_gap(workspace.scenario, workspace.rules, workspace.plan, body)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
 
     @app.get("/api/verifications", response_model=list[VerificationResult])
     def verification_history(request: Request, workspace: Session):
