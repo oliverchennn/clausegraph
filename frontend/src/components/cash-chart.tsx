@@ -15,7 +15,7 @@ export default function CashChart({ plan, verification }: { plan: PlanResult; ve
       <CartesianGrid strokeDasharray="3 5" vertical={false} stroke="#e7eaf1" />
       <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fill: "#8790a3", fontSize: 11 }} minTickGap={45} axisLine={false} tickLine={false} tickMargin={12} />
       <YAxis tickFormatter={value => money(Number(value))} tick={{ fill: "#8790a3", fontSize: 11 }} axisLine={false} tickLine={false} width={64} tickMargin={10} />
-      <Tooltip labelFormatter={value => shortDate(String(value))} formatter={(value, name) => [money(Number(value), true), name === "counterexample" ? "Counterexample" : name === "proposed" ? "Nominal plan" : "Current path"]} contentStyle={{ border: "1px solid #e7eaf1", borderRadius: 12, boxShadow: "0 8px 30px #14204610", fontSize: 12 }} />
+      <Tooltip labelFormatter={value => shortDate(String(value))} formatter={(value, name) => [money(Number(value), true), name === "counterexample" ? "Counterexample" : name === "proposed" ? "Saved plan (nominal case)" : "Current path"]} contentStyle={{ border: "1px solid #e7eaf1", borderRadius: 12, boxShadow: "0 8px 30px #14204610", fontSize: 12 }} />
       <ReferenceLine y={0} stroke="#d08a88" strokeDasharray="4 4" />
       <Area type="stepAfter" dataKey="proposed" fill="url(#cashFill)" stroke="none" tooltipType="none" isAnimationActive={false} />
       <Line type="stepAfter" dataKey="baseline" name="baseline" stroke="#b2a7b5" strokeDasharray="5 5" strokeWidth={2} dot={false} isAnimationActive={false} />

@@ -76,6 +76,9 @@ test("proven cash buffer compares the same schedule, links evidence, and mutates
 test("authorization failures and incomplete coverage never become funding claims", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  // Startup first creates the private session, then saves its initial plan.
+  // Snapshot only the ready plan so that startup is not mistaken for a diagnostic write.
+  await expect(page.getByTestId("minimum-balance")).toContainText("$50");
   const panel = page.getByTestId("verification-panel");
   const recordedBefore = await readApi<{ scenario: { actions: { id: string; approval_status: string }[] }; rules: { id: string; approval_status: string }[] }>(page, "/workspace");
   expect(recordedBefore.scenario.actions.find(action => action.id === "shift-payment")?.approval_status).toBe("approved");

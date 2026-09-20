@@ -4,7 +4,7 @@ test("complete synthetic plan, evidence, approval, scenario, document and privac
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/");
-  await expect(page.getByText("All six example documents and financial details are fictional.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Its six fixture documents and starting financial details are fictional.", { exact: false })).toBeVisible();
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
   await expect(page.getByTestId("ending-balance")).toHaveText("$500");
   await expect(page.getByTestId("action-claim-assistance")).toContainText("Not in plan");
