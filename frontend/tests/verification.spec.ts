@@ -33,6 +33,7 @@ test("fixed-plan verification exposes a counterexample, proves bounded safety, a
   await result.getByRole("button", { name: "Event evidence", exact: true }).first().click();
   await expect(page.getByRole("dialog").getByRole("heading", { name: "Follow the evidence" })).toBeVisible();
   await page.getByRole("button", { name: "Close dialog" }).click();
+  await expect(result.getByRole("button", { name: "Event evidence", exact: true }).first()).toBeFocused();
   await page.getByRole("tab", { name: "Documents & facts" }).click();
   await page.getByRole("tab", { name: "Overview", exact: true }).click();
   await expect(panel.getByLabel("Latest verification payday")).toHaveValue("2026-09-28");

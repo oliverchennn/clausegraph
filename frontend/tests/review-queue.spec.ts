@@ -103,6 +103,7 @@ test("queue loading failures are retryable and mobile review is keyboard accessi
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(review).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await queue.screenshot({ path: testInfo.outputPath("review-queue-mobile.png") });
   await page.getByRole("button", { name: "Start my own plan" }).click();
