@@ -16,39 +16,35 @@ One implementation agent per developer and one active C assignment. No editing a
 
 ## Ordered delivery for A and B
 
-| Order | Developer A | Developer B | Gate |
-|---|---|---|---|
-| 1 | Workflow rules, base-policy CI, pre-push hook, pinned toolchain | Read-only demo audit, then install checks | Bootstrap merged and guards validated |
-| 2 | Read-only review queue API/shared blocker descriptions/generated contracts | Extract overview/review presentation while preserving behavior | Backend contract PR merged before API consumption |
-| 3 | Queue/gate regression tests; prepare synthetic provider checks | Next-review UI, evidence controls, stale-response and browser coverage | Source -> valid review -> updated plan works |
-| 4 | Fix observed backend problems and record actual validation | Loading/errors/empty states, keyboard/mobile clarity | Complete synthetic story and failure state work |
-| 5: B delivered | Integration/readiness record for merged PR20/PR21 | Operator rehearsal, local fallback and focused visual sign-off delivered in PR21 | Human spoken rehearsal remains; no global freeze declared |
-| 6: A merged, B active | History/delete contracts delivered in PR19; review B's submitted UI | User-assigned read-only plan/verification history, revision labels | Existing contracts stay stable; [acceptance criteria](DELIVERY_CHECKPOINT.md#acceptance-for-b-task-6s-history-pr) |
-| 7: A merged | Existing uncertainty limits validated in PR20 | Amount ranges and multiple uncertainty controls | B controls require a separate future assignment |
-| 8: later | Specify robust synthesis/correlations/expense uncertainty | Participate in UX specification | Separate design before implementation |
+The user approved this expanded queue on 2026-09-20. [HACKATHON_ASSIGNMENTS.md](HACKATHON_ASSIGNMENTS.md) is the detailed assignment scope, including lane tasks, acceptance checks and limits. The order below supersedes the earlier freeze-after-review-guidance roadmap. Feature numbers refer to the curated ideas, not execution order.
 
-C works alongside this sequence only on the optional queue below. No row, contract merge, review or rehearsal requires C to finish. If C finds a correctness defect, the owning developer triages it and can fix it immediately; the defect must not be held for C.
+| Stage | Developer A | Developer B | Completion gate |
+|---|---|---|---|
+| 0: closeout | Verify merged history checkpoint; run consented synthetic live extraction/review/recalculation; record native/OCR results separately | Existing Brev destination-aware browser consent; live-flow UI checks; presenter cues and human spoken rehearsal | Working local fallback; actual live/rehearsal results or explicit external blockers, never invented success |
+| 1: idea #2 | Fixed-schedule minimum hypothetical cash diagnostic, proof-qualified API and evidence | Cash-gap explanation, unchanged-schedule comparison and blocked/incomplete states | Proven versus observed results distinguished; no cash repair of authorization/evidence failures |
+| 2: idea #3 | Validate existing uncertainty contracts; supply missing backend visualization data | Amount/date/approval dimensions, multiple incomes, case-budget preview and failure exploration | Inclusive/exact domains; honest Safe/Unsafe/Unknown and large counts |
+| 3: idea #1 | Reviewed robust-synthesis design, then bounded resilient-schedule search | Design review, then nominal/resilient comparison and explicit adoption | One fixed schedule survives all declared assignments; no per-outcome reoptimization presented as robust |
+| 4: idea #4 | Missing consequence/provenance contract data using the existing engine | Cross-document consequence walkthrough linked to graph/evidence/cash | Cancellation debt acceleration and retained obligations are visible; integrated rehearsal/fallback |
+| Optional: idea #5 | Specify document replacement/diff/impact semantics | Reviewed old/new clauses and affected-plan presentation | Only if time remains after required work and rehearsal |
+| Lowest: idea #6 | Specify bounded hypothetical review-impact comparisons | Explain conditional review priority | Only after #5 is accepted or explicitly skipped; never promised benefit or approval |
+
+Each developer takes one bounded task at a time, records exact files and current starting/contract SHAs in its own new handoff, and stops after publishing it. The required queue is user-authorized; start the next fresh task only after its stage/contract gates are met. Do not execute another developer's lane or skip ahead. Optional activation requires an explicit remaining-time assessment recorded by A/B. Missing provider access or a human presenter remains outstanding but does not block independent local stages. A/B never wait on C.
 
 ## Confirmed checkpoint and current assignments
 
-Checkpoint: fetched main `a00af57`, including A's [PR20](https://github.com/oliverchennn/clausegraph/pull/20) and B's [PR21](https://github.com/oliverchennn/clausegraph/pull/21). The user approved A's bounded [release-readiness task](handoffs/dev-a/release-readiness.md) and confirmed B has started task 6's history UI. The [delivery checkpoint](DELIVERY_CHECKPOINT.md) records exact merged CI, fallback results and history review criteria. Historical handoffs retain their original results.
+Freshly fetched main is `ca7cde5` (PR23); no open PRs were present at this assignment refresh. PR19/20 delivered A's history and bounded uncertainty validation, PR21 delivered B's automated rehearsal/focus/fallback work, PR22 delivered A's readiness record, and PR23 delivered B's read-only history UI. Earlier workflow, review queue, provider support and C corrections remain merged. These tasks are complete, not pending assignments.
 
-- Workflow PR5, review queue [PR6](https://github.com/vzhu08/clausegraph/pull/6) and frontend snapshot [PR7](https://github.com/vzhu08/clausegraph/pull/7) are merged.
-- B's [PR8](https://github.com/vzhu08/clausegraph/pull/8) is merged as `147e657`. Its [handoff](handoffs/dev-b/review-guidance-finish.md) records typecheck/lint/build and all 11 browser tests passing on that task. The two earlier queue failures are historical, not an outstanding assignment to C.
-- A's [PR9](https://github.com/vzhu08/clausegraph/pull/9) is merged as `af980e1`; [NVIDIA_BREV.md](NVIDIA_BREV.md) describes the optional consent contract. This does not establish live provider accuracy or authorize provisioning.
-- Task-start synchronization PR10 and C's operating rules PR12 are merged. Original A task 1 (workflow bootstrap, PR5) is complete; do not restart it as unfinished work.
-- Brev output/source fixes PR11/PR13 and [live retest PR15](https://github.com/vzhu08/clausegraph/pull/15) are merged. Repeated five-clause tests scored 3/5 then 5/5 exact fields, with 5/5 valid citations and unreviewed outputs withheld in both. Browser consent remains unimplemented; no general accuracy or OCR claim follows.
-- C's [UI PR17](https://github.com/vzhu08/clausegraph/pull/17) (`eb81eab`) and [demo wording PR16](https://github.com/vzhu08/clausegraph/pull/16) (`79dced5`) are merged. Their handoffs record owner-directed exceptions to the normal release procedure; those exceptions do not assign future C work. PR17's application checks passed, while its current-main ancestry gate failed before merge.
+The [delivery checkpoint](DELIVERY_CHECKPOINT.md) and existing handoffs retain historical checks at their original commits. B's [history handoff](handoffs/dev-b/history-ui.md) records 19 passing local browser tests; B's [demo handoff](handoffs/dev-b/demo-rehearsal.md) records automated 180.02-second operator timing, not human spoken delivery. Stage 0 verifies current merged CI rather than assuming old results cover a new checkpoint.
 
-| Contributor | Next permitted work | Start condition / exclusions |
+| Contributor | Next assigned task | Boundaries |
 |---|---|---|
-| A | Current user assignment: merged integration/readiness record and history acceptance criteria | `codex/dev-a/release-readiness` from `a00af57`; documentation and existing validation only. Preserve B's files and stable APIs; no next task without consulting the user |
-| B | User-confirmed active task 6: read-only plan/verification history | Separate B session/task from current main using merged [history contracts](HISTORY_CONTRACT.md). Task 5 is delivered; richer uncertainty controls and Brev consent UI need separate assignments |
-| C | No active write assignment; optional ready read-only review | PR16/PR17 findings are delivered. Name a merged snapshot for any new review; a future C5 patch needs a new release |
+| A | Stage 0 `live-demo-closeout`, then the ordered A tasks above | A-owned backend/contracts/shared docs only; preserve baseline and independent local progress if live access is blocked |
+| B | Stage 0 `live-demo-consent`, then the ordered B tasks above | B-owned frontend/browser tests only; consume only merged contracts; coordinate actual human rehearsal rather than claiming automation measured it |
+| C | No active write assignment | Optional read-only review of a named merged snapshot; future fixes need exact-path release |
 
-A6/A7 backend work and B5 are delivered. B's automated operator rehearsal and visual/fallback evidence do not measure human spoken delivery. B6 is active and is not claimed complete or included in the recorded demo baseline. A stops after the approved readiness task; task 8 remains deferred and every new task requires consultation with the user.
+Hosted native/evidence/OCR and the full live browser workflow remain unverified by the prior five-clause Brev native-text tests (3/5 then 5/5 exact fields). Browser Brev consent remains unfinished until stage 0 is implemented. Human spoken rehearsal remains outstanding. No live accuracy, deployment or new-feature delivery is claimed by this assignment update.
 
-Historical handoffs remain unchanged: A's [review-queue](handoffs/dev-a/review-queue.md), [review-workflow](handoffs/dev-a/review-workflow.md), [nvidia-brev](handoffs/dev-a/nvidia-brev.md), [task-sync](handoffs/dev-a/task-sync.md), and B's [review-guidance](handoffs/dev-b/review-guidance.md) / [review-guidance-finish](handoffs/dev-b/review-guidance-finish.md). New work gets a new handoff. Merged-task checks are historical evidence, not fresh full-stack results for later commits.
+Historical task handoffs are read-only records. The [new assignment document](HACKATHON_ASSIGNMENTS.md) defines future work; each owner creates its own task handoff before implementation. This documentation task does not start any feature or send instructions to another session.
 
 ## C's optional queue
 
