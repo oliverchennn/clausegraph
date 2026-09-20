@@ -30,6 +30,8 @@ Validation on 2026-09-20:
 - `git diff --check`: passed. Reviewed allowed paths and source claims against the merged implementation, including C12's `FailureViewSlot` returning null.
 - Root Python 3.12 environment: `python scripts/install_hooks.py` confirmed the existing managed hook; no custom hook was overwritten. The current-main workflow check passed before commit; the final commit is also checked by the normal pre-push hook and PR CI.
 
+Published [PR39](https://github.com/oliverchennn/clausegraph/pull/39). The committed-change workflow check and managed pre-push hook both passed on initial head `89810b064f8c6c0e5321d014e427fae237e0620a`. Final design inspection added explicit backend-computed comparison cost fields and the existing numeric magnitude limits, so B need not invent money calculations. Normal PR CI validates the final head; B's review is still pending.
+
 No runtime change, dependency update, provider call, deployment or user-service restart occurred. Full application CI and independent B design review remain normal PR requirements; no self-review is substituted for B.
 
 ## Remaining gates
