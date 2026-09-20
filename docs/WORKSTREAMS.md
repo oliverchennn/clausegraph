@@ -32,19 +32,19 @@ Each developer takes one bounded task at a time, records exact files and current
 
 ## Confirmed checkpoint and current assignments
 
-Freshly fetched main is `ca7cde5` (PR23); no open PRs were present at this assignment refresh. PR19/20 delivered A's history and bounded uncertainty validation, PR21 delivered B's automated rehearsal/focus/fallback work, PR22 delivered A's readiness record, and PR23 delivered B's read-only history UI. Earlier workflow, review queue, provider support and C corrections remain merged. These tasks are complete, not pending assignments.
+Freshly fetched main is `e65464c` (documentation-only PR24); the application checkpoint remains `ca7cde5` (PR23). PR19/20 delivered A's history and bounded uncertainty validation, PR21 delivered B's automated rehearsal/focus/fallback work, PR22 delivered A's readiness record, and PR23 delivered B's read-only history UI. Earlier workflow, review queue, provider support and C corrections remain merged. These tasks are complete, not pending assignments.
 
-The [delivery checkpoint](DELIVERY_CHECKPOINT.md) and existing handoffs retain historical checks at their original commits. B's [history handoff](handoffs/dev-b/history-ui.md) records 19 passing local browser tests; B's [demo handoff](handoffs/dev-b/demo-rehearsal.md) records automated 180.02-second operator timing, not human spoken delivery. Stage 0 verifies current merged CI rather than assuming old results cover a new checkpoint.
+The [delivery checkpoint](DELIVERY_CHECKPOINT.md) and existing handoffs retain historical checks at their original commits. B's [history handoff](handoffs/dev-b/history-ui.md) records 19 passing local browser tests; B's [demo handoff](handoffs/dev-b/demo-rehearsal.md) records automated 180.02-second operator timing, not human spoken delivery. A verified exact merged-history CI: 352 backend tests including PostgreSQL, 19 browser tests, frontend/contract/platform checks, and the recorded independent PR23 review. A's [stage 0 handoff](handoffs/dev-a/live-demo-closeout.md) adds 130 fresh focused local passes (eight PostgreSQL skips), both reproduced fallback reports, and prepared native/scanned local consent/deletion checks. Explicit consent for live processing of the two hosted NVIDIA fixtures remains pending; no live or human rehearsal success is claimed.
 
 | Contributor | Next assigned task | Boundaries |
 |---|---|---|
-| A | Stage 0 `live-demo-closeout`, then the ordered A tasks above | A-owned backend/contracts/shared docs only; preserve baseline and independent local progress if live access is blocked |
+| A | Current stage 0 `live-demo-closeout`: local preparation/checkpoint validated; live consent pending | A-owned backend/contracts/shared docs only; preserve baseline and independent local progress if live access is blocked |
 | B | Stage 0 `live-demo-consent`, then the ordered B tasks above | B-owned frontend/browser tests only; consume only merged contracts; coordinate actual human rehearsal rather than claiming automation measured it |
 | C | C7 judge-story review now; C8 after stages 1/2; optional C9 after stage 4 | Two prompts, third only if available; bounded read-only reports per [DEV_C.md](DEV_C.md). No write assignment or required-review gate |
 
 Hosted native/evidence/OCR and the full live browser workflow remain unverified by the prior five-clause Brev native-text tests (3/5 then 5/5 exact fields). Browser Brev consent remains unfinished until stage 0 is implemented. Human spoken rehearsal remains outstanding. No live accuracy, deployment or new-feature delivery is claimed by this assignment update.
 
-Historical task handoffs are read-only records. The [new assignment document](HACKATHON_ASSIGNMENTS.md) defines future work; each owner creates its own task handoff before implementation. This documentation task does not start any feature or send instructions to another session.
+Historical task handoffs are read-only records. The [new assignment document](HACKATHON_ASSIGNMENTS.md) defines future work; each owner creates its own task handoff before implementation. Stage 0 preparation does not start a future-stage feature or send instructions to another session.
 
 ## C's optional queue
 
