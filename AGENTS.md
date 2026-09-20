@@ -42,6 +42,8 @@ Each developer has one active implementation agent at a time. Extra agents may i
 
 Use fresh codex/dev-a/<task> or codex/dev-b/<task> branches from freshly fetched origin/main, with separate .worktrees/<developer>-<task> checkouts. Preserve existing worktrees and uncommitted work. Retire branches after squash merges; never restart work on codex/integration. Never force-push to repair stale ancestry.
 
+Standing user instruction: the agent performs synchronization at the start of every repository task; do not delegate routine update commands to the user. Inspect Git status, worktrees and the current task/PR state, then fetch origin with pruning. Fast-forward a clean local main when possible and start new work from fetched origin/main. For an existing unmerged task, incorporate its remote updates and current main while preserving both developers' work, resolve understood conflicts and run affected checks. Preserve dirty work and divergent local commits; never reset, clean, overwrite or silently stash them to make an update succeed. If the task was squash-merged, retain its historical branch and create a fresh task branch/worktree. A peer's push is not integration: consume shared contracts only after their PR merges, unless an explicit task assignment requests otherwise. If fetching fails, report that freshness could not be verified instead of claiming the checkout is current.
+
 ## Task and contract protocol
 A's task assignment names the allowed files, starting commit, required contract commits and acceptance checks. Record those in the task handoff before implementation. Separate developer sessions coordinate via committed handoffs and PRs; an agent message channel is supplementary, never the only source of assignments or interface decisions.
 
