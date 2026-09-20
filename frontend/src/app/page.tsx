@@ -18,6 +18,7 @@ import OverviewMetrics from "@/components/overview-metrics";
 import FactsReview from "@/components/facts-review";
 import ReviewQueue from "@/components/review-queue";
 import ActionCard from "@/components/action-card";
+import ConsequenceWalkthrough from "@/components/consequence-walkthrough";
 import { ApiError, download, dollars, humanize, money, parseCents, request, requestBlob, SESSION_KEY, shortDate, streamJob } from "@/lib/api";
 import type { Action, ConsequenceWalkthroughProps, DraftResponse, IntakeRequest, PlanRequest, PlanResult, ProviderStatus, RuleReview, SynthesisAdoptionResult, UploadResponse, VerificationResult, Workspace } from "@/lib/types";
 
@@ -30,8 +31,7 @@ type Comparison = { label: string; summary: string; result: PlanResult; actionId
 
 /** Placeholder seam released to C14; C owns only this body and its import. */
 function ConsequenceWalkthroughSlot(props: ConsequenceWalkthroughProps) {
-  void props;
-  return null;
+  return <ConsequenceWalkthrough {...props} />;
 }
 
 export default function Home() {
