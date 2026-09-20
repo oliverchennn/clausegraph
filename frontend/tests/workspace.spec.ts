@@ -21,6 +21,7 @@ test("complete synthetic plan, evidence, approval, scenario, document and privac
   expect(deniedPreview.proposed.minimum_balance_cents).toBe(-40000);
   await expect(page.getByTestId("active-minimum")).toHaveText("$50");
   await expect(page.getByTestId("candidate-minimum")).toHaveText("-$400");
+  await expect(page.getByTestId("consequence-walkthrough-slot")).toHaveCount(0);
   await page.getByRole("button", { name: "Keep recorded plan" }).click();
   await page.getByLabel("Payment extension approval assumption").selectOption("recorded");
 
@@ -65,12 +66,14 @@ test("complete synthetic plan, evidence, approval, scenario, document and privac
   expect(comparison.proposed.minimum_balance_cents).toBeLessThan(0);
   expect(comparison.proposed.ending_balance_cents).toBe(8000);
   await expect(page.getByTestId("scenario-comparison")).toBeVisible();
+  await expect(page.getByTestId("consequence-walkthrough-slot")).toHaveCount(1);
   await expect(page.getByTestId("candidate-minimum")).toHaveText("-$820");
   await expect(page.getByTestId("candidate-ending")).toHaveText("$80");
   await expect(page.getByTestId("active-ending")).toHaveText("$500");
   await expect(page.getByTestId("ending-balance")).toHaveText("$500");
   await page.reload();
   await expect(page.getByTestId("scenario-comparison")).not.toBeVisible();
+  await expect(page.getByTestId("consequence-walkthrough-slot")).toHaveCount(0);
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
 
   await page.getByTestId("action-shift-payment").getByRole("button", { name: "Draft request" }).click();

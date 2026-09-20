@@ -29,3 +29,12 @@ export type IncomeAmountUncertainty = components["schemas"]["IncomeAmountUncerta
 export type ApprovalUncertainty = components["schemas"]["ApprovalUncertainty"];
 export type ReviewQueue = components["schemas"]["ReviewQueue"];
 export type ReviewQueueItem = components["schemas"]["ReviewQueueItem"];
+
+export type ConsequenceWalkthroughProps = {
+  workspace: Workspace;
+  recorded: PlanResult;
+  candidate: PlanResult;
+  actionId: string;
+  onEvidence: (ruleIds: string[]) => void;
+  onGraph: (ruleIds: string[]) => void;
+};
