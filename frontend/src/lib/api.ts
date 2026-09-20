@@ -1,6 +1,13 @@
 const API = process.env.NEXT_PUBLIC_API_URL || "";
 export const SESSION_KEY = "clausegraph.session";
 
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function request<T>(path: string, token?: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -9,7 +16,7 @@ export async function request<T>(path: string, token?: string, options: RequestI
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: response.statusText }));
     const message = typeof error.detail === "string" ? error.detail : JSON.stringify(error.detail);
-    throw new Error(message || `Request failed (${response.status})`);
+    throw new ApiError(message || `Request failed (${response.status})`, response.status);
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
