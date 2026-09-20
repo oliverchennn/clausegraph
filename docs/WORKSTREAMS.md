@@ -22,16 +22,16 @@ One implementation agent per developer and one active C assignment. No editing a
 | 2 | Read-only review queue API/shared blocker descriptions/generated contracts | Extract overview/review presentation while preserving behavior | Backend contract PR merged before API consumption |
 | 3 | Queue/gate regression tests; prepare synthetic provider checks | Next-review UI, evidence controls, stale-response and browser coverage | Source -> valid review -> updated plan works |
 | 4 | Fix observed backend problems and record actual validation | Loading/errors/empty states, keyboard/mobile clarity | Complete synthetic story and failure state work |
-| 5 | Full integration checks, sequential green merges, shared delivery record | Three-minute rehearsal and local fallback | Feature freeze; only demo-blocking fixes |
-| 6: A merged | Validate existing history/delete contracts | Read-only plan/verification history, revision labels | A's PR19 merged; B UI still requires its own assignment |
-| 7: A assigned | Validate existing uncertainty limits | Amount ranges and multiple uncertainty controls | A's separate uncertainty-limits task; B UI still requires its own assignment |
+| 5: B delivered | Integration/readiness record for merged PR20/PR21 | Operator rehearsal, local fallback and focused visual sign-off delivered in PR21 | Human spoken rehearsal remains; no global freeze declared |
+| 6: A merged, B active | History/delete contracts delivered in PR19; review B's submitted UI | User-assigned read-only plan/verification history, revision labels | Existing contracts stay stable; [acceptance criteria](DELIVERY_CHECKPOINT.md#acceptance-for-b-task-6s-history-pr) |
+| 7: A merged | Existing uncertainty limits validated in PR20 | Amount ranges and multiple uncertainty controls | B controls require a separate future assignment |
 | 8: later | Specify robust synthesis/correlations/expense uncertainty | Participate in UX specification | Separate design before implementation |
 
 C works alongside this sequence only on the optional queue below. No row, contract merge, review or rehearsal requires C to finish. If C finds a correctness defect, the owning developer triages it and can fix it immediately; the defect must not be held for C.
 
 ## Confirmed checkpoint and current assignments
 
-Checkpoint: fetched main `7088b81` after the user merged A's [history PR19](https://github.com/oliverchennn/clausegraph/pull/19). The [history-contracts handoff](handoffs/dev-a/history-contracts.md) and PR CI record that delivery's checks; integration PR18 remains historical evidence. The user assigned A the bounded [uncertainty-limits task](handoffs/dev-a/uncertainty-limits.md) and confirmed B is working on task 5's demo. Historical handoffs retain their original results.
+Checkpoint: fetched main `a00af57`, including A's [PR20](https://github.com/oliverchennn/clausegraph/pull/20) and B's [PR21](https://github.com/oliverchennn/clausegraph/pull/21). The user approved A's bounded [release-readiness task](handoffs/dev-a/release-readiness.md) and confirmed B has started task 6's history UI. The [delivery checkpoint](DELIVERY_CHECKPOINT.md) records exact merged CI, fallback results and history review criteria. Historical handoffs retain their original results.
 
 - Workflow PR5, review queue [PR6](https://github.com/vzhu08/clausegraph/pull/6) and frontend snapshot [PR7](https://github.com/vzhu08/clausegraph/pull/7) are merged.
 - B's [PR8](https://github.com/vzhu08/clausegraph/pull/8) is merged as `147e657`. Its [handoff](handoffs/dev-b/review-guidance-finish.md) records typecheck/lint/build and all 11 browser tests passing on that task. The two earlier queue failures are historical, not an outstanding assignment to C.
@@ -42,11 +42,11 @@ Checkpoint: fetched main `7088b81` after the user merged A's [history PR19](http
 
 | Contributor | Next permitted work | Start condition / exclusions |
 |---|---|---|
-| A | Current user assignment: validate existing bounded uncertainty limits | `codex/dev-a/uncertainty-limits`, started from `f23133b` and updated to merged `7088b81`; exact paths/checks in its handoff and guidance in [UNCERTAINTY_CONTRACT.md](UNCERTAINTY_CONTRACT.md). No frontend or robust synthesis work |
-| B | User-confirmed active task 5: demo polish/rehearsal | Separate B session/task from current main. Keep generated types/manifests with A. History, richer uncertainty controls and optional Brev consent UI require separate assignments |
+| A | Current user assignment: merged integration/readiness record and history acceptance criteria | `codex/dev-a/release-readiness` from `a00af57`; documentation and existing validation only. Preserve B's files and stable APIs; no next task without consulting the user |
+| B | User-confirmed active task 6: read-only plan/verification history | Separate B session/task from current main using merged [history contracts](HISTORY_CONTRACT.md). Task 5 is delivered; richer uncertainty controls and Brev consent UI need separate assignments |
 | C | No active write assignment; optional ready read-only review | PR16/PR17 findings are delivered. Name a merged snapshot for any new review; a future C5 patch needs a new release |
 
-The merged [history contract](HISTORY_CONTRACT.md) and A's uncertainty validation do not complete or replace B's active rehearsal/visual sign-off. History presentation and richer uncertainty controls remain separately assigned B follow-ups. A stops after uncertainty validation rather than proceeding to row 8.
+A6/A7 backend work and B5 are delivered. B's automated operator rehearsal and visual/fallback evidence do not measure human spoken delivery. B6 is active and is not claimed complete or included in the recorded demo baseline. A stops after the approved readiness task; task 8 remains deferred and every new task requires consultation with the user.
 
 Historical handoffs remain unchanged: A's [review-queue](handoffs/dev-a/review-queue.md), [review-workflow](handoffs/dev-a/review-workflow.md), [nvidia-brev](handoffs/dev-a/nvidia-brev.md), [task-sync](handoffs/dev-a/task-sync.md), and B's [review-guidance](handoffs/dev-b/review-guidance.md) / [review-guidance-finish](handoffs/dev-b/review-guidance-finish.md). New work gets a new handoff. Merged-task checks are historical evidence, not fresh full-stack results for later commits.
 
