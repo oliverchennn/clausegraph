@@ -31,18 +31,20 @@ C works alongside this sequence only on the optional queue below. No row, contra
 
 ## Confirmed checkpoint and current assignments
 
-Checkpoint verified against fetched main `bd143a3` and GitHub PR state during this docs task:
+Checkpoint: fetched main `79dced5` on 2026-09-20 UTC, after the user merged C's PR17 and PR16. A's [integration-validation handoff](handoffs/dev-a/integration-validation.md) records current checks; historical handoffs retain their original results.
 
 - Workflow PR5, review queue [PR6](https://github.com/vzhu08/clausegraph/pull/6) and frontend snapshot [PR7](https://github.com/vzhu08/clausegraph/pull/7) are merged.
 - B's [PR8](https://github.com/vzhu08/clausegraph/pull/8) is merged as `147e657`. Its [handoff](handoffs/dev-b/review-guidance-finish.md) records typecheck/lint/build and all 11 browser tests passing on that task. The two earlier queue failures are historical, not an outstanding assignment to C.
 - A's [PR9](https://github.com/vzhu08/clausegraph/pull/9) is merged as `af980e1`; [NVIDIA_BREV.md](NVIDIA_BREV.md) describes the optional consent contract. This does not establish live provider accuracy or authorize provisioning.
-- Task-start synchronization [PR10](https://github.com/vzhu08/clausegraph/pull/10) is merged as `bd143a3`. This documentation task adds C's operating rules; it implements none of C's tasks.
+- Task-start synchronization PR10 and C's operating rules PR12 are merged. Original A task 1 (workflow bootstrap, PR5) is complete; do not restart it as unfinished work.
+- Brev output/source fixes PR11/PR13 and [live retest PR15](https://github.com/vzhu08/clausegraph/pull/15) are merged. Repeated five-clause tests scored 3/5 then 5/5 exact fields, with 5/5 valid citations and unreviewed outputs withheld in both. Browser consent remains unimplemented; no general accuracy or OCR claim follows.
+- C's [UI PR17](https://github.com/vzhu08/clausegraph/pull/17) (`eb81eab`) and [demo wording PR16](https://github.com/vzhu08/clausegraph/pull/16) (`79dced5`) are merged. Their handoffs record owner-directed exceptions to the normal release procedure; those exceptions do not assign future C work. PR17's application checks passed, while its current-main ancestry gate failed before merge.
 
 | Contributor | Next permitted work | Start condition / exclusions |
 |---|---|---|
-| A | Finish separately assigned backend work, review B changes, consolidate shared docs | Preserve existing unmerged work, including the locally observed brev-json-output task; this docs task does not take it over |
+| A | Current user assignment: validate the merged application and update shared delivery docs | Fresh `codex/dev-a/integration-validation` from `79dced5`; exact allowed files/checks in its handoff. Preserve old worktrees; no new feature scope |
 | B | Separately assigned demo polish/rehearsal; optional Brev consent UI if requested | Fresh task from main; PR9's contract is merged, but no UI assignment is implied here. Keep generated types/manifests with A |
-| C | Start C1 proofreading, then choose one ready read-only task | Use merged main, name the reviewed commit, return a short report. C5 write work is unassigned until its release protocol is complete |
+| C | No active write assignment; optional ready read-only review | PR16/PR17 findings are delivered. Name a merged snapshot for any new review; a future C5 patch needs a new release |
 
 Historical handoffs remain unchanged: A's [review-queue](handoffs/dev-a/review-queue.md), [review-workflow](handoffs/dev-a/review-workflow.md), [nvidia-brev](handoffs/dev-a/nvidia-brev.md), [task-sync](handoffs/dev-a/task-sync.md), and B's [review-guidance](handoffs/dev-b/review-guidance.md) / [review-guidance-finish](handoffs/dev-b/review-guidance-finish.md). New work gets a new handoff. Merged-task checks are historical evidence, not fresh full-stack results for later commits.
 
