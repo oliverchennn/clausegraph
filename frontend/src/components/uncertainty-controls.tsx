@@ -2,11 +2,9 @@
 
 import { Plus, Trash2, TriangleAlert } from "lucide-react";
 import { Button, Field } from "./ui";
+import { MAX_CASES, MAX_DIMENSIONS, dimensionSize, duplicateTargets, exactCaseCount, exceedsSafeInteger, overBudget } from "@/lib/uncertainty";
 import { money } from "@/lib/api";
 import type { Action, Rule, Uncertainty, Workspace } from "@/lib/types";
-
-export const MAX_DIMENSIONS = 8;
-export const MAX_CASES = 10000;
 
 type Props = {
   workspace: Workspace;
@@ -14,42 +12,6 @@ type Props = {
   onChange: (dimensions: Uncertainty[]) => void;
   disabled?: boolean;
 };
-
-/** Values a single dimension contributes, as an exact integer. */
-export function dimensionSize(dimension: Uncertainty): bigint {
-  if (dimension.kind === "approval") return BigInt(dimension.outcomes.length);
-  if (dimension.kind === "income_amount") {
-    const span = BigInt(dimension.maximum_cents) - BigInt(dimension.minimum_cents) + BigInt(1);
-    return span > BigInt(0) ? span : BigInt(0);
-  }
-  const start = Date.parse(`${dimension.earliest}T00:00:00Z`);
-  const end = Date.parse(`${dimension.latest}T00:00:00Z`);
-  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return BigInt(0);
-  return BigInt(Math.round((end - start) / 86_400_000)) + BigInt(1);
-}
-
-/**
- * Exact product of the declared domains. BigInt throughout: a product can far
- * exceed JavaScript's safe integer range, and a rounded count must never be
- * shown as exact. This mirrors the backend's arbitrary-precision count.
- */
-export function exactCaseCount(dimensions: Uncertainty[]): bigint {
-  return dimensions.reduce((total, dimension) => total * dimensionSize(dimension), BigInt(1));
-}
-
-/** Two dimensions may not declare the same property of the same target. */
-export function duplicateTargets(dimensions: Uncertainty[]): Set<string> {
-  const seen = new Map<string, number>();
-  const duplicates = new Set<string>();
-  for (const dimension of dimensions) {
-    const target = dimension.kind === "approval" ? dimension.target_id : dimension.event_id;
-    const key = `${dimension.kind}:${target}`;
-    const count = (seen.get(key) ?? 0) + 1;
-    seen.set(key, count);
-    if (count > 1) duplicates.add(dimension.id);
-  }
-  return duplicates;
-}
 
 function uniqueId(dimensions: Uncertainty[], prefix: string) {
   let index = 1;
@@ -91,7 +53,8 @@ export default function UncertaintyControls({ workspace, dimensions, onChange, d
   }
 
   const count = exactCaseCount(dimensions);
-  const overBudget = count > BigInt(MAX_CASES);
+  const above = overBudget(count);
+  const huge = exceedsSafeInteger(count);
 
   return <div className="uncertainty-controls" data-testid="uncertainty-controls">
     <div className="uncertainty-add">
@@ -172,9 +135,10 @@ export default function UncertaintyControls({ workspace, dimensions, onChange, d
     </ul>
 
     {/* Exact preflight count, never a rounded float. */}
-    <div className={`uncertainty-count${overBudget ? " uncertainty-over-budget" : ""}`} data-testid="preflight-count">
+    <div className={`uncertainty-count${above ? " uncertainty-over-budget" : ""}`} data-testid="preflight-count">
       <strong>{count.toString()}</strong> case{count === BigInt(1) ? "" : "s"} in the declared model
-      {overBudget && <span role="alert" data-testid="budget-warning"><TriangleAlert size={13} /> Above the {MAX_CASES}-case
+      {huge && <span className="uncertainty-huge" data-testid="huge-count">Exact count shown; it exceeds JavaScript&rsquo;s exact integer range.</span>}
+      {above && <span role="alert" data-testid="budget-warning"><TriangleAlert size={13} /> Above the {MAX_CASES}-case
         budget. The check will stop early and report incomplete coverage — it will not return Safe.</span>}
     </div>
   </div>;

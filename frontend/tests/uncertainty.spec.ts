@@ -107,3 +107,42 @@ test("the controls are keyboard operable at 390px without horizontal overflow", 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test("date cardinality is exact across DST, leap day and years below 100", async ({ page }) => {
+  const panel = await open(page);
+  await panel.getByTestId("add-income-date").click();
+  const cases: [string, string, string][] = [
+    // US DST spring-forward: a 23-hour local day must not lose a date.
+    ["2026-03-01", "2026-03-31", "31"],
+    // Leap day: 2028 is a leap year, so February has 29 days.
+    ["2028-02-01", "2028-03-01", "30"],
+    // Non-leap century.
+    ["2100-02-01", "2100-03-01", "29"],
+    // Single day is one assignment, not zero.
+    ["2026-09-21", "2026-09-21", "1"],
+  ];
+  for (const [earliest, latest, expected] of cases) {
+    await panel.getByLabel("Earliest for date-1").fill(earliest);
+    await panel.getByLabel("Latest for date-1").fill(latest);
+    await expect(panel.getByTestId("preflight-count")).toContainText(expected);
+  }
+});
+
+test("an invalid draft has no valid count and cannot be submitted", async ({ page }) => {
+  const panel = await open(page);
+  await panel.getByTestId("add-income-date").click();
+  // Latest before earliest: an empty domain, not a silent reordering.
+  await panel.getByLabel("Earliest for date-1").fill("2026-09-28");
+  await panel.getByLabel("Latest for date-1").fill("2026-09-21");
+  await expect(panel.getByTestId("preflight-count")).toContainText("0");
+  await expect(panel.getByRole("button", { name: "Verify fixed plan" })).toBeDisabled();
+  await panel.getByLabel("Latest for date-1").fill("2026-09-28");
+  await expect(panel.getByRole("button", { name: "Verify fixed plan" })).toBeEnabled();
+});
+
+test("a blank rationale blocks submission", async ({ page }) => {
+  const panel = await open(page);
+  await panel.getByTestId("add-approval").click();
+  await panel.getByLabel("Rationale for approval-1").fill("");
+  await expect(panel.getByRole("button", { name: "Verify fixed plan" })).toBeDisabled();
+});

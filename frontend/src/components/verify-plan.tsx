@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { CalendarDays, FileText, ShieldCheck } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 import CashGapPanel from "@/components/cash-gap-panel";
-import UncertaintyControls, { MAX_CASES, exactCaseCount, duplicateTargets } from "@/components/uncertainty-controls";
+import UncertaintyControls from "@/components/uncertainty-controls";
+import { MAX_CASES, draftBlockers } from "@/lib/uncertainty";
 import { humanize, money, request } from "@/lib/api";
 import type { PlanResult, Uncertainty, VerificationRequest, VerificationResult, Workspace } from "@/lib/types";
 
@@ -74,12 +75,8 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
     setDimensions(next);
   }
 
-  const duplicates = duplicateTargets(dimensions);
-  const caseCount = exactCaseCount(dimensions);
-  const blocked = duplicates.size > 0 || dimensions.some(item => !item.rationale.trim())
-    || dimensions.some(item => item.kind === "income_date" && item.latest < item.earliest)
-    || dimensions.some(item => item.kind === "income_amount" && item.maximum_cents < item.minimum_cents)
-    || caseCount === BigInt(0);
+  // An invalid draft has no valid count and cannot be submitted.
+  const blocked = draftBlockers(dimensions).length > 0;
 
   const counterexample = result?.counterexample;
   const actionTitle = (id: string) => workspace.scenario.actions.find(action => action.id === id)?.title ?? id;
