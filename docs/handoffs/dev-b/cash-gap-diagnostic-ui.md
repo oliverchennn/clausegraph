@@ -4,7 +4,7 @@
 
 The user requested every Developer B assignment from the most recent pull. Freshly fetched `origin/main` is `8fa1279c61e702d82f2adb80729f082bfcbc892e` (PR31), which assigns B's current stage 1 task before the still-gated stages 2–4. This task starts from that exact commit on `codex/dev-b/cash-gap-diagnostic-ui` in `.worktrees/dev-b-cash-gap-diagnostic-ui`; existing branches, worktrees, services and local configuration remain untouched.
 
-Required merged prerequisites at start were PR29's cash-gap API/generated contract at `b5d9204a62ba854cfd82c1a8bf90ca90b0adf174`, PR30's incomplete-source guard at `5e79c1d7b571a0c67bc0bb41e70cd0be405265e5`, and PR31's assignment at the starting SHA. B independently reviewed A's follow-up PR32 with no blocking findings and 33 focused local passes. During implementation PR32 merged as `1a24143`; this branch then fast-forwarded to that exact latest `origin/main` before final validation. The guard changes no schema or cash arithmetic.
+Required merged prerequisites at start were PR29's cash-gap API/generated contract at `b5d9204a62ba854cfd82c1a8bf90ca90b0adf174`, PR30's incomplete-source guard at `5e79c1d7b571a0c67bc0bb41e70cd0be405265e5`, and PR31's assignment at the starting SHA. B independently reviewed A's follow-up PR32 with no blocking findings and 33 focused local passes. During implementation PR32 merged as `1a24143`; the branch fast-forwarded to it before runtime validation. Immediately after publication, main advanced again to docs-only uncertainty specification PR33 `dd77765`; that commit merged conflict-free, no cash-gap runtime path changed, and the current-main/ownership checker passed again.
 
 Allowed paths are `frontend/src/lib/types.ts`, new `frontend/src/components/cash-gap-diagnostic.tsx`, `frontend/src/components/verify-plan.tsx`, `frontend/src/app/globals.css`, new `frontend/tests/cash-gap.spec.ts`, and this handoff. No generated types, backend, dependency/lock, central documentation, C-assigned view/demo path, deployment or provider work is assigned.
 
@@ -31,7 +31,7 @@ Pinned Node 22.23.2/npm 10.9.8 and the existing locked dependency tree were used
 | Post-PR32 `python -m pytest backend/tests/test_cash_gap_api.py backend/tests/test_cash_gap.py -q` | 33 passed; two existing dependency deprecation warnings. |
 | Post-PR32 focused browser reruns on ports 8130/3130 and 8131/3131 | 3 passed each against the latest merged guard; the final run includes corrected incomplete-result wording. |
 
-Final ownership/current-main, `git diff --check` and GitHub CI are recorded at publication. Full PostgreSQL/backend, clean-install matrix and generated drift remain CI checks because this task changes only B-owned frontend and handoff paths. No live provider, private real-data, deployment or cloud action occurred.
+Final ownership/current-main checks passed on `dd77765`, as did `git diff --check`. GitHub CI is recorded on the PR. Full PostgreSQL/backend, clean-install matrix and generated drift remain CI checks because this task changes only B-owned frontend and handoff paths. No live provider, private real-data, deployment or cloud action occurred.
 
 ## Handoff and limits
 
