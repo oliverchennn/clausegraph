@@ -60,7 +60,7 @@ test("an older real queue response cannot replace review guidance for a newer re
   try {
     await page.goto("/");
     await captured;
-    await page.getByTestId("action-shift-payment").getByRole("button", { name: "View evidence", exact: true }).click();
+    await page.getByTestId("action-shift-payment").getByRole("button", { name: "View evidence for Move the $450 installment", exact: true }).click();
     const rule = page.getByTestId("rule-rule-shift");
     await rule.getByLabel("Approval for Approved payment shift").selectOption("denied");
     const nextQueueResponse = page.waitForResponse(response => response.url().endsWith("/api/review-queue") && response.ok());

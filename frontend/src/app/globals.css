@@ -8,7 +8,7 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .5; }
 button, a { transition: background .16s, color .16s, border-color .16s, box-shadow .16s; }
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #99b2ff; outline-offset: 3px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #587ac2; outline-offset: 3px; }
 button { border: none; background: none; color: inherit; }
 a { color: inherit; text-decoration: none; }
 h1,h2,h3,h4,p { margin: 0; }
@@ -442,8 +442,8 @@ h1 { font-size: 29px; font-weight: 650; letter-spacing: -1px; }
 .review-queue-rest > div { display: grid; gap: 12px; margin-top: 10px; }
 .review-queue-message, .review-queue-loading { font-size: 12px; line-height: 1.7; color: #526172; }
 .review-queue-message .button { margin-top: 10px; }
+.review-queue-refresh-error { color: #a4564a; margin: 8px 0 0; }
 .review-queue-loading { display: flex; align-items: center; gap: 8px; }
-.review-queue :focus-visible { outline: 3px solid #587ac2; outline-offset: 3px; }
 @media (max-width: 600px) { .review-queue-body { padding: 15px; } .review-queue-item { padding: 12px; } .review-queue-item-heading { flex-direction: column; gap: 6px; } .review-blockers li { flex-direction: column; gap: 4px; } .review-queue h2 { align-items: flex-start; } .review-queue h2 svg { flex-shrink: 0; } .review-queue-actions .button { white-space: normal; text-align: left; } .review-form .form-grid { grid-template-columns: 1fr; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @media (min-width: 1600px) { .page-content { padding-top: 43px; } .dashboard-grid { grid-template-columns: minmax(0,1fr) 320px; gap: 28px; } .cash-chart { height: 320px; } .metric-card { padding: 22px 25px; } .metric-value { font-size: 35px; } }
