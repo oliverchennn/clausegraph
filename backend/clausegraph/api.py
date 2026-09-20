@@ -275,10 +275,20 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         if (workspace.plan is None or workspace.plan.id != body.plan_id
                 or workspace.plan.revision != body.revision):
             raise HTTPException(409, "Diagnose the current saved plan. Calculate a plan, refresh, and retry.")
+        if incomplete_sources(workspace):
+            raise HTTPException(409, "Document source processing is incomplete. Resolve the upload/processing "
+                "status and calculate a current plan before diagnosing a cash gap.")
         try:
-            return diagnose_cash_gap(workspace.scenario, workspace.rules, workspace.plan, body)
+            result = diagnose_cash_gap(workspace.scenario, workspace.rules, workspace.plan, body)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
+        # No result is persisted, so recheck identity here instead of save_verification.
+        # A replacement plan can have the same input revision; deletion must also fail closed.
+        current = request.app.state.store.get(workspace.session_id)
+        if (current.revision != body.revision or current.plan is None
+                or current.plan.id != body.plan_id or current.plan.revision != body.revision):
+            raise StaleRevision()
+        return result
 
     @app.get("/api/verifications", response_model=list[VerificationResult])
     def verification_history(request: Request, workspace: Session):
