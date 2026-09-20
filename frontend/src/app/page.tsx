@@ -18,7 +18,7 @@ import OverviewMetrics from "@/components/overview-metrics";
 import FactsReview from "@/components/facts-review";
 import ReviewQueue from "@/components/review-queue";
 import ActionCard from "@/components/action-card";
-import { download, dollars, humanize, money, parseCents, request, requestBlob, SESSION_KEY, shortDate, streamJob } from "@/lib/api";
+import { ApiError, download, dollars, humanize, money, parseCents, request, requestBlob, SESSION_KEY, shortDate, streamJob } from "@/lib/api";
 import type { Action, ConsequenceWalkthroughProps, DraftResponse, IntakeRequest, PlanRequest, PlanResult, ProviderStatus, RuleReview, SynthesisAdoptionResult, UploadResponse, VerificationResult, Workspace } from "@/lib/types";
 
 const CashChart = dynamic(() => import("@/components/cash-chart"), { ssr: false, loading: () => <div className="cash-chart chart-loading"><LoaderCircle className="spin" /> Drawing your cash forecast…</div> });
@@ -59,6 +59,8 @@ export default function Home() {
   const [comparison, setComparison] = useState<Comparison | null>(null);
   const [graphFocus, setGraphFocus] = useState<string[]>([]);
   const booted = useRef(false);
+  const workspaceRef = useRef<Workspace | null>(null);
+  const previewGeneration = useRef(0);
 
   const onHistorySessionLost = useCallback((sessionId: string) => {
     if (localStorage.getItem(SESSION_KEY) !== sessionId) return;
@@ -111,11 +113,20 @@ export default function Home() {
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); }, [audioUrl]);
 
   useEffect(() => { setVerification(current => current?.plan_id === workspace?.plan?.id && current?.revision === workspace?.revision ? current : null); }, [workspace?.session_id, workspace?.revision, workspace?.plan?.id]);
+  useEffect(() => {
+    workspaceRef.current = workspace;
+    previewGeneration.current += 1;
+    setComparison(current => current && workspace?.plan && current.result.revision === workspace.revision && current.result.preview_source_plan_id === workspace.plan.id ? current : null);
+  }, [workspace]);
   useEffect(() => { setDraft(null); }, [workspace?.session_id, workspace?.revision]);
   useEffect(() => {
     if (comparison && workspace && comparison.result.revision !== workspace.revision) setComparison(null);
   }, [comparison, workspace]);
   useEffect(() => { if (!comparison) setGraphFocus([]); }, [comparison]);
+  useEffect(() => {
+    previewGeneration.current += 1;
+    setComparison(null);
+  }, [cash, approval, incomeDate, actionDate]);
 
   const pendingJobIds = (workspace?.jobs ?? []).filter(job => job.status === "queued" || job.status === "running").map(job => job.id).sort().join(",");
   useEffect(() => {
@@ -174,11 +185,38 @@ export default function Home() {
     setNotice("Scenario recalculated using your selected assumptions.");
   }
 
+  async function currentPreview(body: PlanRequest) {
+    const source = workspaceRef.current;
+    if (!source?.plan) return null;
+    const identity = { sessionId: source.session_id, revision: source.revision, planId: source.plan.id };
+    const generation = ++previewGeneration.current;
+    try {
+      const result = await request<PlanResult>("/plan/preview", identity.sessionId, { method: "POST", body: JSON.stringify(body) });
+      const current = workspaceRef.current;
+      if (generation !== previewGeneration.current) return null;
+      if (!current || current.session_id !== identity.sessionId || current.revision !== identity.revision || current.plan?.id !== identity.planId || result.revision !== identity.revision || result.preview_source_plan_id !== identity.planId) {
+        setComparison(null);
+        throw new Error("The saved plan changed while this preview was calculated. Refresh the current plan and try again.");
+      }
+      return result;
+    } catch (caught) {
+      if (generation !== previewGeneration.current) return null;
+      setComparison(null);
+      if (caught instanceof ApiError && caught.status === 401) {
+        onHistorySessionLost(identity.sessionId);
+        return null;
+      }
+      if (caught instanceof ApiError && caught.status === 409) throw new Error("The workspace changed while this preview was calculated. Refresh the current plan and try again.");
+      throw caught;
+    }
+  }
+
   async function previewScenario() {
     if (!workspace) return;
     const body = scenarioRequest();
     const changed = [cash ? `Available cash ${money(body.opening_balance_cents ?? 0)}` : "", approval !== "recorded" ? `Payment extension ${approval}` : "", actionDate ? `Action date ${shortDate(actionDate)}` : "", incomeDate ? `Income date ${shortDate(incomeDate)}` : ""].filter(Boolean);
-    const result = await request<PlanResult>("/plan/preview", workspace.session_id, { method: "POST", body: JSON.stringify(body) });
+    const result = await currentPreview(body);
+    if (!result) return;
     setGraphFocus([]);
     setComparison({ label: "Scenario preview", summary: changed.join(" · ") || "Current scenario controls", result });
     setNotice("Scenario previewed safely. Your recorded plan has not changed.");
@@ -193,7 +231,8 @@ export default function Home() {
       force_action_ids: [action.id],
       exclude_action_ids: workspace.scenario.actions.filter(item => item.id !== action.id).map(item => item.id),
     };
-    const result = await request<PlanResult>("/plan/preview", workspace.session_id, { method: "POST", body: JSON.stringify(body) });
+    const result = await currentPreview(body);
+    if (!result) return;
     setGraphFocus([]);
     setComparison({ label: action.title, summary: `${action.title} is the only option applied`, result, actionId: action.id });
     setNotice(`${action.title} previewed safely. Your recorded plan has not changed.`);
