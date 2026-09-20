@@ -22,7 +22,8 @@ PAYMENT_TEXT = "SYNTHETIC TEST ONLY. Payment of $123.45 is due 2026-09-28. This 
 
 
 def candidate(document):
-    quote = document["pages"][0]["text"]
+    page = document["pages"][0]
+    quote = page["text"] if "text" in page else page["evidence_spans"][0]["quote"]
     return {
         "rules": [{"id": "payment", "title": "Fixture payment", "kind": "obligation", "evidence": [{
             "document_id": document["id"], "version": document["version"], "page": 1,

@@ -84,7 +84,9 @@ BREV_NIM_BASE_URL=http://127.0.0.1:18000/v1
 BREV_NIM_MODEL=exact-id-from-the-model-list
 ```
 
-Leave `NVIDIA_BASE_URL` and `NVIDIA_API_KEY` unchanged: evidence checking and OCR still use the selected hosted NVIDIA model (or explicitly selected Gemini). Brev handles text extraction and optional drafts only. This adapter requests JSON in the prompt and strictly validates it locally because constrained decoding parameters differ across NIM backends. It rejects malformed/incomplete output; model compatibility and accuracy require the consented synthetic evaluation above. It never falls back to hosted text inference on failure.
+Leave `NVIDIA_BASE_URL` and `NVIDIA_API_KEY` unchanged: evidence checking and OCR still use the selected hosted NVIDIA model (or explicitly selected Gemini). Brev handles text extraction and optional drafts only. For structured extraction the adapter uses OpenAI-compatible `response_format.type=json_schema`, caps Nemotron reasoning at 2,048 tokens (and at most half the total response budget), and supplies exact source-line quotes/offsets for the model to cite. Plain-text drafts disable reasoning and do not force JSON. This targets the Nemotron 3.5 Lightning NIM/vLLM runtime; another NIM must support these parameters or fail explicitly. See [Nemotron reasoning budgets](https://docs.nvidia.com/nim/large-language-models/2.0.10/get-started/advanced/get-started-nemotron-3.5-lightning.html#control-thinking-budget) and [vLLM structured outputs](https://docs.vllm.ai/en/latest/features/structured_outputs/).
+
+Schema-constrained output does not establish factual accuracy. The adapter still validates responses locally, preserves source text, rejects malformed/incomplete output and requires the existing evidence, review and approval gates. It does not repair model claims or fall back to hosted text inference. The [Brev extraction handoff](handoffs/dev-a/brev-json-output.md) records the small live synthetic evaluation, including remaining failures; it is not an OCR or general model-accuracy claim.
 
 ## Consent contract and Developer B follow-up
 
