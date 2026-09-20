@@ -6,9 +6,10 @@ import { Badge, Button } from "@/components/ui";
 import CashGapDiagnosticPanel from "@/components/cash-gap-diagnostic";
 import UncertaintyControls from "@/components/uncertainty-controls";
 import UncertaintyFailureView from "@/components/uncertainty-failure-view";
+import ResilientPlan from "@/components/resilient-plan";
 import { MAX_CASES, draftBlockers, exactCaseCount } from "@/lib/uncertainty";
 import { humanize, money, request } from "@/lib/api";
-import type { PlanResult, Uncertainty, VerificationRequest, VerificationResult, Workspace } from "@/lib/types";
+import type { PlanResult, SynthesisAdoptionResult, Uncertainty, VerificationRequest, VerificationResult, Workspace } from "@/lib/types";
 
 type Props = {
   workspace: Workspace;
@@ -16,6 +17,9 @@ type Props = {
   result: VerificationResult | null;
   onResult: (result: VerificationResult | null) => void;
   onEvidence: (ruleIds: string[]) => void;
+  onAdopt: (value: SynthesisAdoptionResult) => void;
+  onSessionLost: (sessionId: string) => void;
+  scenarioDraftKey: string;
 };
 
 /** C12's view consumes the merged interface without owning requests or forms. */
@@ -23,10 +27,11 @@ function FailureViewSlot(props: { verification: VerificationResult; onEvidence: 
   return <UncertaintyFailureView {...props} />;
 }
 
-export default function VerifyPlan({ workspace, plan, result, onResult, onEvidence }: Props) {
+export default function VerifyPlan({ workspace, plan, result, onResult, onEvidence, onAdopt, onSessionLost, scenarioDraftKey }: Props) {
   const incomes = workspace.scenario.events.filter(event => event.direction === "income" && event.kind === "projected" && event.date >= workspace.scenario.start_date);
-  const [dimensions, setDimensions] = useState<Uncertainty[]>(() => result?.assumptions.uncertainties ?? []);
+  const [dimensions, setDimensions] = useState<Uncertainty[]>(() => result?.assumptions.uncertainties ?? plan.synthesis_provenance?.request.uncertainties ?? []);
   const [busy, setBusy] = useState(false);
+  const [adopting, setAdopting] = useState(false);
   const [error, setError] = useState("");
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
@@ -86,15 +91,18 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
     <div className="section-title"><h2 id="verify-heading"><ShieldCheck size={18} /> Verify plan</h2><Badge tone="blue">Fixed schedule</Badge></div>
     <p className="helper">Does this saved plan remain safe for every combination of the bounds you declare? Its actions and execution dates stay fixed.</p>
     <form onSubmit={event => { event.preventDefault(); void verify(); }}>
-      <fieldset disabled={busy} className="verification-fields">
-        <UncertaintyControls workspace={workspace} dimensions={dimensions} onChange={changeDimensions} disabled={busy} />
+      <fieldset disabled={busy || adopting} className="verification-fields">
+        <UncertaintyControls workspace={workspace} dimensions={dimensions} onChange={changeDimensions} disabled={busy || adopting} />
         {workspace.mode === "synthetic" && incomes.some(income => income.date === "2026-09-21") &&
           <div className="verification-presets"><span>Synthetic example bounds:</span>
             <Button type="button" variant="ghost" onClick={() => preset("2026-09-28")}>Payday through Sep 28</Button>
             <Button type="button" variant="ghost" onClick={() => preset("2026-09-26")}>Payday through Sep 26</Button></div>}
+        {workspace.mode === "synthetic" && workspace.demo_variant === "resilient" && <div className="verification-presets"><span>Separate synthetic example bounds:</span>
+          <Button type="button" variant="ghost" onClick={() => changeDimensions([{ id: "resilient-payday", kind: "income_date", basis: "user_assumption",
+            event_id: "resilient-paycheck", earliest: "2026-09-03", latest: "2026-09-05", rationale: "Synthetic user-declared income delay range." }])}>Payday Sep 3–5</Button></div>}
         {incomes.length === 0 && <p className="helper">No projected income event is available to vary. Recorded income stays fixed.</p>}
       </fieldset>
-      <div className="verification-submit"><Button type="submit" variant="primary" busy={busy} disabled={blocked}><ShieldCheck size={15} /> Verify fixed plan</Button><span>Up to {MAX_CASES.toLocaleString("en-US")} cases · 5-second budget</span></div>
+      <div className="verification-submit"><Button type="submit" variant="primary" busy={busy} disabled={blocked || adopting}><ShieldCheck size={15} /> Verify fixed plan</Button><span>Up to {MAX_CASES.toLocaleString("en-US")} cases · 5-second budget</span></div>
     </form>
     <details className="verification-schedule"><summary>Saved actions and dates held fixed ({plan.actions.length})</summary>{plan.actions.length ? plan.actions.map(action => <div className="verification-action" key={action.action_id}><div><strong>{actionTitle(action.action_id)}</strong><span><CalendarDays size={12} /> {action.execution_date}</span></div><button className="text-button" disabled={!action.source_rule_ids.length} onClick={() => onEvidence(action.source_rule_ids)}><FileText size={12} /> Action evidence</button></div>) : <p>The saved plan selects no actions.</p>}</details>
     {error && <div className="inline-error" role="alert">{error}</div>}
@@ -125,5 +133,7 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
       {!!result.warnings?.length && <ul className="verification-warnings">{result.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
       {result.status !== "SAFE" && <CashGapDiagnosticPanel key={result.id} workspace={workspace} plan={plan} verification={result} onEvidence={onEvidence} />}
     </div>}
+    <ResilientPlan key={`${JSON.stringify(dimensions)}:${scenarioDraftKey}`} workspace={workspace} plan={plan} dimensions={dimensions} verification={result}
+      disabled={blocked || busy} onEvidence={onEvidence} onAdopt={onAdopt} onAdopting={setAdopting} onSessionLost={onSessionLost} />
   </section>;
 }

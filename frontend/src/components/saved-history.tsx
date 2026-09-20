@@ -57,7 +57,8 @@ function SavedActions({ actions }: { actions: PlanResult["actions"] }) {
 
 function SavedPlan({ plan }: { plan: PlanResult }) {
   return <>
-    <dl className="history-facts"><div><dt>Saved state</dt><dd>{humanize(plan.state)} · not current permission or funding</dd></div><div><dt>Nominal solver</dt><dd>{plan.solver_status} · {plan.solver_wall_time_seconds.toFixed(3)}s</dd></div><div><dt>Nominal objective proven</dt><dd>{plan.objective_proven ? "Yes" : "No"} · separate from fixed-plan safety verification</dd></div></dl>
+    <dl className="history-facts"><div><dt>Saved state</dt><dd>{humanize(plan.state)} · not current permission or funding</dd></div><div><dt>Plan generation</dt><dd>{plan.generation_mode === "resilient" ? "Verified fixed schedule · no optimization claim" : `${plan.solver_status} · ${plan.solver_wall_time_seconds.toFixed(3)}s`}</dd></div><div><dt>Nominal objective proven</dt><dd>{plan.generation_mode === "resilient" ? "Not a synthesis objective" : plan.objective_proven ? "Yes" : "No"} · separate from fixed-plan safety verification</dd></div></dl>
+    {plan.synthesis_provenance && <details><summary>Saved synthesis provenance</summary><p>Source plan: {plan.synthesis_provenance.source_plan_id}</p><p>Fixed schedule constructed under recorded permissions and independently verified. The saved verification has its original bounds and horizon.</p><p>Declared uncertainty IDs: {plan.synthesis_provenance.request.uncertainties?.map(item => item.id).join(", ") || "None; one concrete case"}</p></details>}
     <h3>Saved nominal assumptions</h3><NominalAssumptions value={plan.assumptions} />
     <h3>Saved cash projection</h3><p>Baseline and proposed series from this record. Deferrals change timing, not savings.</p><CashChart plan={plan} />
     <div className="history-columns"><SavedSimulation value={plan.baseline} label="Saved baseline" /><SavedSimulation value={plan.proposed} label="Saved proposed plan" /></div>
