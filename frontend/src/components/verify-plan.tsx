@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, FileText, ShieldCheck } from "lucide-react";
 import { Badge, Button, Field } from "@/components/ui";
+import CashGapDiagnosticPanel from "@/components/cash-gap-diagnostic";
 import { humanize, money, request } from "@/lib/api";
 import type { PlanResult, VerificationRequest, VerificationResult, Workspace } from "@/lib/types";
 
@@ -109,6 +110,7 @@ export default function VerifyPlan({ workspace, plan, result, onResult, onEviden
         <ol className="counterexample-events">{counterexample.events?.map(({ event, action_ids }) => <li key={event.id}><div className="counterexample-event-main"><time>{event.date}</time><strong>{event.title}</strong><span>{event.direction === "income" ? "+" : "−"}{money(event.amount_cents)}</span></div><div className="counterexample-event-detail">{event.essential && <Badge>Essential retained</Badge>}{event.source_rule_ids?.length ? <button className="text-button" onClick={() => onEvidence(event.source_rule_ids ?? [])}><FileText size={12} /> Event evidence</button> : <span>Recorded financial picture</span>}{action_ids?.map(id => { const action = plan.actions.find(item => item.action_id === id); return <button className="text-button" key={id} disabled={!action?.source_rule_ids.length} onClick={() => onEvidence(action?.source_rule_ids ?? [])}>{actionTitle(id)} · action evidence</button>; })}</div></li>)}</ol>
       </section>}
       {!!result.warnings?.length && <ul className="verification-warnings">{result.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
+      {result.status !== "SAFE" && <CashGapDiagnosticPanel key={result.id} workspace={workspace} plan={plan} verification={result} onEvidence={onEvidence} />}
     </div>}
   </section>;
 }
