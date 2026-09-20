@@ -322,6 +322,69 @@ def test_missing_provider_visible_failure_and_sse_isolation(api):
     assert client.get("/api/workspace", headers=headers).json()["documents"][0]["status"] == "failed"
 
 
+@pytest.mark.parametrize("phase", ["no_consent", "queued", "failed", "empty_extraction"])
+def test_incomplete_document_processing_cannot_confirm_or_verify_plan(api, phase):
+    client, store, providers, originals = api
+    headers, workspace = start(client, False)
+    assert intake(client, headers).status_code == 200
+    other_headers, _ = start(client, False)
+    response = upload(client, headers, consent=phase != "no_consent").json()
+    if phase == "failed":
+        assert run_once(store, originals, providers)  # No configured credential.
+        assert store.get_job(workspace["session_id"], response["job"]["id"]).status == "failed"
+    elif phase == "empty_extraction":
+        providers.settings.nvidia_api_key = "test-key"
+        providers.transport = httpx.MockTransport(lambda request: httpx.Response(200, json={
+            "choices": [{"finish_reason": "stop", "message": {"content": '{"rules": []}'}}]}))
+        assert run_once(store, originals, providers)
+        assert store.get_job(workspace["session_id"], response["job"]["id"]).status == "completed"
+    before = store.get(workspace["session_id"]).model_dump(mode="json")
+    preview = client.post("/api/plan/preview", headers=headers, json={}).json()
+    assert preview["state"] == "unresolved"
+    assert any("source processing is incomplete" in warning for warning in preview["warnings"])
+    assert preview["proposed"]["ending_balance_cents"] == 100000
+    assert store.get(workspace["session_id"]).model_dump(mode="json") == before
+    assert client.get("/api/history", headers=headers).json() == []
+    plan = client.post("/api/plan", headers=headers, json={}).json()
+    assert plan["state"] == "unresolved"
+    before_verify = store.get(workspace["session_id"]).model_dump(mode="json")
+    verified = client.post("/api/verify", headers=headers, json={
+        "plan_id": plan["id"], "revision": plan["revision"], "uncertainties": []})
+    assert verified.status_code == 409
+    assert "source processing is incomplete" in verified.json()["detail"]
+    assert client.get("/api/verifications", headers=headers).json() == []
+    assert store.get(workspace["session_id"]).model_dump(mode="json") == before_verify
+    assert client.post("/api/plan", headers=other_headers, json={}).json()["state"] == "confirmed"
+
+
+def test_failed_extraction_retry_and_supported_review_release_processing_gate(api):
+    client, store, providers, originals = api
+    headers, workspace = start(client, False)
+    assert intake(client, headers).status_code == 200
+    first = upload(client, headers, consent=True).json()
+    assert run_once(store, originals, providers)
+    assert client.post("/api/plan", headers=headers, json={}).json()["state"] == "unresolved"
+    providers.settings.nvidia_api_key = "test-key"
+    retry = upload(client, headers, consent=True).json()
+    assert retry["duplicate"] and retry["document"]["id"] == first["document"]["id"]
+    assert run_once(store, originals, providers)
+    rule = client.get("/api/workspace", headers=headers).json()["rules"][0]
+    assert rule["review_status"] == "pending"
+    unreviewed = client.post("/api/plan", headers=headers, json={}).json()
+    assert unreviewed["state"] == "unresolved"
+    reviewed = client.patch(f"/api/rules/{rule['id']}", headers=headers,
+        json={"review_status": "reviewed"})
+    assert reviewed.status_code == 200
+    assert reviewed.json()["documents"][0]["status"] == "ready"
+    plan = client.post("/api/plan", headers=headers, json={}).json()
+    assert plan["state"] == "confirmed"
+    assert plan["proposed"]["ending_balance_cents"] == 87655
+    assert not any("source processing is incomplete" in warning for warning in plan["warnings"])
+    verified = client.post("/api/verify", headers=headers, json={
+        "plan_id": plan["id"], "revision": plan["revision"], "uncertainties": []})
+    assert verified.status_code == 200 and verified.json()["status"] == "SAFE"
+
+
 def test_deleted_session_cannot_resurrect_from_worker_or_cache(api):
     client, store, providers, originals = api
     headers, workspace = start(client)

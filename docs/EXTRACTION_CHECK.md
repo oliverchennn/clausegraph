@@ -4,7 +4,7 @@ This is a prepared validation procedure, not a claim of live success. Run `pytho
 
 ## Before a live run
 
-Use only these synthetic documents in a new private session. Confirm explicit processing consent for the actual text destination and the separate evidence/OCR destination before sending either file. The hosted route uses a server-side NVIDIA_API_KEY; the existing Brev text route uses its private tunnel/model while evidence/OCR still uses its separately configured provider. Brev browser runs wait for B's destination-aware consent UI. A roadmap assignment, configured credential or prior consent for a different corpus/destination is not consent for this run.
+Use only these synthetic documents in a new private session. Confirm explicit processing consent for the actual text destination and the separate evidence/OCR destination before sending either file. The hosted route uses a server-side NVIDIA_API_KEY; the existing Brev text route uses its private tunnel/model while evidence/OCR still uses its separately configured provider. B's destination-aware browser consent is merged in PR28; browser tests use simulated providers and do not establish live inference. A roadmap assignment, configured credential or prior consent for a different corpus/destination is not consent for this run.
 
 Start API and worker from the same isolated checkout with matching provider/model settings, a dedicated SQLite database and private local original-file directory. Keep cloud storage disabled and use unused local ports. Do not copy another checkout's full `.env`, reuse its sessions, or restart its services. Read only the required server-side provider settings; never paste keys into reports or the browser. A missing key or pending consent is a blocked live check, not a reason to substitute fixture results. No live request is part of fixture generation or ordinary CI.
 
@@ -20,16 +20,18 @@ Start API and worker from the same isolated checkout with matching provider/mode
 
 Report native and scanned outcomes separately. Two documents of one synthetic clause are a reproducible demo check, not a representative accuracy benchmark. The existing five-case semantic fixture evaluation is separate from OCR and human-review validation. Missing credentials leave the live portion unverified; they do not block the synthetic financial demonstration.
 
-## Stage 0 preparation at the merged history checkpoint
+## Stage 0 preparation and authorized live results
 
 A's [closeout handoff](handoffs/dev-a/live-demo-closeout.md) records preparation on application commit `ca7cde5`, subsequently updated with documentation-only PR24 (`e65464c`). Both generated files passed local upload-without-consent checks: no job, no provider request, no compiled events, review required, and successful source/original/session deletion. These checks use the real local API/storage/worker with a rejecting mock transport, not live inference. The PDF contains one image and zero embedded-text characters.
 
 | Measurement | Current result |
 |---|---|
-| Native text extraction/evidence | Not run; explicit consent for the two fixtures and selected hosted NVIDIA destination is pending |
-| Scanned PDF OCR/extraction/evidence | Not run; same consent gate, followed by original-page human verification |
+| Native text extraction/evidence | Authorized request timed out after 120.250 seconds; job failed in 120.469 seconds. No extracted rules or evidence check |
+| Scanned PDF OCR/extraction/evidence | Authorized OCR request returned HTTP 503 after 0.250 seconds; job failed in 4.781 seconds before transcription or extraction |
 | Exact selected models | Text: `nvidia/nemotron-3.5-lightning-30b-a3b`; evidence/OCR: `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` |
-| Selected destination | Hosted NVIDIA, `https://integrate.api.nvidia.com/v1`; credential presence checked, connectivity not claimed |
-| Human source review / live browser / spoken rehearsal | Not performed in this preparation task |
+| Selected destination | Hosted NVIDIA, `https://integrate.api.nvidia.com/v1`; two requests attempted with a 120-second timeout and zero retries; no successful inference claimed |
+| Human source review / live browser / spoken rehearsal | Not performed; both provider attempts produced no rules to review |
 
 The prepared sources and local reports are ignored artifacts in A's isolated worktree under `.data/extraction-demo`, `.data/local-check-ready` and `.data/fallback`. Regenerate them on another machine. Do not infer live success from the passing local gates or the historical five-clause Brev retest.
+
+The [live follow-up and API fix](handoffs/dev-a/incomplete-source-guard.md) records both requests on `08f5102`. They exposed a misleading confirmed empty-ledger plan after failed extraction. The fix marks incomplete source processing unresolved and rejects verification with HTTP 409, without inventing missing amounts. Both real failure states passed local replay and source/original/history/session deletion with no further provider calls. The rule/action/event review queue can be empty before extraction creates rules; it does not prove processing is complete. No accuracy or end-to-end success is inferred from these failed requests. Reports remain in the original closeout worktree's ignored `.data/live-hosted`.
