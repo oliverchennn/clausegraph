@@ -165,7 +165,7 @@ class Store:
     def history(self, session_id: str) -> list[PlanResult]:
         with self.engine.connect() as connection:
             payloads = connection.execute(select(scenario_runs.c.payload).where(scenario_runs.c.session_id == session_id)
-                .order_by(scenario_runs.c.created_at.desc()).limit(30)).scalars().all()
+                .order_by(scenario_runs.c.created_at.desc(), scenario_runs.c.id.desc()).limit(30)).scalars().all()
         plans = [PlanResult.model_validate(payload) for payload in payloads]
         for plan in plans:
             self._restore_series(session_id, plan)
