@@ -2,7 +2,7 @@
 
 This segment uses the original six-document synthetic example. It performs no cancellation, payment, application, message or provider call. Every amount and date shown in the walkthrough comes from the deterministic preview response.
 
-## Proposed 35-second beat
+## Final beat: 2:25–3:00 (proposed 35 seconds)
 
 1. On **Your next moves**, find **Cancel phone service**. Its card already warns about the hidden consequence. Press **Compare option alone**.
 2. The side-by-side preview shows the recorded plan still at a $50 minimum/$500 ending balance and the cancellation-only preview at a -$820 minimum/$80 ending balance. The saved plan and history remain unchanged.
@@ -10,6 +10,8 @@ This segment uses the original six-document synthetic example. It performs no ca
 4. Open exact evidence. The synthetic phone contract says the $60 service payment is removed and the existing $480 device balance becomes due on cancellation. Close the drawer and highlight the linked dependency graph.
 5. On Proposed effect, show the returned `remove` and `accelerate` changes: the phone charge disappears; the same device obligation moves from November 20 to September 1. It is not duplicated, forgiven or newly created.
 6. On Cash consequence, show the server-returned comparison and the change in beyond-horizon obligations. Say: “Removing one charge can still make cash worse when another existing debt moves earlier. This is a read-only preview, not advice to cancel.”
+
+This is beat 6 of the final 180-second script, after the separate resilient example. Use **Open original example** before comparing cancellation so its six fictional source documents and phone contract are restored in a new private synthetic session.
 
 The 35-second budget is proposed, not a measured spoken run. Do not call the $60 removal savings without also showing the accelerated $480 debt and resulting ledger. Do not describe -$820 as a robust worst case; it is the nominal action-only preview under the saved assumptions.
 
