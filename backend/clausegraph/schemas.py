@@ -269,6 +269,8 @@ class PlanResult(Contract):
     assumptions: PlanRequest = Field(default_factory=PlanRequest)
     generation_mode: Literal["nominal", "resilient"] = "nominal"
     synthesis_provenance: SynthesisProvenance | None = None
+    preview_source_plan_id: str | None = Field(default=None,
+        description="For nonmutating previews, the active saved plan at computation time; null if none. Not an adoption credential.")
 
 
 class UncertaintyBasis(Contract):

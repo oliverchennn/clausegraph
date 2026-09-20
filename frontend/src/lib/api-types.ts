@@ -273,7 +273,7 @@ export interface paths {
         put?: never;
         /**
          * Preview Plan
-         * @description Return a side-effect-free scenario result for comparison.
+         * @description Return a side-effect-free result bound to the still-current comparison source.
          */
         post: operations["preview_plan_api_plan_preview_post"];
         delete?: never;
@@ -1132,6 +1132,11 @@ export interface components {
              * @default false
              */
             objective_proven: boolean;
+            /**
+             * Preview Source Plan Id
+             * @description For nonmutating previews, the active saved plan at computation time; null if none. Not an adoption credential.
+             */
+            preview_source_plan_id?: string | null;
             proposed: components["schemas"]["Simulation"];
             /**
              * Revision

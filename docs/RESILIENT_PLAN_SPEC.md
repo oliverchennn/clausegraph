@@ -1,6 +1,6 @@
 # Resilient fixed-plan synthesis: v1 design
 
-Status: **reviewed design implemented in the backend engine/API task; frontend comparison/adoption follows its merge**. Design PR39 merged at `96b220e`; C12/stage 2 PR40 merged at `f85aa08`. The engine starts from `f85aa08bc127d2900d26345963b5a1421a6294fd`. The user has replaced separate B review with the agent's recorded review for this completion run; role references below describe the original interface responsibilities. See the [A handoff](handoffs/dev-a/resilient-plan-spec.md) and [ordered assignments](HACKATHON_ASSIGNMENTS.md).
+Status: **implemented and merged: engine/API/fixture PR41 (`c420609`), comparison/adoption PR42 (`b53cb5c`), C13 presenter segment and regression PR43 (`8d16764`)**. Design PR39 merged at `96b220e`; C12/stage 2 PR40 merged at `f85aa08`. PR43's PR CI passed 463 backend and 59 browser tests. The user replaced separate B review with recorded same-agent orchestrator review for this completion run; role references below describe original interface responsibilities. See the [design handoff](handoffs/dev-a/resilient-plan-spec.md) and [ordered assignments](HACKATHON_ASSIGNMENTS.md). Human spoken rehearsal and successful live extraction remain separately unverified.
 
 ## Product contract and objective
 
