@@ -57,11 +57,11 @@ What is proven **today** is the impossibility half: a separate CP-SAT optimizati
 
 **Say "proposed" for the walkthrough view.** The numbers are real today via **Compare option alone** on phone cancellation: **−$820** minimum and **$80** ending. Removing the $60 service makes the existing **$480** device debt due immediately — relocated from day 80, not duplicated, and not new money.
 
-Close on the bounds, in one breath: SAFE means every case in the declared range and horizon, nothing wider. Limits or unresolved evidence give **Unknown**, never Safe. Future obligations stay on the books. The app executes no payments, cancellations, applications or messages.
+Close on the bounds, in one breath: SAFE means every case in the declared range and horizon, nothing wider. A concrete failure gives **Unsafe**, even if coverage is incomplete; otherwise limits or unresolved evidence give **Unknown**, never Safe. Future obligations stay on the books. The app executes no payments, cancellations, applications or messages.
 
 ## Judge questions and honest answers
 
-**"Is this SAFE a proof?"** Within the declared Cartesian product and the displayed horizon, yes — it is exhaustive enumeration over that finite model, with the same evidence gates and integer-cent transitions the planner uses. Outside those bounds it claims nothing. A cutoff or unresolved fact returns Unknown.
+**"Is this SAFE a proof?"** Within the declared Cartesian product and the displayed horizon, yes — it is exhaustive enumeration over that finite model, with the same evidence gates and integer-cent transitions the planner uses. Outside those bounds it claims nothing. A concrete witness proves Unsafe even before enumeration completes; without one, a cutoff or unresolved fact returns Unknown.
 
 **"Did the model compute the money?"** No. Nemotron turns prose into typed rule candidates, which then pass source, human-review and approval gates. Deterministic code computes every cent in integer USD. A model never writes a balance.
 
