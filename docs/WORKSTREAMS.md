@@ -1,17 +1,20 @@
-# Two-developer work board
+# Three-developer work board
 
-This is the current assignment and ownership record. **A is your agent (this task); B is your friend's agent in a separate session/clone.** Each works only its assignment. The roadmap is a work split, not an instruction for A to execute both lanes or all future tasks. The original engine/API/frontend lane branches and old handoffs are historical. Start from freshly fetched main; PR4 is merged as 9858956.
+This is the current assignment and ownership record. **A owns backend/integration, B owns frontend, and C contributes optional small reviews and cleanup.** Each works only its assignment in a separate session/checkout. The roadmap does not authorize any agent to execute all lanes or future tasks. Original lane branches and old handoffs are historical; start from freshly fetched main.
 
-## Exclusive lanes
+## Ownership and contribution lanes
 
-| Developer | Owns | Task handoffs |
+| Developer | Responsibility | Handoff/output |
 |---|---|---|
-| A: your agent — backend/integration | backend, shared schemas/generated types, dependencies/locks, migrations, fixtures, scripts, CI/deployment, shared docs | One new file per task under handoffs/dev-a/ |
-| B: your friend's agent — frontend/demo experience | frontend components/state/style/accessibility/browser tests, excluding A's manifests/generated types/.npmrc/Dockerfile | One new file per task under handoffs/dev-b/ |
+| A: backend/integration | Backend, shared schemas/generated types, dependencies/locks, migrations, fixtures, scripts, CI/deployment, shared docs, merge coordination | One new file per task under handoffs/dev-a/ |
+| B: frontend/demo experience | Frontend components/state/style/accessibility/browser tests, excluding A's manifests/generated types/.npmrc/Dockerfile | One new file per task under handoffs/dev-b/ |
+| C: part-time review and small cleanup | Proofread merged work, reproduce one reported bug, inspect one UI surface; optionally fix a small released B-owned surface | Read-only report by default; explicitly delegated patches use `handoffs/dev-b/c-<task>.md` |
 
-The first match in [.github/ownership.json](../.github/ownership.json) controls files. One implementation agent per developer. No editing another developer's task handoff. Unassigned paths fail checks until an A-owned policy PR is merged.
+The first match in [.github/ownership.json](../.github/ownership.json) controls files. The checker still supports only dev-a/dev-b implementation lanes; these docs add a contributor, not executable dev-c branch support. C has no permanent source ownership. Do not use a codex/dev-c branch, bypass guards or edit shared files as C. C-authored UI patches use explicitly assigned B-lane tasks; [DEV_C.md](DEV_C.md) defines the release and checks.
 
-## Ordered delivery
+One implementation agent per developer and one active C assignment. No editing another contributor's handoff. Unassigned paths fail checks until an A-owned policy PR is merged. A/B never depend on C's review, fixes or availability; their required validation and mutual reviews remain their responsibility.
+
+## Ordered delivery for A and B
 
 | Order | Developer A | Developer B | Gate |
 |---|---|---|---|
@@ -24,38 +27,51 @@ The first match in [.github/ownership.json](../.github/ownership.json) controls 
 | 7: later | Validate existing uncertainty limits | Amount ranges and multiple uncertainty controls | Separate future task |
 | 8: later | Specify robust synthesis/correlations/expense uncertainty | Participate in UX specification | Separate design before implementation |
 
-## Current handoff and next independent work
+C works alongside this sequence only on the optional queue below. No row, contract merge, review or rehearsal requires C to finish. If C finds a correctness defect, the owning developer triages it and can fix it immediately; the defect must not be held for C.
 
-| Owner | Current state | Next task | Do not edit |
+## Confirmed checkpoint and current assignments
+
+Checkpoint verified against fetched main `bd143a3` and GitHub PR state during this docs task:
+
+- Workflow PR5, review queue [PR6](https://github.com/vzhu08/clausegraph/pull/6) and frontend snapshot [PR7](https://github.com/vzhu08/clausegraph/pull/7) are merged.
+- B's [PR8](https://github.com/vzhu08/clausegraph/pull/8) is merged as `147e657`. Its [handoff](handoffs/dev-b/review-guidance-finish.md) records typecheck/lint/build and all 11 browser tests passing on that task. The two earlier queue failures are historical, not an outstanding assignment to C.
+- A's [PR9](https://github.com/vzhu08/clausegraph/pull/9) is merged as `af980e1`; [NVIDIA_BREV.md](NVIDIA_BREV.md) describes the optional consent contract. This does not establish live provider accuracy or authorize provisioning.
+- Task-start synchronization [PR10](https://github.com/vzhu08/clausegraph/pull/10) is merged as `bd143a3`. This documentation task adds C's operating rules; it implements none of C's tasks.
+
+| Contributor | Next permitted work | Start condition / exclusions |
+|---|---|---|
+| A | Finish separately assigned backend work, review B changes, consolidate shared docs | Preserve existing unmerged work, including the locally observed brev-json-output task; this docs task does not take it over |
+| B | Separately assigned demo polish/rehearsal; optional Brev consent UI if requested | Fresh task from main; PR9's contract is merged, but no UI assignment is implied here. Keep generated types/manifests with A |
+| C | Start C1 proofreading, then choose one ready read-only task | Use merged main, name the reviewed commit, return a short report. C5 write work is unassigned until its release protocol is complete |
+
+Historical handoffs remain unchanged: A's [review-queue](handoffs/dev-a/review-queue.md), [review-workflow](handoffs/dev-a/review-workflow.md), [nvidia-brev](handoffs/dev-a/nvidia-brev.md), [task-sync](handoffs/dev-a/task-sync.md), and B's [review-guidance](handoffs/dev-b/review-guidance.md) / [review-guidance-finish](handoffs/dev-b/review-guidance-finish.md). New work gets a new handoff. Merged-task checks are historical evidence, not fresh full-stack results for later commits.
+
+## C's optional queue
+
+Take one task per session; stop at its time limit and return useful partial findings. Details, candidate surfaces, acceptance criteria and a copyable startup prompt are in [DEV_C.md](DEV_C.md).
+
+| ID | Small task | Start condition | Limit / output |
 |---|---|---|---|
-| A: this agent | PR5 workflow, [PR6](https://github.com/vzhu08/clausegraph/pull/6) backend and [PR7](https://github.com/vzhu08/clausegraph/pull/7) frontend snapshot are now merged; current task starts at main4e2725a. User separately assigned hosted NVIDIA setup and optional Brev preparation. | Finish only backend/config/setup docs on codex/dev-a/nvidia-brev. No GPU launch/live request. Publish the optional consent contract for B; later review B's reported work. | B frontend source, browser tests or B handoff |
-| B: friend's agent | The previous frontend snapshot is on main. Its original handoff records checks/limitations at that historical point; merging alone does not establish those missing checks. | Start a fresh B task from fetched main, finish queue/demo validation and polish. Optional later Brev consent UI consumes A's merged contract; hosted mode works in parallel now. | Schemas, generated types, manifests/locks, CI, shared docs or A handoffs |
+| C1 | Proofread the three-minute demo and visible financial/verification wording | Ready on merged main; read-only | 20 minutes; at most 3 wording findings with exact locations |
+| C2 | Inspect review-queue empty/error/retry text and keyboard focus | PR8 already merged; inspect a fixed snapshot, never another developer's running session | 30 minutes; reproducible findings or no findings in checked scope |
+| C3 | Inspect one selected drawer/card at 390px and desktop with keyboard | Review the merged version after B finishes changes to that surface; if still active, choose C1/C2 instead | 30 minutes; one surface, screenshots/steps where available |
+| C4 | Reproduce one bug reported by A or B; narrow its likely cause | Owner supplies a report and a merged reproducer commit after its task finishes | 30 minutes; expected/actual result and owner routing, no fix |
+| C5 | One typo, label, focus or local overflow correction | WAIT: this workflow is merged, A assigns exact paths, B's work is merged and B releases those paths | 45 minutes; at most 2 frontend files plus C's handoff, one issue |
+| C6 | Proofread the final demo flow against the displayed result | A/B name a merged rehearsal commit after their demo changes finish | 20 minutes; optional notes, never a release gate |
 
-**Immediate coordination:** retire both squash-merged feature branches. A and B create separate fresh tasks from fetched main. B can validate/polish the hosted-provider demo while A prepares Brev. Merge A's new optional consent contract before B consumes it. B reviews A's PR; A reviews B's PR; merge sequentially after green checks.
-
-A's current handoff: [nvidia-brev](handoffs/dev-a/nvidia-brev.md). Historical handoffs: [review-queue](handoffs/dev-a/review-queue.md), [review-workflow](handoffs/dev-a/review-workflow.md), and B's docs/handoffs/dev-b/review-guidance.md. Each developer writes a new task handoff; never rewrite the other developer's history. A's optional setup and exact B consent follow-up are in [NVIDIA_BREV.md](NVIDIA_BREV.md).
-
-### Friend's agent startup
-
-Fetch origin, then create codex/dev-b/demo-polish from origin/main in a separate clone/worktree. The old review-guidance branch was squash-merged; do not reuse it. Read AGENTS, this board and the historical B handoff, then create your own demo-polish handoff. Install Node22.23.2/npm10.9.8 and the Python environment; install the local hook in that clone. The review queue contract is already on main. Keep hosted NVIDIA for current UI work; an optional Brev consent task must wait for A's new contract merge. Do not copy generated types or invent a parallel response schema.
-
-B's minimum completion checks: queue navigation and evidence review, failed-save preservation, stale session/revision responses, recorded denied/pending decisions, missing/deleted sources, an empty private session, keyboard access, mobile overflow, and the existing preview/verification flows. Report exact results in B's task handoff and open/update its PR. A reviews and integrates it only after those checks pass.
-
-Confirmed starting-main blocker: [CI run35476332612](https://github.com/vzhu08/clausegraph/actions/runs/35476332612) at4e2725a fails two review-queue browser cases: source/review completion times out at `selectOption`, and loading-failure retry/keyboard coverage cannot find the expected alert. B owns investigating these before further UI features. This failure predates the NVIDIA/Brev branch; no green full verification is claimed.
-
-A's next session reads its current handoff and reviews B's reported changes; it does not resume the whole roadmap. Shared contracts stay with A, UI behavior with B. A updates shared delivery docs only after B's feature is actually integrated.
+Dependencies run from completed A/B work to C only. C may be absent, stop early or skip a task without holding a feature, merge or demo. No-response means no C write release, not a reason for A/B to wait. If no task is ready, C reports that and stops; do not expand into history, integrations or verification features.
 
 ## Per-task process
 
-1. Commit or preserve existing work. Fetch origin and create a new task worktree/branch from origin/main; never reuse a squash-merged branch.
-2. Record starting commit, allowed paths, required contract commit and acceptance checks in your new handoff. Use PR links and handoffs across separate developer sessions.
-3. Stay inside your lane. Shared contract/dependency changes go through A first; use separate PRs rather than a mixed-lane commit.
-4. Update only your task handoff with exact checks and limits. A consolidates shared docs; B does not append to DEMO, RESUME, HACKATHON_MVP, SPONSORS or this board.
-5. Before publishing, fetch/merge main. The pre-push hook checks ancestry, lane ownership, handoff and conflict markers. Publish with git push -u origin HEAD.
-6. Review and merge sequentially: A integrates B's reviewed green PR; A's PR gets B review first. After squash merge, retire the branch and create the next one from updated main.
+1. The agent inspects status/worktrees and task/PR state, preserves existing work, fetches origin with pruning and fast-forwards clean main when possible. Never reuse a squash-merged branch.
+2. A/B implementation tasks use fresh lane branches/worktrees. C read-only tasks use a separate clone or detached worktree of fetched main and return reports without commits. For C write tasks, first follow DEV_C.md, then use `codex/dev-b/c-<task>` in `.worktrees/dev-c-<task>`.
+3. Record starting commit, allowed paths, required merged contracts and acceptance checks in the implementation handoff. C also records contributor identity, release links and expiry/stop condition. Handoffs/PRs are authoritative; chat supplements them.
+4. Stay inside the assignment. Shared contract/dependency changes go through A. C reports expanded or backend/state/financial problems to the owner; it does not take them on. B and C do not append to DEMO, RESUME, HACKATHON_MVP, SPONSORS or this board.
+5. Before publishing, update only your handoff and fetch/merge main. The hook checks ancestry, lane ownership, handoff and conflict markers. C stops on overlap or owner reclaim; it does not reserve files against B or repair conflicts with active A/B work.
+6. Review and merge sequentially: A integrates B-lane reviewed green PRs (including C's explicit delegations); A's PR gets B review first. C's additional review is optional. If C cannot refresh a patch, leave it unmerged/close it and continue A/B work; owners can implement a needed fix in their own tasks.
 
 ## Install and limits
 
-Use Python3.12, Node22.23.2 and npm10.9.8. Run python scripts/install_hooks.py from an activated virtual environment after bootstrap. Existing pre-push hooks are backed up and chained; an existing core.hooksPath causes a non-destructive stop with chaining instructions. Each clone installs independently; linked worktrees share the repository hook. With a custom hook, fetch origin/main then invoke the base branch's scripts/check_workflow.py with --require-current and each actual pushed SHA/branch; do not silently replace existing hooks.
+Use Python3.12, Node22.23.2 and npm10.9.8. Run python scripts/install_hooks.py from an activated virtual environment. Existing pre-push hooks are backed up and chained; an existing core.hooksPath causes a non-destructive stop with chaining instructions. Each clone installs independently; linked worktrees share the repository hook. With a custom hook, fetch origin/main then invoke the base branch's scripts/check_workflow.py with --require-current and each actual pushed SHA/branch; do not silently replace existing hooks.
 
-CI runs the trusted base checker/policy. During the first bootstrap only, the candidate checker is reviewed and tested because no base policy exists. A branch-name/path policy is an accidental-conflict guard, not proof of author identity. GitHub required-check enforcement is unavailable for this private repository's current plan. A must follow the agreed green-check/review rule; do not change visibility or billing.
+CI runs the trusted base checker/policy. The original bootstrap exception is historical, not available to C. A branch-name/path policy guards against accidental conflicts, not author identity or concurrent edits within one lane; C's exact-path release and handback are required in addition to checks. GitHub required-check enforcement is unavailable for this private repository's current plan. A must follow the green-check/review rule; do not change visibility or billing. These procedures reduce overlap; they do not promise that Git or semantic conflicts are impossible.

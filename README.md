@@ -24,7 +24,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 
 On macOS/Linux, substitute `.venv/bin/python` and `test -f .env || cp .env.example .env`. Open [localhost:3000](http://localhost:3000). Local mode uses SQLite/private local files; no credentials are needed for the clearly labeled synthetic demo. Never overwrite an already-configured `.env`. The API and worker read server-side keys from it. The worker is required for uploaded-document extraction.
 
-Before contributing, read [the two-developer workflow](docs/WORKSTREAMS.md). Each task uses a fresh branch/worktree and its own handoff. After the workflow bootstrap is on main, install local checks with `python scripts/install_hooks.py` from an activated virtual environment. Only Developer A changes dependency manifests/locks; commit both together and validate with clean `npm ci`. CI repeats clean installs on Linux, Windows and macOS.
+Before contributing, read [the three-developer workflow](docs/WORKSTREAMS.md). A owns backend/integration, B owns frontend, and [C handles optional small reviews and cleanup](docs/DEV_C.md) without blocking either. Implementation tasks use fresh branches/worktrees and their own handoffs; C starts with read-only reports and needs an explicit B-lane assignment before editing UI files. Install local checks with `python scripts/install_hooks.py` from an activated virtual environment. Only Developer A changes dependency manifests/locks; commit both together and validate with clean `npm ci`. CI repeats clean installs on Linux, Windows and macOS.
 
 To run processes separately:
 
