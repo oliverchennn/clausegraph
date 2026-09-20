@@ -40,7 +40,7 @@ The [delivery checkpoint](DELIVERY_CHECKPOINT.md) and existing handoffs retain h
 |---|---|---|
 | A | Stage 0 `live-demo-closeout`, then the ordered A tasks above | A-owned backend/contracts/shared docs only; preserve baseline and independent local progress if live access is blocked |
 | B | Stage 0 `live-demo-consent`, then the ordered B tasks above | B-owned frontend/browser tests only; consume only merged contracts; coordinate actual human rehearsal rather than claiming automation measured it |
-| C | No active write assignment | Optional read-only review of a named merged snapshot; future fixes need exact-path release |
+| C | C7 judge-story review now; C8 after stages 1/2; optional C9 after stage 4 | Two prompts, third only if available; bounded read-only reports per [DEV_C.md](DEV_C.md). No write assignment or required-review gate |
 
 Hosted native/evidence/OCR and the full live browser workflow remain unverified by the prior five-clause Brev native-text tests (3/5 then 5/5 exact fields). Browser Brev consent remains unfinished until stage 0 is implemented. Human spoken rehearsal remains outstanding. No live accuracy, deployment or new-feature delivery is claimed by this assignment update.
 
@@ -48,7 +48,7 @@ Historical task handoffs are read-only records. The [new assignment document](HA
 
 ## C's optional queue
 
-Take one task per session; stop at its time limit and return useful partial findings. Details, candidate surfaces, acceptance criteria and a copyable startup prompt are in [DEV_C.md](DEV_C.md).
+Current user assignment: **C7 -> C8, with C9 only if a third prompt remains**, as defined in [DEV_C.md](DEV_C.md). C7 is the immediate story/wording pass; C8 waits for merged cash-gap/uncertainty work; C9 is an optional final consequence check. Preserve the prompt budget; do not run the legacy menu below as extra work. Take one task per session; stop at its time limit and return useful partial findings. Details, candidate surfaces, acceptance criteria and a copyable startup prompt are in [DEV_C.md](DEV_C.md).
 
 | ID | Small task | Start condition | Limit / output |
 |---|---|---|---|

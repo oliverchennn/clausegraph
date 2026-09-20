@@ -6,7 +6,7 @@ User requested an update to A/B assignments: finish worthwhile remaining work, t
 
 Starting commit: `ca7cde5` (merged PR23). Branch: `codex/dev-a/hackathon-assignments`. Worktree: `.worktrees/dev-a-hackathon-assignments`. Fetched origin with pruning, confirmed no open PRs, fast-forwarded clean local main, and preserved existing worktrees and services.
 
-Allowed paths: `AGENTS.md`, `docs/WORKSTREAMS.md`, `docs/HACKATHON_MVP.md`, `docs/RESUME.md`, new `docs/HACKATHON_ASSIGNMENTS.md`, and this handoff. Required contracts: merged PR19 history and PR20 uncertainty validation, included in the starting commit. No backend, frontend, generated contracts, dependencies, fixtures, historical handoffs or deployment edits.
+Allowed paths: `AGENTS.md`, `docs/WORKSTREAMS.md`, `docs/HACKATHON_MVP.md`, `docs/RESUME.md`, new `docs/HACKATHON_ASSIGNMENTS.md`, `docs/DEV_C.md` (added by the follow-up assignment), and this handoff. Required contracts: merged PR19 history and PR20 uncertainty validation, included in the starting commit. No backend, frontend, generated contracts, dependencies, fixtures, historical handoffs or deployment edits.
 
 Acceptance: reconcile PR19-23 completion; specify remaining live/demo closeout; record #2 -> #3 -> #1 -> #4 with lane ownership, prerequisites, acceptance and stop conditions; explicitly make #5/#6 optional; preserve evidence, consent, privacy and proof invariants; check links, ownership, whitespace and stale current-assignment language.
 
@@ -21,3 +21,9 @@ Added `docs/HACKATHON_ASSIGNMENTS.md` with lane-specific task names, prerequisit
 - No application tests were rerun for documentation-only changes. No live provider calls, service restarts, deployment or feature implementation occurred.
 
 The assignment branch will be committed and published for B review; required PR CI and independent review are not claimed by these local checks. Do not merge without the repository's review/green-check procedure. This task stops after the documentation handoff; A/B implementation proceeds in their own sessions from merged assignments.
+
+## Follow-up: C's remaining prompt budget
+
+User requested a little useful work for Developer C, who has approximately two or three substantial prompts remaining. PR24 was still open; fetched origin and confirmed this clean branch matches its remote and includes current main before extending the same task. Added C7 story/wording preparation now, C8 focused cash-gap/uncertainty review after stages 1/2, and optional C9 final consequence check after stage 4. DEV_C contains time bounds, exact report scope and copyable prompts. Updated current assignment summaries consistently. No C source write release, agent spawning, required-review gate or outbound message is created. Existing historical peer handoffs remain untouched.
+
+Follow-up checks: `git diff --check` passed; all seven PR paths are A-owned, 53 local Markdown links resolve, and no conflict markers or obsolete unassigned-C/current-C1 claims remain in the edited current assignment summaries. No runtime tests were rerun for this documentation-only follow-up. The existing pre-push hook checks current-main ancestry, ownership and task handoff again on publication. PR24 remains subject to B review and CI; this report does not claim either completed.

@@ -4,11 +4,17 @@ User-approved priority order, 2026-09-20: finish important existing work, then *
 
 ## Execution and ownership
 
-- A owns backend, deterministic financial logic, API/contracts and generated types, fixtures, scripts, shared docs and merge coordination. B owns frontend presentation/state/accessibility/browser tests, excluding A-owned frontend files. C has no new assignment and is never a dependency.
+- A owns backend, deterministic financial logic, API/contracts and generated types, fixtures, scripts, shared docs and merge coordination. B owns frontend presentation/state/accessibility/browser tests, excluding A-owned frontend files. C is assigned the bounded C7/C8 review queue, with C9 only if a third prompt remains; see [DEV_C.md](DEV_C.md). C is never a dependency.
 - Required stages below are authorized as a queue. Each developer takes one bounded lane task at a time and stops after its handoff/PR; the next task starts in a fresh worktree only when its prerequisites are merged. This authorization does not permit implementing another lane, skipping stages or changing financial guarantees. B may prepare read-only UX work while awaiting A's contract merge.
 - Known base is `ca7cde5`, including PR19-23. Every task starts from freshly fetched `origin/main`, not this historical SHA. Before implementation, the owner records the actual starting SHA, exact allowed files within the lane, required merged contract SHAs and checks in a new `docs/handoffs/dev-a/<task>.md` or `docs/handoffs/dev-b/<task>.md`. A records B's exact-path assignment in shared docs; B writes B's own handoff. Existing historical handoffs remain unchanged.
 - A merges contracts before B consumes generated types. Stage completion means reviewed, green, sequentially merged A/B work and A's updated delivery record. Preserve a working synthetic fallback after every stage. A may specify the next stage while B finishes the current UI, but feature implementation proceeds in the order below.
 - External calls still require configured server-side credentials and explicit processing consent for the selected destination. This roadmap grants no paid provisioning, public real-data deployment, messages, financial execution or invented approvals. Missing credentials or a human presenter must be recorded as outstanding, not simulated as success; those external dependencies do not block independent local stages.
+
+## Developer C: two-prompt support queue
+
+C has only two or three substantial prompts remaining. Assign **C7 now: judge-story/wording review plus a proposed six-beat cue outline**; **C8 after stages 1/2 merge: focused cash-gap and uncertainty proof-label review**; **C9 only with a third prompt after stage 4: cancellation-consequence demo check**. Exact scope, 20/30/20-minute limits, report format and copyable prompts are in [DEV_C.md](DEV_C.md). C7 reviews a recorded merged baseline; future feature beats must be labeled proposed.
+
+This takes a small amount of editorial preparation and independent inspection off A/B without transferring required validation or implementation ownership. A incorporates accepted shared-doc/financial findings; B incorporates UI/presenter findings. C returns at most three findings per report, with exact evidence and untested limits, and then stops. No file writes, PR, live calls, new setup or ongoing monitoring are assigned. Save prompts for prerequisites instead of repeatedly checking readiness. C's work never gates an A/B merge or rehearsal, and no extra implementation lane or path release is created.
 
 ## Stage 0: close the important remaining gaps
 

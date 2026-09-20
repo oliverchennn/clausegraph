@@ -19,7 +19,7 @@ Required feature order:
 3. **Idea #1: find a resilient plan.** Review a separate specification, then search for one fixed permitted schedule that survives the declared domain. Preserve the distinction from nominal optimization and fixed-plan verification; no adaptive policies or per-outcome reoptimization masquerading as one robust schedule.
 4. **Idea #4: cross-document consequence walkthrough.** Connect the existing graph, evidence, deterministic effects and cash comparison into an action-focused explanation, including cancellation debt acceleration and retained future obligations.
 
-A owns engine/contracts and generated types; B owns UI and browser checks. Merge A's contract before B consumes it. Each bounded task gets its own handoff and fresh worktree. C remains optional. Features above are assigned future work, not implemented or live-verified claims.
+A owns engine/contracts and generated types; B owns UI and browser checks. Merge A's contract before B consumes it. Each bounded task gets its own handoff and fresh worktree. C contributes the bounded C7/C8 reviews and optional C9 in [DEV_C.md](DEV_C.md), using at most two or three substantial prompts; these never replace A/B checks or gate delivery. Features above are assigned future work, not implemented or live-verified claims.
 
 ## Optional work and presentation boundary
 
