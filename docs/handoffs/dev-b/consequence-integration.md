@@ -19,6 +19,7 @@ Acceptance: retain the selected action with its nonmutating preview; clear stale
 - Pinned Node 22.23.2/npm 10.9.8 `npm ci --no-audit --no-fund`: passed from the unchanged lock.
 - `npm run typecheck`, `npm run lint`, `npm run build`: passed.
 - `E2E_API_PORT=8156 E2E_WEB_PORT=3156 npm run test:e2e -- workspace.spec.ts`: 2 passed against the real local API/Chromium, including action-only slot identity, generic-preview exclusion, preview nonmutation, reload invalidation and the existing 390px path.
+- PR45 `620f3a1` merged concurrently after publication began. It was merged into this branch without conflict; the regenerated `source_plan_id` contract is retained. Typecheck/lint/build and the two browser cases passed again, and `backend/tests/test_consequence_api.py backend/tests/test_api.py` passed 50 tests with 10 PostgreSQL variants skipped locally.
 - `git diff --check`: passed. Full exact-head CI remains the merge gate.
 
 No money is calculated in the browser; no new API, provider call, live inference, external execution, deployment or human rehearsal occurs in this task. C14 owns the actual walkthrough, accessibility interaction, real-API acceptance and presenter segment after this green merge.
