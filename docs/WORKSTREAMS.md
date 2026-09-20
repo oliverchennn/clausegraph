@@ -23,7 +23,7 @@ One implementation agent per developer and one active C assignment. No editing a
 | 3 | Queue/gate regression tests; prepare synthetic provider checks | Next-review UI, evidence controls, stale-response and browser coverage | Source -> valid review -> updated plan works |
 | 4 | Fix observed backend problems and record actual validation | Loading/errors/empty states, keyboard/mobile clarity | Complete synthetic story and failure state work |
 | 5 | Full integration checks, sequential green merges, shared delivery record | Three-minute rehearsal and local fallback | Feature freeze; only demo-blocking fixes |
-| 6: later | Validate existing history/delete contracts | Read-only plan/verification history, revision labels | Separate future task |
+| 6: A assigned | Validate existing history/delete contracts | Read-only plan/verification history, revision labels | A's separate history-contracts task; B UI still requires its own assignment after merge |
 | 7: later | Validate existing uncertainty limits | Amount ranges and multiple uncertainty controls | Separate future task |
 | 8: later | Specify robust synthesis/correlations/expense uncertainty | Participate in UX specification | Separate design before implementation |
 
@@ -31,7 +31,7 @@ C works alongside this sequence only on the optional queue below. No row, contra
 
 ## Confirmed checkpoint and current assignments
 
-Checkpoint: fetched main `79dced5` on 2026-09-20 UTC, after the user merged C's PR17 and PR16. A's [integration-validation handoff](handoffs/dev-a/integration-validation.md) records current checks; historical handoffs retain their original results.
+Checkpoint: fetched main `f23133b` after the user merged A's [integration PR18](https://github.com/oliverchennn/clausegraph/pull/18). The [integration-validation handoff](handoffs/dev-a/integration-validation.md) records that delivery's checks. The user's next-task instruction assigns A the bounded [history-contracts task](handoffs/dev-a/history-contracts.md); historical handoffs retain their original results.
 
 - Workflow PR5, review queue [PR6](https://github.com/vzhu08/clausegraph/pull/6) and frontend snapshot [PR7](https://github.com/vzhu08/clausegraph/pull/7) are merged.
 - B's [PR8](https://github.com/vzhu08/clausegraph/pull/8) is merged as `147e657`. Its [handoff](handoffs/dev-b/review-guidance-finish.md) records typecheck/lint/build and all 11 browser tests passing on that task. The two earlier queue failures are historical, not an outstanding assignment to C.
@@ -42,9 +42,11 @@ Checkpoint: fetched main `79dced5` on 2026-09-20 UTC, after the user merged C's 
 
 | Contributor | Next permitted work | Start condition / exclusions |
 |---|---|---|
-| A | Current user assignment: validate the merged application and update shared delivery docs | Fresh `codex/dev-a/integration-validation` from `79dced5`; exact allowed files/checks in its handoff. Preserve old worktrees; no new feature scope |
+| A | Current user assignment: validate existing history/deletion contracts and correct reproduced defects | Fresh `codex/dev-a/history-contracts` from `f23133b`; exact paths/checks in its handoff and B consumption guidance in [HISTORY_CONTRACT.md](HISTORY_CONTRACT.md). No frontend or later uncertainty work |
 | B | Separately assigned demo polish/rehearsal; optional Brev consent UI if requested | Fresh task from main; PR9's contract is merged, but no UI assignment is implied here. Keep generated types/manifests with A |
 | C | No active write assignment; optional ready read-only review | PR16/PR17 findings are delivered. Name a merged snapshot for any new review; a future C5 patch needs a new release |
+
+The history contract task does not complete or replace B's outstanding rehearsal/visual sign-off. History presentation is still a separately assigned B follow-up; consume the contract only after A's reviewed PR merges. A stops after this task rather than proceeding to rows 7 or 8.
 
 Historical handoffs remain unchanged: A's [review-queue](handoffs/dev-a/review-queue.md), [review-workflow](handoffs/dev-a/review-workflow.md), [nvidia-brev](handoffs/dev-a/nvidia-brev.md), [task-sync](handoffs/dev-a/task-sync.md), and B's [review-guidance](handoffs/dev-b/review-guidance.md) / [review-guidance-finish](handoffs/dev-b/review-guidance-finish.md). New work gets a new handoff. Merged-task checks are historical evidence, not fresh full-stack results for later commits.
 
