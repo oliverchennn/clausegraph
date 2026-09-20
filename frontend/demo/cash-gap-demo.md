@@ -2,17 +2,17 @@
 
 Covers **beat 4** of [presenter-cues.md](presenter-cues.md): 30 seconds, from the failed verification to a number the judges can trust.
 
-**Status:** runnable end to end once stage 1 merges. A's diagnostic API merged as PR29; B's panel is `cash-gap-diagnostic-ui`. Before both are on main, use the saved `verify_demo.py` output described in [fallback-runbook.md](fallback-runbook.md) and say the on-screen surface is still to come.
+**Status:** the required API and reviewed UI are merged in PR29/PR32 and PR34 (`c00d395`). This segment uses that UI, not the superseded panel in PR38. The saved `verify_demo.py` output in [fallback-runbook.md](fallback-runbook.md) remains the fallback.
 
 ## The 30 seconds
 
 You arrive holding an **Unsafe** result: eight cases checked, payday September 27, first shortfall September 26, balance **−$400**.
 
-1. **Ask the question out loud.** "The plan fails. How big is the hole, exactly?" Press **Diagnose the cash gap**.
-2. **Read the headline.** **$400**, labelled *proven minimum for this fixed schedule*. Say what proven means here: that amount verifies safe across all eight cases, and **one cent less still fails**. It is a proof about this schedule inside the declared bounds — not a claim about every possible schedule.
+1. **Ask the question out loud.** "The plan fails. How big is the hole, exactly?" Press **Explain cash gap**.
+2. **Read the headline.** **$400**, labelled *Proven fixed-schedule buffer*, with the **Proven minimum** badge. Say what proven means here: that amount verifies safe across all eight cases, and **one cent less still fails**. It is a proof about this schedule inside the declared bounds — not a claim about every possible schedule.
 3. **Say the disclaimer before anyone asks.** "This is a diagnostic, not funding." No money was obtained, no approval granted, no obligation changed. The panel says it on screen; say it anyway.
 4. **Show the comparison.** The saved schedule as recorded is UNSAFE; the same schedule under the assumed cash is SAFE. Same actions, same dates — only the declared opening cash moved.
-5. **Land on evidence.** Open **Evidence behind the limiting date** for September 26. The $450 installment and its source rule are what drive the number. Close the drawer and point out the saved plan is still exactly as it was.
+5. **Land on evidence.** Choose **Open limiting evidence** for September 26. The $450 installment and its source rule are what drive the number. Close the drawer and point out the saved plan is still exactly as it was.
 
 ## The two labels that must never blur
 
@@ -20,14 +20,14 @@ Judges will probe this, and it is the most interesting thing in the segment.
 
 | What happened | What the panel says | What you say |
 |---|---|---|
-| Every declared case checked, amount verified, one cent less fails | **Proven minimum for this schedule** | "Proven within the declared bounds and horizon." |
-| Coverage stopped at a case or time cutoff | **Inconclusive · coverage stopped early** | "We stopped early, so there is no minimum to report — only a floor we already know is not enough." |
+| Every declared case checked, amount verified, one cent less fails | **Proven minimum** / **Proven fixed-schedule buffer** | "Proven within the declared bounds and horizon." |
+| Diagnostic stopped before establishing a sufficient amount | **Inconclusive** | "No sufficient amount or exact minimum is established. Any observed lower bound remains unverified." |
 
-A cutoff never becomes a minimum. If you see "Inconclusive", do not describe an amount.
+A cutoff never becomes a proven minimum. A verified-sufficient amount may separately be labelled not proven minimal; do not upgrade that claim. If the result is Inconclusive, never describe a lower bound as sufficient funding.
 
 ## When cash is the wrong question
 
-Set the approval dropdown to vary the payment extension and verify again. The diagnostic returns **Cash cannot repair this**, with `authorization` listed as the blocker and **no amount at all**.
+Declare the payment extension's approval outcomes and verify again. The diagnostic returns **Cash cannot repair**, with **Authorization** listed as the blocker and **no repair amount established**. This is a hypothetical denied/pending case, not a change to the recorded approval. Contextual balances and retained obligations can still appear; they are not a repair amount.
 
 This is the line worth delivering slowly: *money does not buy an approval.* A denied or pending third-party decision, or unresolved evidence, is not a funding problem, and the system refuses to answer it with a number. That refusal is a feature — it is the difference between a planner and a wish.
 
