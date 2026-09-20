@@ -5,6 +5,7 @@ import { CalendarDays, FileText, ShieldCheck } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 import CashGapDiagnosticPanel from "@/components/cash-gap-diagnostic";
 import UncertaintyControls from "@/components/uncertainty-controls";
+import UncertaintyFailureView from "@/components/uncertainty-failure-view";
 import { MAX_CASES, draftBlockers, exactCaseCount } from "@/lib/uncertainty";
 import { humanize, money, request } from "@/lib/api";
 import type { PlanResult, Uncertainty, VerificationRequest, VerificationResult, Workspace } from "@/lib/types";
@@ -17,14 +18,9 @@ type Props = {
   onEvidence: (ruleIds: string[]) => void;
 };
 
-/**
- * Placeholder for C12's failure view. B ships the seam so the wiring, props and
- * selector are merged and testable; C12 replaces this body only.
- */
+/** C12's view consumes the merged interface without owning requests or forms. */
 function FailureViewSlot(props: { verification: VerificationResult; onEvidence: (ruleIds: string[]) => void }) {
-  // The existing counterexample remains visible below until C12 adds its view.
-  void props;
-  return null;
+  return <UncertaintyFailureView {...props} />;
 }
 
 export default function VerifyPlan({ workspace, plan, result, onResult, onEvidence }: Props) {
