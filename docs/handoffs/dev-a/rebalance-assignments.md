@@ -27,3 +27,13 @@ Preserved the draft as `a37a77d`, then merged `origin/main` at `f5f93bd5085bbbd7
 Final documentation checks passed: exactly seven A-owned changed paths against current main, 47 relative links/anchors, 35/35/30 totals, six C tasks totaling 30, 16 proposed frontend paths permitted by the base dev-b policy, byte-equivalent financial invariant text, no conflict markers/trailing whitespace and `git diff --check`. The obsolete active-queue/open-PR wording scan returned no matches. No application tests were rerun for this docs-only diff; normal PR CI and independent B review remain required before merge.
 
 `python scripts/check_workflow.py --require-current` passed after the merge: lane ownership, task handoff, conflict markers and current-main ancestry. The branch is ready to publish for B review; this task does not implement C10 or merge its own assignment PR.
+
+## PR31 documentation conflict repair
+
+The user requested fixing PR31's documentation merge conflicts. Starting PR head is `d6546b6`; its worktree and remote branch matched and were clean. Fetched origin with pruning and fast-forwarded clean root main to `5e79c1d` (merged PR29/30), preserving all other worktrees. Continued this existing unmerged task branch and merged main normally; no rebase, force-push or discarded work.
+
+Conflicts were limited to `docs/RESUME.md` and `docs/WORKSTREAMS.md`. Reconciled the 35/35/30 allocation and C10-C15 queue with PR30's actual authorized native timeout/OCR503, incomplete-source guard and historical validation record. Recorded PR29's merged cash-gap API/generated contracts so B can consume them without assigning the completed backend work again. Updated the same status references in `docs/HACKATHON_ASSIGNMENTS.md` and `docs/HACKATHON_MVP.md`; scope otherwise remains the original seven documentation paths. Historical peer handoffs and all incoming application files are preserved.
+
+Validation for this repair checks documentation links/anchors, unchanged effort/task allocations and financial invariants, exact runtime/peer-file preservation against current main, whitespace/conflict markers, and the existing ownership/ancestry pre-push workflow. No runtime changes or provider calls are part of the repair.
+
+Repair documentation checks passed: exactly seven A-owned paths differ from current main; all 51 local links/anchors resolve; 35/35/30 totals and C's six-task/30-point queue are unchanged; all 16 C frontend paths retain dev-b ownership; financial invariants are unchanged; no encoding corruption, conflict markers or trailing whitespace. `git diff --check` passed. All runtime/generated files and peer handoffs exactly match fetched main. Application tests were not rerun for the documentation-only repair; PR CI reruns on push.

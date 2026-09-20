@@ -8,9 +8,9 @@ Synthetic acceptance values remain: baseline minimum/end -40000/50000 cents; app
 
 ## Current required increment
 
-The user expanded the scope and rebalanced remaining work on 2026-09-20 to approximately **35% A / 35% B / 30% C**. The [A/B/C assignments](HACKATHON_ASSIGNMENTS.md) and [work board](WORKSTREAMS.md) supersede the old freeze sequence and optional-only C role. Refreshed main at `f5f93bd` includes PR25/28 closeout/consent and C's PR26/27 follow-ups, in addition to PR19-24. C's previous queue is complete per the user. Preserve these merged deliveries rather than restarting them.
+The user expanded the scope and rebalanced remaining work on 2026-09-20 to approximately **35% A / 35% B / 30% C**. The [A/B/C assignments](HACKATHON_ASSIGNMENTS.md) and [work board](WORKSTREAMS.md) supersede the old freeze sequence and optional-only C role. Refreshed main at `5e79c1d` includes PR25-28 closeout/consent/corrections, PR29's cash-gap API/contracts and PR30's incomplete-source guard, in addition to PR19-24. C's previous queue is complete per the user. Preserve these merged deliveries rather than restarting them.
 
-Preserve merged consent/closeout preparation and finish A's separate incomplete-source correctness repair, honest native/scanned live records and human spoken rehearsal. C owns demo preparation; A owns live/correctness evidence and B shared UI integration. Automated rehearsal and provider connectivity do not establish human delivery or extraction accuracy. External blockers stay explicit while independent local work continues.
+Preserve merged consent/closeout preparation and the PR30 incomplete-source correctness fix. Native timeout/OCR503 are recorded; successful extraction and human spoken rehearsal remain outstanding. C owns demo preparation; A owns live/correctness evidence and B shared UI integration. Automated rehearsal and provider connectivity do not establish human delivery or extraction accuracy. External blockers stay explicit while independent local work continues.
 
 Required feature order:
 
@@ -19,7 +19,7 @@ Required feature order:
 3. **Idea #1: find a resilient plan.** Review a separate specification, then search for one fixed permitted schedule that survives the declared domain. Preserve the distinction from nominal optimization and fixed-plan verification; no adaptive policies or per-outcome reoptimization masquerading as one robust schedule.
 4. **Idea #4: cross-document consequence walkthrough.** Connect the existing graph, evidence, deterministic effects and cash comparison into an action-focused explanation, including cancellation debt acceleration and retained future obligations.
 
-A owns engine/contracts/generated types; B leads UI state/forms/shared integration; C implements the uncertainty failure view and consequence walkthrough and delivers demo materials/tests/rehearsals. Merge A contracts before B/C consumption. Each bounded task gets its own handoff and fresh worktree. [C10-C15](DEV_C.md) replaces the old limited review queue, with exact paths and shared-file releases in the existing dev-b lane. C validates its deliverables; A/B mutual review remains required. Features above are assigned future work, not implemented or live-verified claims.
+A owns engine/contracts/generated types; B leads UI state/forms/shared integration; C implements the uncertainty failure view and consequence walkthrough and delivers demo materials/tests/rehearsals. Merge A contracts before B/C consumption. Each bounded task gets its own handoff and fresh worktree. [C10-C15](DEV_C.md) replaces the old limited review queue, with exact paths and shared-file releases in the existing dev-b lane. C validates its deliverables; A/B mutual review remains required. The stage 1 backend contract is merged; its UI/demo and the later features remain assigned work. No successful live inference or human rehearsal is claimed.
 
 ## Optional work and presentation boundary
 

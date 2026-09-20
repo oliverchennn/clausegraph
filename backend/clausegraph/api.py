@@ -20,7 +20,7 @@ from starlette.concurrency import run_in_threadpool
 from clausegraph.config import Settings, get_settings
 from clausegraph.providers import ProviderError, Providers
 from clausegraph.schemas import (
-    ApprovalStatus, AudioRequest, DeleteResponse, Document, DraftRequest, DraftResponse,
+    ApprovalStatus, AudioRequest, CashGapDiagnostic, CashGapRequest, DeleteResponse, Document, DraftRequest, DraftResponse,
     ExtractionResult, HealthResponse, IntakeRequest, JobStatus, PlanRequest, PlanResult,
     ProviderStatus, ReviewQueue, ReviewStatus, RuleReview, Scenario, SessionCreate, TranscriptResponse,
     UploadResponse, VerificationRequest, VerificationResult, Workspace,
@@ -163,6 +163,13 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
                 if key[0] == session_id:
                     del request.app.state.plan_cache[key]
 
+    def incomplete_sources(workspace: Workspace) -> list[Document]:
+        represented = {(source.document_id, source.version)
+            for rule in workspace.rules for source in rule.evidence}
+        return [document for document in workspace.documents
+            if document.status in ("uploaded", "extracting", "failed")
+            or (document.status != "ready" and (document.id, document.version) not in represented)]
+
     def solve_plan(body: PlanRequest, request: Request, workspace: Workspace) -> PlanResult:
         """Solve or reuse an immutable result; callers decide whether to persist it."""
         from clausegraph.engine import optimize
@@ -176,6 +183,12 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
             result = optimize(workspace.scenario, workspace.rules, body, revision=workspace.revision)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
+        incomplete = incomplete_sources(workspace)
+        if incomplete:
+            result.state = "unresolved"
+            result.warnings.append("Document source processing is incomplete; amounts or obligations may be missing. "
+                "Displayed cash covers recorded facts only. Resolve the upload/processing status before confirming "
+                "or verifying this plan. Sources: " + ", ".join(document.name for document in incomplete))
         with request.app.state.plan_cache_lock:
             request.app.state.plan_cache[key] = (time.monotonic(), result.model_copy(deep=True))
             request.app.state.plan_cache.move_to_end(key)
@@ -244,11 +257,28 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
         if (workspace.plan is None or workspace.plan.id != body.plan_id
                 or workspace.plan.revision != body.revision):
             raise HTTPException(409, "Verify the current saved plan. Calculate a plan, refresh, and retry.")
+        if incomplete_sources(workspace):
+            raise HTTPException(409, "Document source processing is incomplete. Resolve the upload/processing "
+                "status and calculate a current plan before verification.")
         try:
             result = verify_plan(workspace.scenario, workspace.rules, workspace.plan, body)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
         return request.app.state.store.save_verification(workspace.session_id, result)
+
+    @app.post("/api/cash-gap", response_model=CashGapDiagnostic)
+    def cash_gap(body: CashGapRequest, request: Request, workspace: Session):
+        """Return a side-effect-free hypothetical-cash diagnostic for the saved fixed plan."""
+        from clausegraph.cash_gap import diagnose_cash_gap
+        if workspace.revision != body.revision:
+            raise StaleRevision()
+        if (workspace.plan is None or workspace.plan.id != body.plan_id
+                or workspace.plan.revision != body.revision):
+            raise HTTPException(409, "Diagnose the current saved plan. Calculate a plan, refresh, and retry.")
+        try:
+            return diagnose_cash_gap(workspace.scenario, workspace.rules, workspace.plan, body)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
 
     @app.get("/api/verifications", response_model=list[VerificationResult])
     def verification_history(request: Request, workspace: Session):
