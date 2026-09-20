@@ -171,10 +171,14 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
             if document.status in ("uploaded", "extracting", "failed")
             or (document.status != "ready" and (document.id, document.version) not in represented)]
 
+    def source_state(workspace: Workspace) -> tuple:
+        # Worker failures may change status without incrementing the input revision.
+        return tuple(sorted((document.id, document.version, document.status) for document in workspace.documents))
+
     def solve_plan(body: PlanRequest, request: Request, workspace: Workspace) -> PlanResult:
         """Solve or reuse an immutable result; callers decide whether to persist it."""
         from clausegraph.engine import optimize
-        key = (workspace.session_id, workspace.revision,
+        key = (workspace.session_id, workspace.revision, source_state(workspace),
             json.dumps(body.model_dump(mode="json"), sort_keys=True))
         with request.app.state.plan_cache_lock:
             cached = request.app.state.plan_cache.get(key)
@@ -366,8 +370,22 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
 
     @app.post("/api/plan/preview", response_model=PlanResult)
     def preview_plan(body: PlanRequest, request: Request, workspace: Session):
-        """Return a side-effect-free scenario result for comparison."""
-        return solve_plan(body, request, workspace)
+        """Return a side-effect-free result bound to the still-current comparison source."""
+        source_plan_id = workspace.plan.id if workspace.plan else None
+        result = solve_plan(body, request, workspace)
+        try:
+            current = request.app.state.store.get(workspace.session_id)
+        except MissingSession:
+            # Computation may have populated the cache after deletion cleared it.
+            clear_plan_cache(request, workspace.session_id)
+            raise
+        if (current.revision != workspace.revision
+                or (current.plan.id if current.plan else None) != source_plan_id
+                or source_state(current) != source_state(workspace)):
+            raise StaleRevision()
+        # The cache owns a separate deep copy. A later save must not inherit this provenance.
+        result.preview_source_plan_id = source_plan_id
+        return result
 
     @app.post("/api/documents", response_model=UploadResponse, status_code=201)
     async def upload(request: Request, workspace: Session, file: UploadFile = File(...), consent: bool = Form(False),
