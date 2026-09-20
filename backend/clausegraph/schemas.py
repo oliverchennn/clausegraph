@@ -386,6 +386,61 @@ class VerificationResult(Contract):
     generated_at: datetime
 
 
+class CashGapRequest(Contract):
+    """Ask how much explicitly hypothetical opening cash the saved fixed schedule would need."""
+    plan_id: str
+    revision: int = Field(ge=1)
+    uncertainties: list[Uncertainty] = Field(default_factory=list, max_length=8)
+    max_cases: int = Field(default=10000, ge=1, le=10000, strict=True)
+    time_limit_seconds: float = Field(default=5, gt=0, le=10)
+
+    @model_validator(mode="after")
+    def unique_dimensions(self):
+        if len({item.id for item in self.uncertainties}) != len(self.uncertainties):
+            raise ValueError("Uncertainty dimension IDs must be unique.")
+        targets = [(item.kind, getattr(item, "event_id", getattr(item, "target_id", None))) for item in self.uncertainties]
+        if len(set(targets)) != len(targets):
+            raise ValueError("Each uncertain property may be declared only once.")
+        return self
+
+
+class MinimalityWitness(Contract):
+    """One cent below a claimed minimum must actually fail, or minimality is not proven."""
+    tested_additional_cents: int
+    status: Literal["SAFE", "UNSAFE", "UNKNOWN"]
+    coverage_complete: bool
+    earliest_failing_date: Date | None = None
+
+
+class CashGapDiagnostic(Contract):
+    id: str
+    plan_id: str
+    revision: int
+    mode: Literal["cash_gap_diagnostic"] = "cash_gap_diagnostic"
+    # NOT_REQUIRED: already safe. PROVEN_MINIMUM: sufficient and one cent less fails.
+    # SUFFICIENT_NOT_PROVEN_MINIMAL: verified sufficient, minimality unproven.
+    # NOT_REPAIRABLE_WITH_CASH: the failure is authorization, evidence or accounting.
+    # INCONCLUSIVE: coverage stopped early; no amount is established.
+    status: Literal["NOT_REQUIRED", "PROVEN_MINIMUM", "SUFFICIENT_NOT_PROVEN_MINIMAL",
+                    "NOT_REPAIRABLE_WITH_CASH", "INCONCLUSIVE"]
+    # A verified-sufficient amount. Never funding, never income, never a permission.
+    additional_opening_cash_cents: int | None = None
+    # An amount the declared model already proves is not enough on its own.
+    lower_bound_cents: int | None = None
+    minimality_proven: bool = False
+    is_funding: Literal[False] = False
+    baseline: VerificationResult
+    funded: VerificationResult | None = None
+    minimality_witness: MinimalityWitness | None = None
+    limiting_date: Date | None = None
+    limiting_event_ids: list[str] = Field(default_factory=list)
+    limiting_rule_ids: list[str] = Field(default_factory=list)
+    blocking_properties: list[str] = Field(default_factory=list)
+    statement: str
+    warnings: list[str] = Field(default_factory=list)
+    generated_at: datetime
+
+
 class JobStatus(Contract):
     id: str
     status: Literal["queued", "running", "completed", "failed"]
