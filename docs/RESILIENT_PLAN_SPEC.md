@@ -1,6 +1,6 @@
 # Resilient fixed-plan synthesis: v1 design
 
-Status: **reviewed by the user-authorized solo orchestrator; no synthesis runtime is implemented**. Starting application checkpoint: `2e7653718ff7fac27158789deff965775da408a1`. Implementation requires this design's green merge and acceptance of stage 2, including the reassigned C12. The user has replaced separate B review with the agent's recorded review for this completion run; role references below describe the original interface responsibilities. See the [A handoff](handoffs/dev-a/resilient-plan-spec.md) and [ordered assignments](HACKATHON_ASSIGNMENTS.md).
+Status: **reviewed design implemented in the backend engine/API task; frontend comparison/adoption follows its merge**. Design PR39 merged at `96b220e`; C12/stage 2 PR40 merged at `f85aa08`. The engine starts from `f85aa08bc127d2900d26345963b5a1421a6294fd`. The user has replaced separate B review with the agent's recorded review for this completion run; role references below describe the original interface responsibilities. See the [A handoff](handoffs/dev-a/resilient-plan-spec.md) and [ordered assignments](HACKATHON_ASSIGNMENTS.md).
 
 ## Product contract and objective
 
@@ -43,11 +43,11 @@ For each structurally admissible candidate:
 
 ## Budgets, counts and proof states
 
-Proposed defaults/hard maximums: `max_candidates=1000/10000`, `max_case_checks=10000/10000`, `time_limit_seconds=5/10`. The case budget is shared across the entire request and counts each nominal `check_fixed_plan` plus every assignment checked by `verify_plan`. The time limit covers domain preparation, rendering and verification as well as search. Check the monotonic deadline between bounded units and pass only the remaining duration into verification. This is a cooperative deadline, not a promise to interrupt a single Python operation at an exact millisecond.
+Implemented defaults/hard maximums: `max_candidates=1000/10000`, `max_case_checks=10000/10000`, `time_limit_seconds=5/10`. The case budget is shared across the entire request and counts each nominal `check_fixed_plan` plus every assignment checked by `verify_plan`. The time limit covers domain preparation, rendering and verification as well as search. Check the monotonic deadline between bounded units and pass only the remaining duration into verification. This is a cooperative deadline, not a promise to interrupt a single Python operation at an exact millisecond.
 
 Reuse the nominal planner's limits of 100 actions and 10000 action/date options, and its safe input magnitude checks (aggregate ledger/effect money plus fees and aggregate burden each at most 10^12). Exceeding a work/representation limit produces `INCONCLUSIVE`/`MODEL_LIMIT`, never proof of impossibility. Do not pre-expand large cent/date products. Domain construction must account for its work and check the deadline. No sampling or monotonic/endpoint shortcut is included in v1.
 
-Return `total_candidate_tuples` and `uncertainty_cases_per_candidate` as decimal strings so JavaScript can display exact products. Return bounded actual work counters as integers: `visited_candidate_tuples`, `refuted_candidate_tuples`, `unresolved_candidate_tuples`, `nominal_checks`, `uncertainty_checks`. Explain that the theoretical product includes structurally invalid combinations. A refuted tuple needs only one conclusive failure; proving no solution does not require simulating every assignment of an already refuted tuple.
+Return `total_candidate_tuples` and `uncertainty_cases_per_candidate` as decimal strings so JavaScript can display exact products. The tuple count is null if bounded domain construction stops before it is known. A shared empty-schedule nominal precheck counts toward the case budget and is reused when enumerating that tuple. Return bounded actual work counters as integers: `visited_candidate_tuples`, `refuted_candidate_tuples`, `unresolved_candidate_tuples`, `nominal_checks`, `uncertainty_checks`. Explain that the theoretical product includes structurally invalid combinations. A refuted tuple needs only one conclusive failure; proving no solution does not require simulating every assignment of an already refuted tuple.
 
 | Result status | Termination | Required evidence and permitted statement |
 |---|---|---|
@@ -57,13 +57,13 @@ Return `total_candidate_tuples` and `uncertainty_cases_per_candidate` as decimal
 
 `candidate` and `verification` are present only for `FOUND`. Include a clearly labeled example refutation for other statuses, when available; one witness against one schedule is not a certificate against all schedules. Return warnings, active source identity, nominal assumptions, exact uncertainty request, domain restrictions, actual counters/runtime and `search_exhausted`. A found candidate remains valid even when other schedules were not examined; do not equate search exhaustion with verification coverage. There is no synthesis `OPTIMAL` label.
 
-Return backend-computed `nominal_costs` and, only when found, `candidate_costs`, each with integer `total_action_fees_cents` and `total_action_burden`. Sum the actual selected action metadata, not event balances or deferred principal; these are comparison values, not search objectives. B formats these values and never computes financial totals from effects. The candidate's nominal simulation and complete verified worst case supply the cash comparison; the saved nominal plan's own uncertainty result must be labeled separately and never inferred from the candidate's proof.
+Return backend-computed `nominal_costs` and, only when found, `candidate_costs`, each with integer `total_action_fees_cents` and `total_action_burden`. Totals are null when domain preparation fails before a trustworthy bounded comparison is available. Sum the actual selected action metadata, not event balances or deferred principal; these are comparison values, not search objectives. B formats these values and never computes financial totals from effects. The candidate's nominal simulation and complete verified worst case supply the cash comparison; the saved nominal plan's own uncertainty result must be labeled separately and never inferred from the candidate's proof.
 
 Invalid request/unsupported saved assumptions return 422. Stale input revision or changed active plan/incomplete source processing returns 409. Missing/deleted private sessions follow existing authentication/not-found behavior. An unexpected internal error is an error response, not `NO_SOLUTION` or a partial candidate.
 
 ## API, plan representation and adoption
 
-Proposed operations (to be implemented only after review):
+Implemented operations:
 
 | Operation | Request and result | Mutation |
 |---|---|---|
@@ -94,7 +94,7 @@ Use dates in September 2026, a seven-day horizon starting September 1, opening c
 | `early-shift` | Same expense moved to September 3; zero fee | 5000 / 5000 cents | -5000 / 5000 cents |
 | `late-shift` | Same expense moved to September 5; 100-cent fee on September 1 | 4900 / 4900 cents | 4900 / 4900 cents |
 
-Nominal optimization selects `early-shift` because its nominal minimum is higher. It fails when income arrives September 4 or 5. The fixed `late-shift` schedule survives all three dates without narrowing bounds, adding cash, changing approval or duplicating the expense. The date/amount facts and approved fee must be supported by the new fixture evidence. This table's arithmetic is a design example; the reviewed corpus, loader and successful end-to-end synthesis remain future implementation acceptance.
+Nominal optimization selects `early-shift` because its nominal minimum is higher. It fails when income arrives September 4 or 5. The fixed `late-shift` schedule survives all three dates without narrowing bounds, adding cash, changing approval or duplicating the expense. The date/amount facts and approved fee must be supported by the new fixture evidence. The separate corpus/loader, arithmetic oracle and offline script now reproduce this table. API adoption is tested separately; browser comparison/adoption remains the next task.
 
 For a real-API demo, extend `SessionCreate` with `demo_variant: "baseline" | "resilient"`, default `baseline`; a nonbaseline variant with `demo=false` is invalid. Store the variant on synthetic workspaces, and preserve it on demo reset. Existing sessions/default resets keep the original six-source behavior. B owns the explicit demo selector and its labeling. Never replace a user's existing session automatically. This API addition is part of the engine contract review, not an instruction to C to synthesize backend fixtures.
 

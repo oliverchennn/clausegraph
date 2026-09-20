@@ -1645,6 +1645,15 @@
             "title": "Generated At",
             "type": "string"
           },
+          "generation_mode": {
+            "default": "nominal",
+            "enum": [
+              "nominal",
+              "resilient"
+            ],
+            "title": "Generation Mode",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -1668,7 +1677,8 @@
               "FEASIBLE",
               "INFEASIBLE",
               "UNKNOWN",
-              "MODEL_INVALID"
+              "MODEL_INVALID",
+              "FIXED_VERIFIED"
             ],
             "title": "Solver Status",
             "type": "string"
@@ -1686,6 +1696,16 @@
             ],
             "title": "State",
             "type": "string"
+          },
+          "synthesis_provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SynthesisProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "warnings": {
             "items": {
@@ -2241,6 +2261,26 @@
         "title": "Scenario",
         "type": "object"
       },
+      "ScheduledAction": {
+        "additionalProperties": false,
+        "properties": {
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "execution_date": {
+            "format": "date",
+            "title": "Execution Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_id",
+          "execution_date"
+        ],
+        "title": "ScheduledAction",
+        "type": "object"
+      },
       "SessionCreate": {
         "additionalProperties": false,
         "properties": {
@@ -2248,6 +2288,15 @@
             "default": false,
             "title": "Demo",
             "type": "boolean"
+          },
+          "demo_variant": {
+            "default": "baseline",
+            "enum": [
+              "baseline",
+              "resilient"
+            ],
+            "title": "Demo Variant",
+            "type": "string"
           }
         },
         "title": "SessionCreate",
@@ -2303,6 +2352,406 @@
           "additional_cash_required_cents"
         ],
         "title": "Simulation",
+        "type": "object"
+      },
+      "SynthesisAdoptRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "candidate_fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Candidate Fingerprint",
+            "type": "string"
+          },
+          "selected_actions": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduledAction"
+            },
+            "maxItems": 100,
+            "title": "Selected Actions",
+            "type": "array"
+          },
+          "synthesis_request": {
+            "$ref": "#/components/schemas/SynthesisRequest"
+          }
+        },
+        "required": [
+          "synthesis_request",
+          "selected_actions",
+          "candidate_fingerprint"
+        ],
+        "title": "SynthesisAdoptRequest",
+        "type": "object"
+      },
+      "SynthesisAdoptionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/PlanResult"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/VerificationResult"
+          }
+        },
+        "required": [
+          "plan",
+          "verification"
+        ],
+        "title": "SynthesisAdoptionResult",
+        "type": "object"
+      },
+      "SynthesisCosts": {
+        "additionalProperties": false,
+        "properties": {
+          "total_action_burden": {
+            "minimum": 0.0,
+            "title": "Total Action Burden",
+            "type": "integer"
+          },
+          "total_action_fees_cents": {
+            "minimum": 0.0,
+            "title": "Total Action Fees Cents",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_action_fees_cents",
+          "total_action_burden"
+        ],
+        "title": "SynthesisCosts",
+        "type": "object"
+      },
+      "SynthesisProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "fingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "request": {
+            "$ref": "#/components/schemas/SynthesisRequest"
+          },
+          "source_plan_id": {
+            "title": "Source Plan Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_plan_id",
+          "fingerprint",
+          "request"
+        ],
+        "title": "SynthesisProvenance",
+        "type": "object"
+      },
+      "SynthesisRefutation": {
+        "additionalProperties": false,
+        "properties": {
+          "counterexample": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Counterexample"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/VerificationFailure"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "selected_actions": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduledAction"
+            },
+            "title": "Selected Actions",
+            "type": "array"
+          },
+          "stage": {
+            "enum": [
+              "nominal",
+              "uncertainty"
+            ],
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage",
+          "selected_actions",
+          "failures"
+        ],
+        "title": "SynthesisRefutation",
+        "type": "object"
+      },
+      "SynthesisRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "max_candidates": {
+            "default": 1000,
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Max Candidates",
+            "type": "integer"
+          },
+          "max_case_checks": {
+            "default": 10000,
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Max Case Checks",
+            "type": "integer"
+          },
+          "plan_id": {
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "time_limit_seconds": {
+            "default": 5,
+            "exclusiveMinimum": 0.0,
+            "maximum": 10.0,
+            "title": "Time Limit Seconds",
+            "type": "number"
+          },
+          "uncertainties": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "approval": "#/components/schemas/ApprovalUncertainty",
+                  "income_amount": "#/components/schemas/IncomeAmountUncertainty",
+                  "income_date": "#/components/schemas/IncomeDateUncertainty"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/IncomeDateUncertainty"
+                },
+                {
+                  "$ref": "#/components/schemas/IncomeAmountUncertainty"
+                },
+                {
+                  "$ref": "#/components/schemas/ApprovalUncertainty"
+                }
+              ]
+            },
+            "maxItems": 8,
+            "title": "Uncertainties",
+            "type": "array"
+          }
+        },
+        "required": [
+          "plan_id",
+          "revision"
+        ],
+        "title": "SynthesisRequest",
+        "type": "object"
+      },
+      "SynthesisResult": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "$ref": "#/components/schemas/SynthesisRequest"
+          },
+          "candidate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidate_costs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SynthesisCosts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "candidate_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidate Fingerprint"
+          },
+          "example_refutation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SynthesisRefutation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "excluded_actions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Excluded Actions",
+            "type": "object"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mode": {
+            "const": "bounded_fixed_schedule_synthesis",
+            "default": "bounded_fixed_schedule_synthesis",
+            "title": "Mode",
+            "type": "string"
+          },
+          "nominal_assumptions": {
+            "$ref": "#/components/schemas/PlanRequest"
+          },
+          "nominal_checks": {
+            "default": 0,
+            "title": "Nominal Checks",
+            "type": "integer"
+          },
+          "nominal_costs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SynthesisCosts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plan_id": {
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "refuted_candidate_tuples": {
+            "default": 0,
+            "title": "Refuted Candidate Tuples",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "runtime_seconds": {
+            "title": "Runtime Seconds",
+            "type": "number"
+          },
+          "search_exhausted": {
+            "default": false,
+            "title": "Search Exhausted",
+            "type": "boolean"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "FOUND",
+              "NO_SOLUTION",
+              "INCONCLUSIVE"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "termination": {
+            "enum": [
+              "VERIFIED_CANDIDATE",
+              "EXHAUSTED",
+              "CANDIDATE_LIMIT",
+              "CASE_LIMIT",
+              "TIME_LIMIT",
+              "MODEL_LIMIT",
+              "UNRESOLVED"
+            ],
+            "title": "Termination",
+            "type": "string"
+          },
+          "total_candidate_tuples": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Candidate Tuples"
+          },
+          "uncertainty_cases_per_candidate": {
+            "title": "Uncertainty Cases Per Candidate",
+            "type": "string"
+          },
+          "uncertainty_checks": {
+            "default": 0,
+            "title": "Uncertainty Checks",
+            "type": "integer"
+          },
+          "unresolved_candidate_tuples": {
+            "default": 0,
+            "title": "Unresolved Candidate Tuples",
+            "type": "integer"
+          },
+          "verification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerificationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visited_candidate_tuples": {
+            "default": 0,
+            "title": "Visited Candidate Tuples",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "plan_id",
+          "revision",
+          "status",
+          "termination",
+          "assumptions",
+          "nominal_assumptions",
+          "uncertainty_cases_per_candidate",
+          "statement",
+          "runtime_seconds",
+          "generated_at"
+        ],
+        "title": "SynthesisResult",
         "type": "object"
       },
       "TranscriptResponse": {
@@ -2719,6 +3168,15 @@
       "Workspace": {
         "additionalProperties": false,
         "properties": {
+          "demo_variant": {
+            "default": "baseline",
+            "enum": [
+              "baseline",
+              "resilient"
+            ],
+            "title": "Demo Variant",
+            "type": "string"
+          },
           "documents": {
             "items": {
               "$ref": "#/components/schemas/Document"
@@ -3632,6 +4090,92 @@
           }
         },
         "summary": "Create Session"
+      }
+    },
+    "/api/synthesis": {
+      "post": {
+        "operationId": "synthesis_api_synthesis_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SynthesisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SynthesisResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Synthesis"
+      }
+    },
+    "/api/synthesis/adopt": {
+      "post": {
+        "operationId": "adopt_synthesis_api_synthesis_adopt_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SynthesisAdoptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SynthesisAdoptionResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Adopt Synthesis"
       }
     },
     "/api/verifications": {

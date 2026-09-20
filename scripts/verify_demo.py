@@ -54,7 +54,9 @@ def run_demo() -> dict:
         "minimum_extra_opening_cash_cents": cash if tight else None,
         "extra_cash_is_hypothetical_not_funding": True,
         "same_schedule_with_extra_cash": funded_verification.model_dump(mode="json") if funded_verification else None,
-        "robust_synthesis_implemented": False,
+        "robust_synthesis_implemented": True,
+        "report_uses_synthesis": False,
+        "separate_synthesis_success_report": "scripts/synthesize_demo.py",
     }
 
 

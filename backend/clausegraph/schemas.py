@@ -1,4 +1,6 @@
 """Canonical public contracts. Integration owner controls interface changes."""
+from __future__ import annotations
+
 from datetime import date as Date, datetime
 from enum import Enum
 from typing import Annotated, Literal
@@ -254,7 +256,7 @@ class PlanResult(Contract):
     id: str
     revision: int = 1
     state: Literal["confirmed", "conditional", "infeasible", "unresolved"]
-    solver_status: Literal["OPTIMAL", "FEASIBLE", "INFEASIBLE", "UNKNOWN", "MODEL_INVALID"]
+    solver_status: Literal["OPTIMAL", "FEASIBLE", "INFEASIBLE", "UNKNOWN", "MODEL_INVALID", "FIXED_VERIFIED"]
     solver_wall_time_seconds: float
     baseline: Simulation
     proposed: Simulation
@@ -265,6 +267,8 @@ class PlanResult(Contract):
     objective_proven: bool = False
     generated_at: datetime
     assumptions: PlanRequest = Field(default_factory=PlanRequest)
+    generation_mode: Literal["nominal", "resilient"] = "nominal"
+    synthesis_provenance: SynthesisProvenance | None = None
 
 
 class UncertaintyBasis(Contract):
@@ -386,6 +390,90 @@ class VerificationResult(Contract):
     generated_at: datetime
 
 
+class SynthesisRequest(Contract):
+    plan_id: str
+    revision: int = Field(ge=1)
+    uncertainties: list[Uncertainty] = Field(default_factory=list, max_length=8)
+    max_candidates: int = Field(default=1000, ge=1, le=10000, strict=True)
+    max_case_checks: int = Field(default=10000, ge=1, le=10000, strict=True)
+    time_limit_seconds: float = Field(default=5, gt=0, le=10)
+
+    @model_validator(mode="after")
+    def unique_dimensions(self):
+        VerificationRequest(plan_id=self.plan_id, revision=self.revision, uncertainties=self.uncertainties)
+        return self
+
+
+class SynthesisProvenance(Contract):
+    source_plan_id: str
+    fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+    request: SynthesisRequest
+
+
+class ScheduledAction(Contract):
+    action_id: str
+    execution_date: Date
+
+
+class SynthesisCosts(Contract):
+    total_action_fees_cents: int = Field(ge=0)
+    total_action_burden: int = Field(ge=0)
+
+
+class SynthesisRefutation(Contract):
+    stage: Literal["nominal", "uncertainty"]
+    selected_actions: list[ScheduledAction]
+    failures: list[VerificationFailure]
+    counterexample: Counterexample | None = None
+
+
+class SynthesisResult(Contract):
+    id: str
+    plan_id: str
+    revision: int
+    mode: Literal["bounded_fixed_schedule_synthesis"] = "bounded_fixed_schedule_synthesis"
+    status: Literal["FOUND", "NO_SOLUTION", "INCONCLUSIVE"]
+    termination: Literal["VERIFIED_CANDIDATE", "EXHAUSTED", "CANDIDATE_LIMIT", "CASE_LIMIT", "TIME_LIMIT", "MODEL_LIMIT", "UNRESOLVED"]
+    assumptions: SynthesisRequest
+    nominal_assumptions: PlanRequest
+    total_candidate_tuples: str | None = None
+    uncertainty_cases_per_candidate: str
+    visited_candidate_tuples: int = 0
+    refuted_candidate_tuples: int = 0
+    unresolved_candidate_tuples: int = 0
+    nominal_checks: int = 0
+    uncertainty_checks: int = 0
+    search_exhausted: bool = False
+    candidate: PlanResult | None = None
+    verification: VerificationResult | None = None
+    candidate_fingerprint: str | None = None
+    nominal_costs: SynthesisCosts | None = None
+    candidate_costs: SynthesisCosts | None = None
+    example_refutation: SynthesisRefutation | None = None
+    excluded_actions: dict[str, str] = Field(default_factory=dict)
+    statement: str
+    warnings: list[str] = Field(default_factory=list)
+    runtime_seconds: float
+    generated_at: datetime
+
+
+class SynthesisAdoptRequest(Contract):
+    synthesis_request: SynthesisRequest
+    selected_actions: list[ScheduledAction] = Field(max_length=100)
+    candidate_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def unique_actions(self):
+        if len({item.action_id for item in self.selected_actions}) != len(self.selected_actions):
+            raise ValueError("Selected action identifiers must be unique.")
+        return self
+
+
+class SynthesisAdoptionResult(Contract):
+    plan: PlanResult
+    verification: VerificationResult
+
+
 class CashGapRequest(Contract):
     """Ask how much explicitly hypothetical opening cash the saved fixed schedule would need."""
     plan_id: str
@@ -462,6 +550,7 @@ class ProviderStatus(Contract):
 class Workspace(Contract):
     session_id: str
     mode: Literal["synthetic", "live"]
+    demo_variant: Literal["baseline", "resilient"] = "baseline"
     revision: int
     scenario: Scenario
     documents: list[Document]
@@ -512,6 +601,13 @@ class DraftResponse(Contract):
 
 class SessionCreate(Contract):
     demo: bool = False
+    demo_variant: Literal["baseline", "resilient"] = "baseline"
+
+    @model_validator(mode="after")
+    def synthetic_variant(self):
+        if not self.demo and self.demo_variant != "baseline":
+            raise ValueError("A demo variant requires an explicitly synthetic session.")
+        return self
 
 
 class DraftRequest(Contract):
@@ -537,3 +633,6 @@ class HealthResponse(Contract):
     status: str
     database: str
     storage: str
+
+
+PlanResult.model_rebuild()

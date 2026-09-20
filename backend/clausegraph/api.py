@@ -23,6 +23,7 @@ from clausegraph.schemas import (
     ApprovalStatus, AudioRequest, CashGapDiagnostic, CashGapRequest, DeleteResponse, Document, DraftRequest, DraftResponse,
     ExtractionResult, HealthResponse, IntakeRequest, JobStatus, PlanRequest, PlanResult,
     ProviderStatus, ReviewQueue, ReviewStatus, RuleReview, Scenario, SessionCreate, TranscriptResponse,
+    SynthesisAdoptionResult, SynthesisAdoptRequest, SynthesisRequest, SynthesisResult,
     UploadResponse, VerificationRequest, VerificationResult, Workspace,
 )
 from clausegraph.storage import MissingSession, Originals, StaleRevision, Store, utcnow
@@ -211,17 +212,18 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
             return content
         raise HTTPException(404, "The private original is unavailable; evidence confirmation is blocked.")
 
-    def new_workspace(session_id: str, demo: bool) -> Workspace:
+    def new_workspace(session_id: str, demo: bool, demo_variant: str = "baseline") -> Workspace:
         from clausegraph.schemas import DependencyGraph
         if demo:
             from clausegraph.demo import load_demo
-            scenario, documents, rules = load_demo()
+            from clausegraph.resilient_demo import load_resilient_demo
+            scenario, documents, rules = load_resilient_demo() if demo_variant == "resilient" else load_demo()
         else:
             scenario = Scenario(id=secrets.token_urlsafe(12), title="My emergency plan", start_date=date.today(),
                 horizon_days=60, opening_balance_cents=0, events=[], actions=[])
             documents, rules = [], []
         workspace = Workspace(session_id=session_id, mode="synthetic" if demo else "live", revision=1,
-            scenario=scenario, documents=documents, rules=rules, graph=DependencyGraph())
+            scenario=scenario, documents=documents, rules=rules, graph=DependencyGraph(), demo_variant=demo_variant)
         refresh_graph(workspace)
         return workspace
 
@@ -232,7 +234,7 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
 
     @app.post("/api/sessions", response_model=Workspace, status_code=201)
     def create_session(body: SessionCreate, request: Request):
-        workspace = request.app.state.store.create(new_workspace(secrets.token_urlsafe(32), body.demo))
+        workspace = request.app.state.store.create(new_workspace(secrets.token_urlsafe(32), body.demo, body.demo_variant))
         return present(request, workspace)
 
     @app.get("/api/workspace", response_model=Workspace)
@@ -294,13 +296,46 @@ def create_app(settings: Settings | None = None, store: Store | None = None,
     def verification_history(request: Request, workspace: Session):
         return request.app.state.store.verifications(workspace.session_id)
 
+    def synthesis_source(workspace: Workspace, body: SynthesisRequest):
+        if (workspace.revision != body.revision or workspace.plan is None
+                or workspace.plan.id != body.plan_id or workspace.plan.revision != body.revision):
+            raise StaleRevision()
+        if incomplete_sources(workspace):
+            raise HTTPException(409, "Document source processing is incomplete. Resolve it and save a current plan before synthesis.")
+
+    @app.post("/api/synthesis", response_model=SynthesisResult)
+    def synthesis(body: SynthesisRequest, request: Request, workspace: Session):
+        from clausegraph.synthesis import synthesize_plan
+        synthesis_source(workspace, body)
+        try:
+            result = synthesize_plan(workspace.scenario, workspace.rules, workspace.plan, body)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        synthesis_source(request.app.state.store.get(workspace.session_id), body)
+        return result
+
+    @app.post("/api/synthesis/adopt", response_model=SynthesisAdoptionResult)
+    def adopt_synthesis(body: SynthesisAdoptRequest, request: Request, workspace: Session):
+        from clausegraph.synthesis import CandidateUnavailable, revalidate_candidate
+        synthesis_source(workspace, body.synthesis_request)
+        try:
+            result = revalidate_candidate(workspace.scenario, workspace.rules, workspace.plan, body)
+        except CandidateUnavailable as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        request.app.state.store.adopt_synthesis(workspace.session_id, body.synthesis_request.plan_id,
+            result.plan, result.verification, lambda current: synthesis_source(current, body.synthesis_request))
+        clear_plan_cache(request, workspace.session_id)
+        return result
+
     @app.post("/api/demo/reset", response_model=Workspace)
     def reset_demo(request: Request, workspace: Session):
         data_store = request.app.state.store
         def apply(current: Workspace):
             for key in data_store.original_keys(current.session_id):
                 request.app.state.originals.delete(key)
-            fresh = new_workspace(current.session_id, True)
+            fresh = new_workspace(current.session_id, True, current.demo_variant)
             current.mode, current.scenario = fresh.mode, fresh.scenario
             current.documents, current.rules, current.graph = fresh.documents, fresh.rules, fresh.graph
             current.jobs = []
