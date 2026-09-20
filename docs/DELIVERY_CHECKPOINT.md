@@ -1,5 +1,15 @@
 # Demo checkpoints and history acceptance
 
+## Current cash-gap and uncertainty-controls checkpoint
+
+Commit [`2e7653718ff7fac27158789deff965775da408a1`](https://github.com/oliverchennn/clausegraph/commit/2e7653718ff7fac27158789deff965775da408a1) includes PR34 cash-gap UI, PR37 C10 presenter kit, PR36 C11 demo/tests and PR35 multi-dimension uncertainty controls, as well as the earlier API guards and contracts. [CI on this exact merged main commit](https://github.com/oliverchennn/clausegraph/actions/runs/35497142151) passed **390 backend tests in 29.34 seconds** (including PostgreSQL; two existing warnings) and **46 real-API Chromium tests in 2.3 minutes**, Ruff, generated OpenAPI/TypeScript drift, frontend typecheck/lint/build and Linux/Windows/macOS clean installs. The PR-only ownership job is intentionally skipped on main.
+
+Independent A review and conflict resolution are recorded in the [C10 integration handoff](handoffs/dev-b/c-demo-kit-integration.md), [C11 integration handoff](handoffs/dev-b/c-cash-gap-demo-integration.md) and [uncertainty UI integration handoff](handoffs/dev-b/uncertainty-explorer-ui-integration.md). PR38 was closed as duplicate cash-gap implementation, with its useful retry coverage retained in PR36. Original contributor handoffs and historical branches are preserved.
+
+Use this checkpoint for the current implemented cash-gap story and uncertainty controls. C12's dedicated failure view remains an empty released seam; synthesis/adoption and consequence walkthrough are not implemented. The [synthesis specification](RESILIENT_PLAN_SPEC.md) is a proposed design awaiting B review. No successful live extraction or human spoken rehearsal is inferred from CI. The [C10 presenter kit](../frontend/demo/presenter-cues.md), [fallback runbook](../frontend/demo/fallback-runbook.md) and [C11 cash-gap segment](../frontend/demo/cash-gap-demo.md) are source material; preserve their historical/proposed labels when using the current [demo script](DEMO.md).
+
+The earlier exact checkpoints below remain reproducible history. This update does not restart the user's app, deploy a service or change stored sessions. Reproduce the chosen commit in an isolated checkout using the fallback procedure below.
+
 ## Validated application checkpoint with history
 
 Commit [`ca7cde59287e5456a9398965796c873152176491`](https://github.com/oliverchennn/clausegraph/commit/ca7cde59287e5456a9398965796c873152176491) includes PR23's read-only history UI and all earlier baseline work. [CI on this exact merged commit](https://github.com/oliverchennn/clausegraph/actions/runs/35488606919) passed 352 backend tests in 39.69 seconds, including PostgreSQL 17; 19 real-API Chromium tests in 2.0 minutes; Ruff, generated OpenAPI/TypeScript drift, frontend typecheck/lint/build, and clean installs on Linux, Windows and macOS. The PR-only ownership job is intentionally skipped on main.
@@ -8,7 +18,7 @@ Commit [`ca7cde59287e5456a9398965796c873152176491`](https://github.com/oliverche
 
 A's [stage 0 closeout handoff](handoffs/dev-a/live-demo-closeout.md) records fresh local preparation: 130 existing focused tests passed, eight PostgreSQL variants skipped without a disposable test URL; both fallback scripts passed and their saved reports parsed; both native/scanned no-consent uploads stayed local and were deleted. PR24 (`e65464c`) subsequently changed assignment documents only; it did not change the tested runtime. No new live provider, human source-review or spoken-rehearsal success is claimed. [EXTRACTION_CHECK.md](EXTRACTION_CHECK.md) records the subsequently consented native timeout and OCR HTTP 503. Neither produced rules or a successful live flow. The [follow-up API fix](handoffs/dev-a/incomplete-source-guard.md) prevents incomplete processing from producing a confirmed plan or verification result; that fix is not part of the earlier recorded checkpoint.
 
-Use this commit when a presentation includes history, preserving the isolated setup and fallback procedure below. The earlier `a00af57` baseline and its rehearsal evidence remain valid historical records. Neither checkpoint is a deployment or a global feature freeze.
+This historical commit is a reproducible history-UI baseline; use the newer checkpoint above for the expanded cash-gap/uncertainty story. Preserve the isolated setup and fallback procedure below. The earlier `a00af57` baseline and its rehearsal evidence remain valid historical records. No checkpoint is a deployment or a global feature freeze.
 
 ## Earlier recorded demo checkpoint
 
