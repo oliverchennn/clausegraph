@@ -1663,6 +1663,18 @@
             "title": "Objective Proven",
             "type": "boolean"
           },
+          "preview_source_plan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For nonmutating previews, the active saved plan at computation time; null if none. Not an adoption credential.",
+            "title": "Preview Source Plan Id"
+          },
           "proposed": {
             "$ref": "#/components/schemas/Simulation"
           },
@@ -3858,7 +3870,7 @@
     },
     "/api/plan/preview": {
       "post": {
-        "description": "Return a side-effect-free scenario result for comparison.",
+        "description": "Return a side-effect-free result bound to the still-current comparison source.",
         "operationId": "preview_plan_api_plan_preview_post",
         "requestBody": {
           "content": {
