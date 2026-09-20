@@ -16,7 +16,7 @@ Percentages estimate remaining effort, not task counts or past work. The [100-po
 
 ## Confirmed checkpoint and in-flight work
 
-Freshly synchronized main is `8fa1279` (PR31 assignments), including PR29's cash-gap contract and PR30's incomplete-source guard. The user reports A/B's first tasks and all previous C work done. These are completed merged deliveries:
+Freshly synchronized main is `1a24143` (PR32 cash-gap integration guards), including PR31 assignments, PR29's cash-gap contract and PR30's incomplete-source guard. The user reports A/B's first tasks and all previous C work done. These are completed merged deliveries:
 
 | PR | Contributor / merge commit | Delivered scope and limits |
 |---|---|---|
@@ -26,10 +26,11 @@ Freshly synchronized main is `8fa1279` (PR31 assignments), including PR29's cash
 | [27](https://github.com/oliverchennn/clausegraph/pull/27) | C Brev wording / `f5f93bd` | Historical-variability wording and C's handoff. |
 | [29](https://github.com/oliverchennn/clausegraph/pull/29) | A-lane cash-gap contract / `b5d9204` | Private nonmutating API/generated types and backend tests; carried out by C under a separate explicit A-lane assignment, not standing C ownership. UI/demo still pending. |
 | [30](https://github.com/oliverchennn/clausegraph/pull/30) | A incomplete-source guard / `5e79c1d` | Plans stay unresolved during incomplete processing; verification rejects with HTTP 409. Authorized native timeout/OCR503 recorded without claiming successful live extraction. |
+| [32](https://github.com/oliverchennn/clausegraph/pull/32) | A cash-gap guards / `1a24143` | Cash diagnostics also reject incomplete processing and discard results when the session, input revision or active plan changes during computation. |
 
 Do not restart these tasks. PR31 reconciles their delivery records with the new allocation. A continues normal green/reviewed sequential integration for future PRs. Historical handoffs remain unchanged. C1-C9 are closed/superseded per the user; no missing C reports or checks are invented.
 
-A's current bounded stage 1 task is [cash-gap-guards](handoffs/dev-a/cash-gap-guards.md), on `codex/dev-a/cash-gap-guards` from `8fa1279`. It fixes reproduced gaps in source completeness and in-flight session/plan validation without changing schemas or cash semantics. The tested correction awaits B review and CI/merge. B continues the cash-gap UI against merged contracts; C10 is independent, C11 follows A/B integration, and stage 2 implementation remains gated by the required stage 1 deliveries.
+A's current [uncertainty-explorer-contract](handoffs/dev-a/uncertainty-explorer-contract.md) task prepares the next-stage consumption specification from `1a24143`, as permitted while the current UI finishes. It maps existing backend fields to B controls/C12 failure details, exact/qualified counts and proof labels, and records B's exact future paths. No schema or runtime implementation is added. The specification awaits B review and CI/merge. B continues the cash-gap UI against merged contracts; C10 is independent, C11 follows A/B integration, and stage 2 implementation remains gated by the required stage 1 deliveries.
 
 The [delivery checkpoint](DELIVERY_CHECKPOINT.md) retains A's verification of exact PR23 CI: 352 backend tests including PostgreSQL, 19 browser tests, frontend/contract/platform checks and independent review. The merged [closeout handoff](handoffs/dev-a/live-demo-closeout.md) adds 130 focused local passes/eight PostgreSQL skips, reproduced fallback reports and native/scanned consent/deletion checks. Its pending-consent statement predates the authorized native timeout (120.250 seconds) and OCR HTTP 503 (0.250 seconds), now recorded in the merged [PR30 handoff](handoffs/dev-a/incomplete-source-guard.md). That handoff records 348 backend passes/nine PostgreSQL skips and 28 real-API browser passes; inference in browser tests is simulated. The guard fix is merged, while successful live inference remains outstanding. The [B demo handoff](handoffs/dev-b/demo-rehearsal.md) records 180.02-second automated operator timing, not human delivery. A owns current live/correctness evidence; C owns presenter preparation. External blockers stay explicit while independent local work proceeds.
 
@@ -38,8 +39,8 @@ The [delivery checkpoint](DELIVERY_CHECKPOINT.md) retains A's verification of ex
 | Stage | A | B | C | Completion gate |
 |---|---|---|---|---|
 | 0: closeout | Guard fix/live failure record merged in PR30; retain fallback and explicit remaining live limits | Preserve merged consent; handle newly reproduced shared UI defects | C10 demo kit after assignment merge, using current main | Working fallback; truthful live/human status; no false confirmed plan from missing extraction |
-| 1: cash-gap #2 | PR29 contract merged; `cash-gap-guards` integration correction awaiting review | `cash-gap-diagnostic-ui` state/explanation | C11 cash-gap demo/test after A/B merge | Proven versus observed/incomplete; cash cannot repair authorization; unchanged saved plan |
-| 2: uncertainty #3 | `uncertainty-explorer-contract` | `uncertainty-explorer-ui` controls/count/request/selection/stale state | C12 failure view and released wiring/tests | Exact inclusive domains/counts; accessible failures; honest Safe/Unsafe/Unknown |
+| 1: cash-gap #2 | PR29 contract and PR32 guards merged; support B's consumption | `cash-gap-diagnostic-ui` state/explanation | C11 cash-gap demo/test after A/B merge | Proven versus observed/incomplete; cash cannot repair authorization; unchanged saved plan |
+| 2: uncertainty #3 | `uncertainty-explorer-contract` consumption specification awaiting review; existing data sufficient for bounded witness view | `uncertainty-explorer-ui` controls/count/request/selection/stale state after stage 1 | C12 failure view and released wiring/tests | Exact inclusive domains/counts; accessible failures; honest Safe/Unsafe/Unknown |
 | 3: resilient #1 | Reviewed `resilient-plan-spec`, then `resilient-plan-engine` | Design review, comparison and explicit adoption | C13 resilient-plan demo/test | One fixed permitted schedule survives unchanged bounds; independent verification; honest cutoff |
 | 4: consequences #4 | `consequence-walkthrough-contract` | `consequence-integration` graph/evidence callbacks and shell release | C14 walkthrough, then C15 final demo | Removed charge/accelerated debt/future obligations visible; integrated fallback/rehearsal |
 
