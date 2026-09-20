@@ -75,7 +75,7 @@ test("fixed-plan verification exposes a counterexample, proves bounded safety, a
   await expect(result.getByText("Verified Safe", { exact: true })).toBeVisible();
 
   // Recorded evidence changes the workspace revision and removes the old result.
-  await page.getByTestId("action-shift-payment").getByRole("button", { name: "View evidence", exact: true }).click();
+  await page.getByTestId("action-shift-payment").getByRole("button", { name: "View evidence for Move the $450 installment", exact: true }).click();
   const shift = page.getByTestId("rule-rule-shift");
   await shift.getByLabel("Approval for Approved payment shift").selectOption("denied");
   await shift.getByRole("button", { name: "Save review & recalculate" }).click();

@@ -39,6 +39,7 @@ function ReviewItem({ item, first, workspace, onEvidence, onIntake, onUpload }: 
 export default function ReviewQueue({ workspace, onEvidence, onIntake, onUpload, onRefresh }: Props) {
   const [queue, setQueue] = useState<Queue | null>(null);
   const [error, setError] = useState("");
+  const [refreshError, setRefreshError] = useState("");
   const [stale, setStale] = useState(false);
   const [retry, setRetry] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,7 +47,7 @@ export default function ReviewQueue({ workspace, onEvidence, onIntake, onUpload,
 
   useEffect(() => {
     const controller = new AbortController();
-    setQueue(null); setError(""); setStale(false);
+    setQueue(null); setError(""); setRefreshError(""); setStale(false);
     void request<Queue>("/review-queue", sessionId, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]) }).then(result => {
       if (controller.signal.aborted) return;
       if (result.revision !== revision) { setStale(true); return; }
@@ -59,8 +60,9 @@ export default function ReviewQueue({ workspace, onEvidence, onIntake, onUpload,
 
   async function refresh() {
     setRefreshing(true);
+    setRefreshError("");
     try { await onRefresh(); setRetry(value => value + 1); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : "The workspace could not be refreshed."); }
+    catch (caught) { setRefreshError(caught instanceof Error ? caught.message : "Please try again."); }
     finally { setRefreshing(false); }
   }
 
@@ -69,7 +71,7 @@ export default function ReviewQueue({ workspace, onEvidence, onIntake, onUpload,
     <div className="panel-heading"><div><h2 id="review-queue-heading"><ClipboardList size={18} /> What needs review next?</h2><p>Essential obligations first, then blocked options and other reviews. This order does not estimate a cash benefit.</p></div>{items && <Badge tone={items.length ? "warning" : "neutral"}>{items.length} {items.length === 1 ? "item" : "items"}</Badge>}</div>
     <div className="review-queue-body">
       {error ? <div role="alert" className="review-queue-message"><p>Review tasks could not be loaded. {error}</p><Button onClick={() => setRetry(value => value + 1)}>Try again</Button></div>
-        : stale ? <div role="status" className="review-queue-message"><p>The workspace changed while review tasks were loading. Refresh to inspect the latest facts.</p><Button busy={refreshing} onClick={() => void refresh()}>Refresh workspace</Button></div>
+        : stale ? <div role="status" className="review-queue-message"><p>The workspace changed while review tasks were loading. Refresh to inspect the latest facts.</p>{refreshError && <p role="alert" className="review-queue-refresh-error">The workspace could not be refreshed. {refreshError}</p>}<Button busy={refreshing} onClick={() => void refresh()}>Refresh workspace</Button></div>
         : !items ? <p role="status" className="review-queue-loading"><LoaderCircle size={16} className="spin" /> Loading review tasks…</p>
         : !items.length ? <p role="status" className="review-queue-message">No listed review tasks remain. This does not mean the plan is financially safe; check its cash projection and declared verification bounds.</p>
         : <><ReviewItem item={items[0]} first workspace={workspace} onEvidence={onEvidence} onIntake={onIntake} onUpload={onUpload} />{items.length > 1 && <details className="review-queue-rest"><summary>Show {items.length - 1} more review {items.length === 2 ? "item" : "items"}</summary><div>{items.slice(1).map(item => <ReviewItem key={item.id} item={item} first={false} workspace={workspace} onEvidence={onEvidence} onIntake={onIntake} onUpload={onUpload} />)}</div></details>}</>}
