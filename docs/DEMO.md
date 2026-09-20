@@ -4,7 +4,7 @@ Use only the prominently labeled synthetic demo. No model calls or cloud credent
 
 ## 0:00–0:35 — source to nominal plan
 
-Show the $2,000 opening cash and six synthetic sources. The baseline minimum is −$400. In **Why this plan?**, follow the source → clause → action → ledger effect chain and open its exact quote, page/version, separate evidence/review/approval states and execution deadline. CP-SAT moves the same $450 installment from September 13 to September 26: minimum $50, ending $500. This is timing relief, not savings. The unresolved assistance benefit remains excluded.
+Show the $2,000 **Available cash** and six synthetic sources. The unplanned path is the −$400 shown on screen as **Current path**. In **Why this plan?**, follow the source → clause → action → ledger effect chain and open its exact quote, page/version, separate evidence/review/approval states and execution deadline. CP-SAT moves the same $450 installment from September 13 to September 26: **Lowest projected balance** $50, **At the end of your plan** $500. This is timing relief, not savings. The unresolved assistance benefit remains excluded.
 
 ## 0:35–1:20 — declare what could change
 
