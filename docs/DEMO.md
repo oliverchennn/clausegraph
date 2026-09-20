@@ -30,7 +30,9 @@ The integrated side-by-side preview is a useful optional detour: **Compare optio
 
 - `python scripts/verify_demo.py` — complete synthetic verification, no-safe-schedule proof, and hypothetical cash diagnostic.
 - `python scripts/eval_nemotron.py` — five offline semantic gate cases, zero external calls.
-- `python scripts/eval_nemotron.py --live --consent-external` — only with an authorized configured NVIDIA key; sends the synthetic corpus and may consume quota. No live result is claimed in this delivery.
+- `python scripts/eval_nemotron.py --live --consent-external` — only with explicit processing consent and the selected text provider configured; hosted NVIDIA or optional private Brev sends the synthetic corpus and may consume quota/compute. See [setup and consent](NVIDIA_BREV.md). The [historical Brev retest](handoffs/dev-a/brev-live-retest.md) passed 3/5 then 5/5 exact fields; it is separate from this offline demonstration and is not a general accuracy claim.
 - `npm --prefix frontend run test:e2e` — real local API browser coverage, including verification and original workflows.
 
 SAFE is bounded to the declared Cartesian product and daily closing balances over the shown horizon. Large ranges/time limits and unresolved evidence produce Unknown unless a concrete failure is found. Future obligations remain represented beyond the horizon; they are not savings. General robust synthesis, intraday settlement, correlations and hidden obligations are outside this implementation.
+
+Delivery status at `79dced5`: C's on-screen label corrections and UI fixes are merged. A's [integration checks](handoffs/dev-a/integration-validation.md) validate the application and offline scripts. B still needs to record the timed three-minute presentation, local fallback rehearsal and final desktop/mobile visual sign-off. Automated checks do not establish those rehearsal outcomes or feature freeze. Keep `TEXT_PROVIDER=nvidia` for the browser until the separately assigned Brev consent UI is implemented.
