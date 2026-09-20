@@ -77,6 +77,9 @@ test("authorization failures and incomplete coverage never become funding claims
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   const panel = page.getByTestId("verification-panel");
+  const recordedBefore = await readApi<{ scenario: { actions: { id: string; approval_status: string }[] }; rules: { id: string; approval_status: string }[] }>(page, "/workspace");
+  expect(recordedBefore.scenario.actions.find(action => action.id === "shift-payment")?.approval_status).toBe("approved");
+  expect(recordedBefore.rules.find(rule => rule.id === "rule-shift")?.approval_status).toBe("approved");
   await panel.getByLabel("Verification approval outcomes").selectOption("shift-payment");
   const verifyResponse = page.waitForResponse(item => item.url().endsWith("/api/verify") && item.request().method() === "POST");
   await panel.getByRole("button", { name: "Verify fixed plan" }).click();
@@ -88,12 +91,16 @@ test("authorization failures and incomplete coverage never become funding claims
   expect(blocked.additional_opening_cash_cents).toBeNull();
   expect(blocked.funded).toBeNull();
   expect(blocked.blocking_properties).toContain("authorization");
+  expect(blocked.baseline.counterexample.assignment).toContainEqual({ dimension_id: "approval", value: "denied" });
   let result = page.getByTestId("cash-gap-diagnostic");
   await expect(result.getByText("Cash cannot repair", { exact: true })).toBeVisible();
   await expect(result).toContainText("No cash amount established");
+  await expect(result).toContainText("not authorized in at least one declared case");
   await expect(result).toContainText("Cash cannot grant permission");
+  await expect(result).not.toContainText("Recorded approval does not permit");
   await expect(result).toContainText("No verified cash comparison");
   await expect(result).not.toContainText("Verified-sufficient fixed-schedule buffer");
+  expect(await readApi<typeof recordedBefore>(page, "/workspace")).toEqual(recordedBefore);
 
   await panel.getByLabel("Verification approval outcomes").selectOption("");
   await panel.getByRole("button", { name: "Payday through Sep 28" }).click();

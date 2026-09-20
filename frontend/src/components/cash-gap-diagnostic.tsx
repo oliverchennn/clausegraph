@@ -14,7 +14,7 @@ type Props = {
 };
 
 const blockerCopy: Record<string, string> = {
-  authorization: "Recorded approval does not permit this fixed schedule. Cash cannot grant permission.",
+  authorization: "The fixed schedule is not authorized in at least one declared case. Cash cannot grant permission.",
   evidence: "Required evidence is unresolved or unsupported. Cash cannot replace evidence.",
   accounting: "The obligation accounting is invalid. Adding cash cannot make an invalid ledger complete.",
   essential_services: "The schedule does not preserve an essential service. Cash alone cannot authorize that schedule.",

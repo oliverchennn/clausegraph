@@ -18,6 +18,8 @@ The result presents the original fixed schedule beside the same actions/dates un
 
 The real-API browser coverage proves the original eight-date example returns a 40000-cent minimum, the 39999-cent witness fails, the funded comparison is safe, `rule-loan` opens through keyboard activation, workspace/history stay unchanged and reload does not persist this diagnostic. A 390px path checks authorization cannot be repaired with cash and a real case-limited response remains inconclusive with no amount; the page has no horizontal overflow. A delayed request is aborted and suppressed when assumptions change, and completed diagnostics clear on same-revision plan replacement, revision/evidence change and new session identity. Desktop and 390px screenshots were inspected from the passing focused run; labels, hierarchy, wrapping and evidence control were readable.
 
+A's independent review caught one wording defect: the authorization explanation described a hypothetical denied assignment as if the unchanged recorded approval denied the schedule. The copy now says the fixed schedule is unauthorized in at least one declared case. The real-API regression asserts the returned counterexample assignment is hypothetical `denied`, both recorded action/rule approvals remain `approved`, the workspace is byte-for-byte unchanged and the misleading sentence is absent.
+
 ## Validation
 
 Pinned Node 22.23.2/npm 10.9.8 and the existing locked dependency tree were used. The worktree-only dependency symlink was removed before publication. Tests used isolated SQLite/browser ports and made no provider request.
@@ -30,6 +32,7 @@ Pinned Node 22.23.2/npm 10.9.8 and the existing locked dependency tree were used
 | `E2E_API_PORT=8129 E2E_WEB_PORT=3129 npm run test:e2e` | 31 passed, including all existing history, consent, review, verification and workspace regressions. |
 | Post-PR32 `python -m pytest backend/tests/test_cash_gap_api.py backend/tests/test_cash_gap.py -q` | 33 passed; two existing dependency deprecation warnings. |
 | Post-PR32 focused browser reruns on ports 8130/3130 and 8131/3131 | 3 passed each against the latest merged guard; the final run includes corrected incomplete-result wording. |
+| Review correction: typecheck/lint and focused browser on ports 8132/3132 | Passed; 3 browser tests include the recorded-versus-hypothetical approval distinction. |
 
 Final ownership/current-main checks passed on `dd77765`, as did `git diff --check`. GitHub CI is recorded on the PR. Full PostgreSQL/backend, clean-install matrix and generated drift remain CI checks because this task changes only B-owned frontend and handoff paths. No live provider, private real-data, deployment or cloud action occurred.
 
