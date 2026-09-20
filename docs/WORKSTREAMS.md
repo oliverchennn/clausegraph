@@ -1,5 +1,7 @@
 # Three-developer work board
 
+**Solo completion override, 2026-09-20:** the user confirms other developers are inactive and reassigns all remaining reviews, fixes and required deliveries to this agent. Follow the current override in [AGENTS](../AGENTS.md): use the existing ownership lanes, finish required stages sequentially, record same-agent orchestrator reviews honestly and merge green PRs without waiting for B/C. The allocation below records the earlier division of work, not current staffing. C12 and the later frontend/demo tasks are reassigned, not waived.
+
 The user rebalanced remaining required work on 2026-09-20 to approximately **A 35% / B 35% / C 30%**. A owns backend/integration; B leads frontend state/shared integration; C delivers assigned frontend views and demo materials. The old optional-only C queue is retired. Each developer uses its own session/checkout and one bounded task at a time.
 
 ## Ownership and contribution lanes

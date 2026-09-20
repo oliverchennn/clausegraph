@@ -2,6 +2,10 @@
 
 Read this file, docs/WORKSTREAMS.md and your assigned task handoff before work. This repository is an executable financial decision engine. Preserve user changes.
 
+## Current solo completion instruction (2026-09-20)
+
+The user states the other developers are no longer working and authorizes this agent to act as the full orchestrator: perform their remaining reviews and fixes, merge, and finish the required tasks alone. This supersedes the separate-contributor review, no-takeover and stop-after-each-task rules below for this completion run. Record the agent's review honestly as an orchestrator review, not independent B/C approval. Continue sequentially through the required queue without waiting for inactive developers, preserving all financial/privacy invariants, task handoffs, fresh worktrees, ownership-lane checks and green CI before merges. Use dev-a for backend/shared work and dev-b for reassigned frontend/demo work; no checker bypass or policy change is needed. Preserve previous contributor work/handoffs. No subagents or messages to inactive developer tasks are needed. Stop only for a repeatedly unresolvable blocker and report it; unavailable live providers and human spoken rehearsal remain explicit limits, never fabricated successes.
+
 ## Hackathon product priorities
 Read [docs/HACKATHON_MVP.md](docs/HACKATHON_MVP.md) before choosing or expanding feature scope. ClauseGraph is a hackathon MVP: prioritize a reliable end-to-end demonstration of **novelty, user impact and technical depth**. Make the chain from source clause to reviewed rule, dependency, permitted action and cash consequence visible. Prefer a small complete workflow over additional integrations or broad financial-app features.
 

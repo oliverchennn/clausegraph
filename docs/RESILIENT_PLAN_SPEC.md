@@ -1,6 +1,6 @@
 # Resilient fixed-plan synthesis: v1 design
 
-Status: **proposed for B review; no synthesis runtime is implemented**. Starting application checkpoint: `2e7653718ff7fac27158789deff965775da408a1`. Implementation requires this design's reviewed merge and acceptance of stage 2, including C12. See the [A handoff](handoffs/dev-a/resilient-plan-spec.md) and [ordered assignments](HACKATHON_ASSIGNMENTS.md).
+Status: **reviewed by the user-authorized solo orchestrator; no synthesis runtime is implemented**. Starting application checkpoint: `2e7653718ff7fac27158789deff965775da408a1`. Implementation requires this design's green merge and acceptance of stage 2, including the reassigned C12. The user has replaced separate B review with the agent's recorded review for this completion run; role references below describe the original interface responsibilities. See the [A handoff](handoffs/dev-a/resilient-plan-spec.md) and [ordered assignments](HACKATHON_ASSIGNMENTS.md).
 
 ## Product contract and objective
 

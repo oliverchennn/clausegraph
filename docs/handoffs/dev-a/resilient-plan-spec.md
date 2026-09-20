@@ -37,3 +37,11 @@ No runtime change, dependency update, provider call, deployment or user-service 
 ## Remaining gates
 
 B design review is pending. C12 is not delivered. The engine task and subsequent consequence contract remain ordered work; this design does not claim either is implemented. Optional #5/#6 are not activated.
+
+## User-authorized solo continuation and design review
+
+The user subsequently confirmed other developers are inactive and directed this agent to do their reviews/fixes, merge and finish all required work alone. The prior B-review wait is superseded. Scope expands to `AGENTS.md` and the existing assignment/board/spec files to record that instruction; lane ownership itself is unchanged. C12 and subsequent B/C implementation/demo tasks are reassigned to this agent in fresh dev-b tasks, not dropped.
+
+Orchestrator review (same agent, explicitly **not independent B review**): reviewed first-feasible semantics and omission/date ordering, recorded-approval restrictions, nominal-plus-domain claims, inclusive/exact counts, global work/time limits, independent fixed-plan verification, cost fields and magnitude limits, transient versus saved proof identity, fingerprint trust limits, same-revision races and atomic adoption. No unresolved design blocker. Implementation must test malformed saved schedules/IDs, zero domains/unresolved facts, final-budget-unit success, exact tuple preservation and rollback races; a prior successful search does not bypass adoption revalidation. The original no-safe-schedule fixture stays unchanged. Human/live-provider success is not inferred from this authorization.
+
+The current directive in AGENTS/assignments supersedes the earlier pending-review wording in historical checkpoints. Publish this recorded review, require green CI on the amended design, then merge and continue the reassigned C12 before synthesis implementation. Optional #5/#6 remain unactivated pending the final capacity assessment.
