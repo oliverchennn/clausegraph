@@ -8,9 +8,9 @@ Synthetic acceptance values remain: baseline minimum/end -40000/50000 cents; app
 
 ## Current required increment
 
-The user expanded the hackathon scope on 2026-09-20. The detailed [A/B assignments](HACKATHON_ASSIGNMENTS.md) and [work board](WORKSTREAMS.md) supersede the former freeze-after-review-guidance sequence. The merged baseline at `ca7cde5` includes A's history/uncertainty validation, B's automated demo/fallback work, A's release record and B's saved-history UI (PR19-23). Do not rebuild these as proposed features.
+The user expanded the scope and rebalanced remaining work on 2026-09-20 to approximately **35% A / 35% B / 30% C**. The [A/B/C assignments](HACKATHON_ASSIGNMENTS.md) and [work board](WORKSTREAMS.md) supersede the old freeze sequence and optional-only C role. Refreshed main at `5e79c1d` includes PR25-28 closeout/consent/corrections, PR29's cash-gap API/contracts and PR30's incomplete-source guard, in addition to PR19-24. C's previous queue is complete per the user. Preserve these merged deliveries rather than restarting them.
 
-Finish the important remaining work: destination-aware Brev browser consent, a separately recorded native/scanned synthetic live upload -> extraction -> review -> recalculation check, verification of the merged history checkpoint, and human spoken rehearsal. Automated rehearsal and provider connectivity do not establish human delivery or extraction accuracy. External access blockers stay explicit while independent local work continues.
+Preserve merged consent/closeout preparation and the PR30 incomplete-source correctness fix. Native timeout/OCR503 are recorded; successful extraction and human spoken rehearsal remain outstanding. C owns demo preparation; A owns live/correctness evidence and B shared UI integration. Automated rehearsal and provider connectivity do not establish human delivery or extraction accuracy. External blockers stay explicit while independent local work continues.
 
 Required feature order:
 
@@ -19,11 +19,11 @@ Required feature order:
 3. **Idea #1: find a resilient plan.** Review a separate specification, then search for one fixed permitted schedule that survives the declared domain. Preserve the distinction from nominal optimization and fixed-plan verification; no adaptive policies or per-outcome reoptimization masquerading as one robust schedule.
 4. **Idea #4: cross-document consequence walkthrough.** Connect the existing graph, evidence, deterministic effects and cash comparison into an action-focused explanation, including cancellation debt acceleration and retained future obligations.
 
-A owns engine/contracts and generated types; B owns UI and browser checks. Merge A's contract before B consumes it. Each bounded task gets its own handoff and fresh worktree. C contributes the bounded C7/C8 reviews and optional C9 in [DEV_C.md](DEV_C.md), using at most two or three substantial prompts; these never replace A/B checks or gate delivery. Features above are assigned future work, not implemented or live-verified claims.
+A owns engine/contracts/generated types; B leads UI state/forms/shared integration; C implements the uncertainty failure view and consequence walkthrough and delivers demo materials/tests/rehearsals. Merge A contracts before B/C consumption. Each bounded task gets its own handoff and fresh worktree. [C10-C15](DEV_C.md) replaces the old limited review queue, with exact paths and shared-file releases in the existing dev-b lane. C validates its deliverables; A/B mutual review remains required. The stage 1 backend contract is merged; its UI/demo and the later features remain assigned work. No successful live inference or human rehearsal is claimed.
 
 ## Optional work and presentation boundary
 
-**Idea #5, document-change impact, is if time permits after the required stages. Idea #6, review by decision impact, has lower priority still.** A/B must record a remaining-time assessment before activating either; preserve implementation, integration and human rehearsal time. Exact scope and acceptance are in the assignment document. Correlations, uncertain expenses and adaptive policies are not silently included in resilient synthesis.
+**Idea #5, document-change impact, is if time permits after the required stages. Idea #6, review by decision impact, has lower priority still.** A/B/C assess remaining capacity and A records it before activation; preserve implementation, integration and human rehearsal time. Exact scope/acceptance is in the assignment document. Correlations, uncertain expenses and adaptive policies are not silently included in resilient synthesis.
 
 Keep a tested synthetic demo checkpoint and local fallback after each stage. Rehearse the final source -> review -> plan -> failure -> cash diagnostic/resilient alternative -> consequence story; update demo claims only after the corresponding implementation is merged and checked. Source support, confidence, human review, conditions and third-party approval remain separate. An empty review queue is not proof of safety.
 
