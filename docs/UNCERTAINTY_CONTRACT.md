@@ -1,10 +1,10 @@
 # Bounded uncertainty contract
 
-This documents the existing backend contract for a future, separately assigned B task covering amount ranges and multiple uncertainty controls. B is currently assigned task 5's demo work per the user; this document does not change that assignment. A's [uncertainty-limits handoff](handoffs/dev-a/uncertainty-limits.md) records the validation scope and results. No new API fields, controls or robust synthesis are introduced.
+This documents the existing backend contract for the separately assigned stage 2 uncertainty explorer. A's [uncertainty-limits handoff](handoffs/dev-a/uncertainty-limits.md) records its original validation. The [explorer consumption specification](UNCERTAINTY_EXPLORER.md) maps existing fields to B's controls and C12's bounded failure view, exact/qualified counts and stale-state handling. Stage 1 acceptance still gates stage 2 implementation under [the assignments](HACKATHON_ASSIGNMENTS.md). No new API fields, controls or robust synthesis are introduced by these documents.
 
 ## Request and allowed domains
 
-`POST /api/verify` requires the private session bearer token and the current saved `plan_id` plus `revision`. Missing/invalid sessions return 401; an absent or stale active plan returns 409. Invalid request fields or semantic targets return 422 without saving a verification or changing the workspace. The store rechecks the active plan/revision before saving an in-flight result. Results are available through the existing private `GET /api/verifications` route.
+`POST /api/verify` requires the private session bearer token and the current saved `plan_id` plus `revision`. Missing/invalid sessions return 401; an absent/stale active plan or incomplete document source processing returns 409. Invalid request fields or semantic targets return 422 without saving a verification or changing the workspace. The store rechecks the active plan/revision before saving an in-flight result. Results are available through the existing private `GET /api/verifications` route.
 
 | Input | Existing constraint |
 |---|---|
@@ -48,8 +48,10 @@ The clock is checked before each case. A case already running can finish after t
 
 `total_cases` is an integer in the API, but very large products exceed JavaScript's exact integer range. B must not present a rounded JavaScript number as an exact case count or derive proof status from floating-point ratios. Use the server's coverage/proof fields and qualify large counts (or calculate a display count with exact integer arithmetic from the declared bounds). Cash remains backend-computed integer cents.
 
+Results retain one selected counterexample and a separate worst permitted cash assignment, not an outcome for every visited case. Their assignments can differ. `checked_cases` includes authorization/unresolved cases with no cash simulation; do not infer a success count, failure frequency or per-case heatmap. A v1 view can expose the returned witness's dimensions, reasons, events/evidence and future obligations. The [consumption specification](UNCERTAINTY_EXPLORER.md) records the exact mappings and null/proof labels.
+
 ## Frontend handoff and scope
 
-Use existing generated contracts only after this validation task is merged. Keep ranges and rationales visibly labeled as user assumptions; show saved nominal assumptions alongside verification dimensions. Do not silently narrow a large range or raise budgets to obtain SAFE. Reject unsupported targets and duplicate properties early for usability while preserving server validation. Clear stale results when the request, active plan, revision or private session changes; a historical result never authorizes today's action.
+The original validation and generated contracts are merged. Follow stage prerequisites and B's interface release before implementing the richer controls/C12 view. Keep ranges and rationales visibly labeled as user assumptions; show saved nominal assumptions alongside verification dimensions. Do not silently narrow a large range or raise budgets to obtain SAFE. Reject unsupported targets and duplicate properties early for usability while preserving server validation. Clear stale results when the request, active plan, revision or private session changes; a historical result never authorizes today's action.
 
 The backend already supports these dimensions; richer frontend controls are still unimplemented and require B's separate assignment. Correlated uncertainty, uncertain expenses, adaptive schedules and general robust synthesis remain outside this contract and require a separate specification. Validation here uses synthetic data and isolated databases, with no live-provider or deployed-service claim. [Verification semantics](handoffs/verification.md) and [history semantics](HISTORY_CONTRACT.md) provide the related contracts.
