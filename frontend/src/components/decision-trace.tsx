@@ -60,7 +60,8 @@ export default function DecisionTracePanel({ plan, workspace, onEvidence }: {
             <span className="trace-icon"><GitBranch size={17} /></span>
             <small>2 · Clause</small>
             <strong>{rules.map(rule => rule?.title).join(", ") || "Reviewed rule"}</strong>
-            <span>{rules.every(rule => rule?.evidence_status === "supported") ? "Evidence supported" : "Review required"}</span>
+            <span>{rules.every(rule => rule?.evidence_status === "supported") ? "Evidence supported" : `Evidence ${rules.find(rule => rule?.evidence_status !== "supported")?.evidence_status ?? "unchecked"}`}</span>
+            <span>{rules.every(rule => rule?.review_status === "reviewed") ? "Human reviewed" : "Human review pending"}</span>
           </div>
           <ArrowRight className="trace-arrow" size={17} />
           <div className="trace-step">
@@ -73,7 +74,7 @@ export default function DecisionTracePanel({ plan, workspace, onEvidence }: {
           <div className="trace-step trace-ledger">
             <span className="trace-icon"><Wallet size={17} /></span>
             <small>4 · Ledger effect</small>
-            <strong>{(trace.changes ?? []).length} verified change{(trace.changes ?? []).length === 1 ? "" : "s"}</strong>
+            <strong>{(trace.changes ?? []).length} computed change{(trace.changes ?? []).length === 1 ? "" : "s"}</strong>
             {(trace.changes ?? []).map((change, index) => <span key={index} data-testid="trace-change">{changeLabel(change)}</span>)}
           </div>
         </article>;
