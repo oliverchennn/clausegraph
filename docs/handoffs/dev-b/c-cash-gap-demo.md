@@ -12,7 +12,9 @@ Files: new `frontend/demo/cash-gap-demo.md`, new `frontend/tests/cash-gap-demo.s
 
 C11's prerequisite is stage 1 **A and B**. A's half is merged; B's is not. C11 also writes into `frontend/demo/`, which C10 creates. So this branch sits on stage 1 B with C10 merged in — all three are dev-b lane, so the ownership check passes against main.
 
-**Required merge order: C10 → `cash-gap-diagnostic-ui` → C11.** Merging C11 alone would carry the other two in with it.
+**Required merge order: C10 → `cash-gap-diagnostic-ui` → `uncertainty-explorer-ui` → C11.** Merging C11 alone would carry the others in with it.
+
+Stage 2 B replaced the approval select this spec originally drove, so `uncertainty-explorer-ui` is merged into this branch and the spec now uses its `add-approval` control. With all four integrated the full suite is **46 passed**.
 
 ## Deliverables
 

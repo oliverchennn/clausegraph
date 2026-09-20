@@ -69,7 +69,7 @@ test("the denied-approval aside reports no amount at all", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
   const panel = page.getByTestId("verification-panel");
-  await panel.getByLabel("Verification approval outcomes").selectOption({ index: 1 });
+  await panel.getByTestId("add-approval").click();
   const verified = page.waitForResponse(r => r.url().endsWith("/api/verify") && r.request().method() === "POST");
   await panel.getByRole("button", { name: "Verify fixed plan" }).click();
   await (await verified).json();
