@@ -23,7 +23,7 @@ test("fixed-plan verification exposes a counterexample, proves bounded safety, a
   expect(unsafe.coverage_complete).toBe(true);
   const result = page.getByTestId("verification-result");
   await expect(result.getByText("Unsafe", { exact: true })).toBeVisible();
-  await expect(result).toContainText("Earliest failing date: 2026-09-26");
+  await expect(result).toContainText("Failure date in this witness: 2026-09-26");
   await expect(result).toContainText("Balance: -$400");
   await expect(page.getByTestId("verification-worst-balance")).toHaveText("-$400");
   await expect(page.getByRole("img", { name: /Cash projection.*Counterexample minimum/ })).toBeVisible();

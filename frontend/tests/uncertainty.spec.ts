@@ -35,7 +35,7 @@ test("an inclusive $100 amount range counts 10001 values and warns about the cas
   await expect(panel.getByTestId("budget-warning")).toContainText("will not return Safe");
 });
 
-test("counts beyond JavaScript's safe integer range stay exact", async ({ page }) => {
+test("counts beyond JavaScript's safe integer range stay exact", async ({ page }, testInfo) => {
   const panel = await open(page);
   await panel.getByTestId("add-income-amount").click();
   await panel.getByLabel("Minimum cents for amount-1").fill("0");
@@ -61,6 +61,7 @@ test("counts beyond JavaScript's safe integer range stay exact", async ({ page }
   await panel.getByRole("button", { name: "Verify fixed plan" }).click();
   const result = page.getByTestId("verification-result");
   await expect(result.locator(".verification-facts")).toContainText(`1 / ${expected}`);
+  await result.locator(".verification-facts").screenshot({ path: testInfo.outputPath("large-result-count.png") });
   await expect(result).toContainText("bounded check incomplete");
   await panel.getByRole("button", { name: "Explain cash gap" }).click();
   await expect(page.getByTestId("cash-gap-diagnostic").getByLabel("Fixed schedule cash comparison")).toContainText(`1 / ${expected}`);
@@ -111,12 +112,13 @@ test("editing a declared bound clears the previous result rather than relabellin
   await expect(page.getByTestId("verification-result")).toHaveCount(0);
 });
 
-test("the controls are keyboard operable at 390px without horizontal overflow", async ({ page }) => {
+test("the controls are keyboard operable at 390px without horizontal overflow", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const panel = await open(page);
   await panel.getByTestId("add-income-date").focus();
   await page.keyboard.press("Enter");
   await expect(panel.getByTestId("dimension-count")).toHaveText("1 / 8 dimensions");
+  await panel.screenshot({ path: testInfo.outputPath("uncertainty-mobile.png") });
   await panel.getByRole("button", { name: "Remove date-1" }).focus();
   await page.keyboard.press("Enter");
   await expect(panel.getByTestId("dimension-count")).toHaveText("0 / 8 dimensions");
