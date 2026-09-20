@@ -8,9 +8,9 @@ Synthetic acceptance values remain: baseline minimum/end -40000/50000 cents; app
 
 ## Current required increment
 
-The user expanded the scope and rebalanced remaining work on 2026-09-20 to approximately **35% A / 35% B / 30% C**. The [A/B/C assignments](HACKATHON_ASSIGNMENTS.md) and [work board](WORKSTREAMS.md) supersede the old freeze sequence and optional-only C role. Main at `e65464c` includes PR24 assignments and the PR19-23 application baseline. A/B's first tasks are published in open PR25/28; C's previous work is complete per the user, with PR26/27 awaiting integration. Preserve these deliveries rather than restarting them.
+The user expanded the scope and rebalanced remaining work on 2026-09-20 to approximately **35% A / 35% B / 30% C**. The [A/B/C assignments](HACKATHON_ASSIGNMENTS.md) and [work board](WORKSTREAMS.md) supersede the old freeze sequence and optional-only C role. Refreshed main at `f5f93bd` includes PR25/28 closeout/consent and C's PR26/27 follow-ups, in addition to PR19-24. C's previous queue is complete per the user. Preserve these merged deliveries rather than restarting them.
 
-Finish integration of consent/closeout, A's observed incomplete-source correctness repair, honest native/scanned live records and human spoken rehearsal. C owns demo preparation; A owns live/correctness evidence and B shared UI integration. Automated rehearsal and provider connectivity do not establish human delivery or extraction accuracy. External blockers stay explicit while independent local work continues.
+Preserve merged consent/closeout preparation and finish A's separate incomplete-source correctness repair, honest native/scanned live records and human spoken rehearsal. C owns demo preparation; A owns live/correctness evidence and B shared UI integration. Automated rehearsal and provider connectivity do not establish human delivery or extraction accuracy. External blockers stay explicit while independent local work continues.
 
 Required feature order:
 

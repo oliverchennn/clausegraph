@@ -16,24 +16,24 @@ Percentages estimate remaining effort, not task counts or past work. The [100-po
 
 ## Confirmed checkpoint and in-flight work
 
-Fetched main at refresh is `e65464c` (PR24 assignments), containing the PR19-23 application baseline. The user reports A/B's first tasks and all previous C work done. Published work awaiting integration is distinct from merged work:
+Started at `e65464c`; refreshed main is `f5f93bd` after PR28/25/26/27 merged during this edit. The user reports A/B's first tasks and all previous C work done. These are completed merged deliveries:
 
-| PR | Contributor / published head | Status at refresh |
+| PR | Contributor / merge commit | Delivered scope and limits |
 |---|---|---|
-| [25](https://github.com/oliverchennn/clausegraph/pull/25) | A closeout / `08f5102` | Open; local/checkpoint preparation published. A's local continuation records native timeout/OCR503 and an incomplete-source plan-confirmation blocker under repair; preserve that work and require its fix/checks for closeout. |
-| [28](https://github.com/oliverchennn/clausegraph/pull/28) | B consent / `428b9f7` | Open; consent implementation delivered, pending integration. Human spoken rehearsal remains unmeasured. |
-| [26](https://github.com/oliverchennn/clausegraph/pull/26) | C trace claims / `d42f2b9` | Open follow-up; preserve decision-trace changes and C's handoff. |
-| [27](https://github.com/oliverchennn/clausegraph/pull/27) | C Brev wording / `59d5646` | Open follow-up; preserve historical-variability wording and C's handoff. |
+| [25](https://github.com/oliverchennn/clausegraph/pull/25) | A closeout / `c64b108` | Local/checkpoint preparation. A's separate local continuation records native timeout/OCR503 and an incomplete-source plan-confirmation blocker under repair; require its fix/checks for closeout. |
+| [28](https://github.com/oliverchennn/clausegraph/pull/28) | B consent / `22f6a2c` | Destination-aware consent and browser coverage. Human spoken rehearsal remains unmeasured. |
+| [26](https://github.com/oliverchennn/clausegraph/pull/26) | C trace claims / `1edf405` | Decision-trace wording correction and C's handoff. |
+| [27](https://github.com/oliverchennn/clausegraph/pull/27) | C Brev wording / `f5f93bd` | Historical-variability wording and C's handoff. |
 
-Do not restart these tasks or claim they merged. A coordinates green, reviewed sequential integration, including shared-doc overlap between PR25 and this refresh and DEMO overlap in PR27. Preserve current closeout evidence and this allocation in conflict resolution. Historical handoffs remain unchanged. C1-C9 are closed/superseded per the user; no missing C reports or check results are invented.
+Do not restart these tasks. This branch incorporates their merged work and reconciles shared-doc overlap while preserving closeout evidence and the new allocation. A continues normal green/reviewed sequential integration for future PRs. Historical handoffs remain unchanged. C1-C9 are closed/superseded per the user; no missing C reports or checks are invented.
 
-The [delivery checkpoint](DELIVERY_CHECKPOINT.md) and [B demo handoff](handoffs/dev-b/demo-rehearsal.md) retain historical evidence; 180.02 seconds is automated operator timing, not human delivery. Limited Brev native tests do not establish full live native/OCR/browser accuracy. A owns live results/correctness fixes; C owns presenter preparation. External blockers stay explicit while independent local work proceeds.
+The [delivery checkpoint](DELIVERY_CHECKPOINT.md) retains A's verification of exact PR23 CI: 352 backend tests including PostgreSQL, 19 browser tests, frontend/contract/platform checks and independent review. The merged [closeout handoff](handoffs/dev-a/live-demo-closeout.md) adds 130 focused local passes/eight PostgreSQL skips, reproduced fallback reports and native/scanned consent/deletion checks. Its pending-consent statement predates A's authorized local live continuation; failed attempts are not a success claim. The [B demo handoff](handoffs/dev-b/demo-rehearsal.md) records 180.02-second automated operator timing, not human delivery. A owns current live/correctness evidence; C owns presenter preparation. External blockers stay explicit while independent local work proceeds.
 
 ## Ordered required work
 
 | Stage | A | B | C | Completion gate |
 |---|---|---|---|---|
-| 0: closeout | Integrate first tasks; finish observed blocker and live/fallback record | Integrate consent/shared browser fixes | C10 demo kit after assignment merge, using current main | Working fallback; truthful live/human status; no false confirmed plan from missing extraction |
+| 0: closeout | Finish observed blocker and live/fallback record | Preserve merged consent; handle newly reproduced shared UI defects | C10 demo kit after assignment merge, using current main | Working fallback; truthful live/human status; no false confirmed plan from missing extraction |
 | 1: cash-gap #2 | `cash-gap-diagnostic` | `cash-gap-diagnostic-ui` state/explanation | C11 cash-gap demo/test after A/B merge | Proven versus observed/incomplete; cash cannot repair authorization; unchanged saved plan |
 | 2: uncertainty #3 | `uncertainty-explorer-contract` | `uncertainty-explorer-ui` controls/count/request/selection/stale state | C12 failure view and released wiring/tests | Exact inclusive domains/counts; accessible failures; honest Safe/Unsafe/Unknown |
 | 3: resilient #1 | Reviewed `resilient-plan-spec`, then `resilient-plan-engine` | Design review, comparison and explicit adoption | C13 resilient-plan demo/test | One fixed permitted schedule survives unchanged bounds; independent verification; honest cutoff |

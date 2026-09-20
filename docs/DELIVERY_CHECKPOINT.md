@@ -1,6 +1,16 @@
-# Demo checkpoint and history acceptance
+# Demo checkpoints and history acceptance
 
-## Stable application checkpoint
+## Validated application checkpoint with history
+
+Commit [`ca7cde59287e5456a9398965796c873152176491`](https://github.com/oliverchennn/clausegraph/commit/ca7cde59287e5456a9398965796c873152176491) includes PR23's read-only history UI and all earlier baseline work. [CI on this exact merged commit](https://github.com/oliverchennn/clausegraph/actions/runs/35488606919) passed 352 backend tests in 39.69 seconds, including PostgreSQL 17; 19 real-API Chromium tests in 2.0 minutes; Ruff, generated OpenAPI/TypeScript drift, frontend typecheck/lint/build, and clean installs on Linux, Windows and macOS. The PR-only ownership job is intentionally skipped on main.
+
+[A's recorded PR23 review](https://github.com/oliverchennn/clausegraph/pull/23) found no blockers on exact head `150809d2db82ef216859189467994beaad832739`, independently passed all 19 real-API browser tests and inspected desktop/mobile history screenshots. This is distinct from B's implementation checks. The historical review criteria below remain useful regression criteria; history is delivered.
+
+A's [stage 0 closeout handoff](handoffs/dev-a/live-demo-closeout.md) records fresh local preparation: 130 existing focused tests passed, eight PostgreSQL variants skipped without a disposable test URL; both fallback scripts passed and their saved reports parsed; both native/scanned no-consent uploads stayed local and were deleted. PR24 (`e65464c`) subsequently changed assignment documents only; it did not change the tested runtime. No new live provider, human source-review or spoken-rehearsal success is claimed. [EXTRACTION_CHECK.md](EXTRACTION_CHECK.md) records the prepared fixtures and pending destination-specific consent.
+
+Use this commit when a presentation includes history, preserving the isolated setup and fallback procedure below. The earlier `a00af57` baseline and its rehearsal evidence remain valid historical records. Neither checkpoint is a deployment or a global feature freeze.
+
+## Earlier recorded demo checkpoint
 
 Use commit [`a00af572cc20afea6893e0e261272bb919aed11f`](https://github.com/oliverchennn/clausegraph/commit/a00af572cc20afea6893e0e261272bb919aed11f) as the reproducible synthetic demo baseline. It includes A's history/deletion contracts (PR19), A's uncertainty validation (PR20), and B's dialog focus correction and demo handoff (PR21). This is a recorded checkpoint, not a new tag, deployment or global feature freeze.
 
@@ -8,7 +18,7 @@ Use commit [`a00af572cc20afea6893e0e261272bb919aed11f`](https://github.com/olive
 
 B's [merged task 5 handoff](handoffs/dev-b/demo-rehearsal.md) records desktop/mobile sign-off, outage/retry recovery, offline fallback and a 180.02-second automated operator run with narration holds. A independently reviewed PR21 and passed all 11 browser tests on its exact head. Human spoken delivery has not been measured; the automated timing is not that sign-off.
 
-B is now implementing task 6's read-only history UI in a separate worktree. That UI is absent from this checkpoint. Presenting this baseline does not depend on finishing history. If history is included in a later presentation build, review and validate its merged commit using the criteria below. Richer uncertainty controls and task 8's advanced design remain separate, unstarted follow-ups.
+The history UI is absent from this earlier checkpoint and is now delivered in the validated `ca7cde5` checkpoint above. The [expanded assignment queue](HACKATHON_ASSIGNMENTS.md) governs later cash diagnostics, uncertainty controls, reviewed synthesis design and consequence work; those features are not claimed by either checkpoint.
 
 ## Reproduce and prepare the local fallback
 
@@ -37,7 +47,7 @@ Before declaring presentation readiness, perform a human spoken three-minute run
 
 ## Acceptance for B task 6's history PR
 
-These are review criteria for the already assigned read-only UI, based on [HISTORY_CONTRACT.md](HISTORY_CONTRACT.md) and [verification semantics](handoffs/verification.md). They introduce no new endpoint, schema or implementation assignment. A should review the exact submitted head, confirm current-main ancestry and green CI, and inspect B's committed handoff and browser evidence.
+These were the review criteria for the read-only UI delivered in PR23, based on [HISTORY_CONTRACT.md](HISTORY_CONTRACT.md) and [verification semantics](handoffs/verification.md). They remain regression guidance and introduce no new endpoint, schema or implementation assignment. The exact submitted head, independent A review and merged CI are recorded above.
 
 | Area | Concrete acceptance case |
 |---|---|
@@ -52,4 +62,4 @@ These are review criteria for the already assigned read-only UI, based on [HISTO
 | Evidence and presentation | Keep synthetic/historical labels, source references and unavailable-source states honest. Current source text/review is not proof of the saved historical result. Keyboard open/close/focus and 390px layout remain usable |
 | Existing demo | Source review, scenario preview, fixed-plan verification, error recovery and the PR21 focus regression still pass after history is added |
 
-Reuse existing backend tests for retention and purge semantics; B's browser tests should demonstrate UI behavior and stale-response handling. B must request any contract/dependency change from A before consuming it. C review remains optional. Any implementation beyond the assigned history UI, including restore, pagination, uncertainty controls or robust synthesis, requires a separate user-approved task.
+Reuse existing backend tests for retention and purge semantics and B's browser tests for UI behavior and stale-response handling. B must request any contract/dependency change from A before consuming it. C review remains optional. Follow the separate scopes and prerequisites in [HACKATHON_ASSIGNMENTS.md](HACKATHON_ASSIGNMENTS.md) for further implementation; this history acceptance record authorizes no additional feature.
