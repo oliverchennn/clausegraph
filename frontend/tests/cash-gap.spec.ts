@@ -80,7 +80,7 @@ test("authorization failures and incomplete coverage never become funding claims
   const recordedBefore = await readApi<{ scenario: { actions: { id: string; approval_status: string }[] }; rules: { id: string; approval_status: string }[] }>(page, "/workspace");
   expect(recordedBefore.scenario.actions.find(action => action.id === "shift-payment")?.approval_status).toBe("approved");
   expect(recordedBefore.rules.find(rule => rule.id === "rule-shift")?.approval_status).toBe("approved");
-  await panel.getByLabel("Verification approval outcomes").selectOption("shift-payment");
+  await panel.getByTestId("add-approval").click();
   const verifyResponse = page.waitForResponse(item => item.url().endsWith("/api/verify") && item.request().method() === "POST");
   await panel.getByRole("button", { name: "Verify fixed plan" }).click();
   expect((await (await verifyResponse).json()).status).toBe("UNSAFE");
@@ -91,7 +91,7 @@ test("authorization failures and incomplete coverage never become funding claims
   expect(blocked.additional_opening_cash_cents).toBeNull();
   expect(blocked.funded).toBeNull();
   expect(blocked.blocking_properties).toContain("authorization");
-  expect(blocked.baseline.counterexample.assignment).toContainEqual({ dimension_id: "approval", value: "denied" });
+  expect(blocked.baseline.counterexample.assignment).toContainEqual({ dimension_id: "approval-1", value: "denied" });
   let result = page.getByTestId("cash-gap-diagnostic");
   await expect(result.getByText("Cash cannot repair", { exact: true })).toBeVisible();
   await expect(result).toContainText("No cash amount established");
@@ -102,7 +102,7 @@ test("authorization failures and incomplete coverage never become funding claims
   await expect(result).not.toContainText("Verified-sufficient fixed-schedule buffer");
   expect(await readApi<typeof recordedBefore>(page, "/workspace")).toEqual(recordedBefore);
 
-  await panel.getByLabel("Verification approval outcomes").selectOption("");
+  await panel.getByRole("button", { name: "Remove approval-1" }).click();
   await panel.getByRole("button", { name: "Payday through Sep 28" }).click();
   const unsafeResponse = page.waitForResponse(item => item.url().endsWith("/api/verify") && item.request().method() === "POST");
   await panel.getByRole("button", { name: "Verify fixed plan" }).click();
@@ -139,7 +139,7 @@ test("assumption, plan, revision, and session changes clear cash diagnostics and
   });
   await panel.getByRole("button", { name: "Explain cash gap" }).click();
   await interceptedPromise;
-  await panel.getByLabel("Latest verification payday").fill("2026-09-26");
+  await panel.getByLabel("Latest for payday").fill("2026-09-26");
   release();
   await expect(page.getByTestId("verification-result")).not.toBeVisible();
   await expect(page.getByTestId("cash-gap-diagnostic")).not.toBeVisible();

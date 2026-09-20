@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, CircleDollarSign, FileText, LockKeyhole } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
+import { exactCaseCount } from "@/lib/uncertainty";
 import { humanize, money, request, shortDate } from "@/lib/api";
 import type { CashGapDiagnostic, CashGapRequest, PlanResult, VerificationResult, Workspace } from "@/lib/types";
 
@@ -132,12 +133,12 @@ export default function CashGapDiagnosticPanel({ workspace, plan, verification, 
           <div><span>Original fixed schedule</span><Badge tone={verificationTone(diagnostic.baseline.status)}>{verificationLabel(diagnostic.baseline.status)}</Badge></div>
           <strong>No added cash</strong>
           <p>{balanceSummary(diagnostic.baseline)}</p>
-          <small>{diagnostic.baseline.checked_cases} / {diagnostic.baseline.total_cases} cases checked · {diagnostic.baseline.coverage_complete ? "complete coverage" : "incomplete coverage"}</small>
+          <small>{diagnostic.baseline.checked_cases} / {exactCaseCount(diagnostic.baseline.assumptions.uncertainties ?? []).toString()} cases checked · {diagnostic.baseline.coverage_complete ? "complete coverage" : "incomplete coverage"}</small>
         </article>
         <article>
           <div><span>Same actions and dates</span>{diagnostic.funded && <Badge tone={verificationTone(diagnostic.funded.status)}>{verificationLabel(diagnostic.funded.status)}</Badge>}</div>
           <strong>{testedCash != null ? `With ${money(testedCash, true)} hypothetical opening cash` : "No verified cash comparison"}</strong>
-          {diagnostic.funded ? <><p>{balanceSummary(diagnostic.funded)}</p><small>{diagnostic.funded.checked_cases} / {diagnostic.funded.total_cases} cases checked · {diagnostic.funded.coverage_complete ? "complete coverage" : "incomplete coverage"}</small></> : <p>Cash was not tested as a repair because no permissible amount is established.</p>}
+          {diagnostic.funded ? <><p>{balanceSummary(diagnostic.funded)}</p><small>{diagnostic.funded.checked_cases} / {exactCaseCount(diagnostic.funded.assumptions.uncertainties ?? []).toString()} cases checked · {diagnostic.funded.coverage_complete ? "complete coverage" : "incomplete coverage"}</small></> : <p>Cash was not tested as a repair because no permissible amount is established.</p>}
         </article>
       </div>
 

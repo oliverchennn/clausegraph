@@ -23,7 +23,7 @@ test("fixed-plan verification exposes a counterexample, proves bounded safety, a
   expect(unsafe.coverage_complete).toBe(true);
   const result = page.getByTestId("verification-result");
   await expect(result.getByText("Unsafe", { exact: true })).toBeVisible();
-  await expect(result).toContainText("Earliest failing date: 2026-09-26");
+  await expect(result).toContainText("Failure date in this witness: 2026-09-26");
   await expect(result).toContainText("Balance: -$400");
   await expect(page.getByTestId("verification-worst-balance")).toHaveText("-$400");
   await expect(page.getByRole("img", { name: /Cash projection.*Counterexample minimum/ })).toBeVisible();
@@ -36,7 +36,7 @@ test("fixed-plan verification exposes a counterexample, proves bounded safety, a
   await expect(result.getByRole("button", { name: "Event evidence", exact: true }).first()).toBeFocused();
   await page.getByRole("tab", { name: "Documents & facts" }).click();
   await page.getByRole("tab", { name: "Overview", exact: true }).click();
-  await expect(panel.getByLabel("Latest verification payday")).toHaveValue("2026-09-28");
+  await expect(panel.getByLabel("Latest for payday")).toHaveValue("2026-09-28");
   await expect(result.getByText("Unsafe", { exact: true })).toBeVisible();
 
   await panel.getByRole("button", { name: "Payday through Sep 26" }).click();
@@ -91,7 +91,8 @@ test("approval uncertainty stays hypothetical and invalid schedules have no cash
   await page.goto("/");
   await expect(page.getByTestId("minimum-balance")).toContainText("$50");
   const panel = page.getByTestId("verification-panel");
-  await panel.getByLabel("Verification approval outcomes").selectOption("shift-payment");
+  await panel.getByTestId("add-approval").click();
+  await expect(panel.getByLabel("Approval target for approval-1")).toHaveValue("shift-payment");
   const response = page.waitForResponse(item => item.url().endsWith("/api/verify") && item.request().method() === "POST");
   await panel.getByRole("button", { name: "Verify fixed plan" }).click();
   const result = await (await response).json();
