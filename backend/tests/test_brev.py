@@ -10,6 +10,7 @@ from clausegraph.api import create_app
 from clausegraph.config import Settings
 from clausegraph.demo import load_demo
 from clausegraph.providers import ProviderError, Providers
+from clausegraph.schemas import DocumentPage, ExtractionResult
 from clausegraph.storage import Originals, Store
 from clausegraph.worker import run_once
 from test_api import PAYMENT_TEXT, start, transport_handler
@@ -45,7 +46,11 @@ def test_brev_text_keeps_hosted_evidence_and_secrets_separate():
         if request.url.host == "127.0.0.1":
             assert "authorization" not in request.headers
             assert body["model"] == "my-nim-model"
-            assert "guided_json" not in body and "response_format" not in body
+            assert "guided_json" not in body
+            assert body["response_format"] == {"type": "json_schema", "json_schema": {
+                "name": "clausegraph_response", "strict": True, "schema": ExtractionResult.model_json_schema()}}
+            assert body["chat_template_kwargs"] == {"enable_thinking": True}
+            assert body["thinking_token_budget"] == 2048
             assert "schema" in body["messages"][0]["content"]
             return reply(json.dumps({"rules": [], "events": [], "actions": []}))
         assert request.url.host == "integrate.api.nvidia.com"
@@ -66,10 +71,61 @@ def test_hosted_default_remains_keyed_and_schema_constrained():
     def handle(request):
         assert request.headers["authorization"] == "Bearer hosted-key"
         assert request.url.host == "integrate.api.nvidia.com"
-        assert json.loads(request.content)["guided_json"] == {"type": "object"}
+        body = json.loads(request.content)
+        assert body["guided_json"] == {"type": "object"}
+        assert body["response_format"] == {"type": "json_object"}
+        assert "chat_template_kwargs" not in body
+        assert "thinking_token_budget" not in body
         return reply("{}")
     providers = Providers(settings(nvidia_api_key="hosted-key", brev_nim_model="unused"), httpx.MockTransport(handle))
     assert providers._nvidia("Synthetic", {}, {"type": "object"}) == "{}"
+
+
+@pytest.mark.parametrize("max_tokens,budget", [(128, 64), (8192, 2048)])
+def test_brev_structured_reasoning_leaves_room_for_final_json(max_tokens, budget):
+    def handle(request):
+        body = json.loads(request.content)
+        assert body["thinking_token_budget"] == budget < body["max_tokens"]
+        assert body["chat_template_kwargs"] == {"enable_thinking": True}
+        assert body["response_format"]["json_schema"]["schema"] == {"type": "object"}
+        return reply("{}")
+    provider = Providers(settings(text_provider="brev", brev_nim_model="test"), httpx.MockTransport(handle))
+    assert provider._nvidia("Return JSON.", {}, {"type": "object"}, max_tokens=max_tokens) == "{}"
+
+
+def test_brev_plain_text_reserves_output_budget_without_forcing_json():
+    def handle(request):
+        body = json.loads(request.content)
+        assert "response_format" not in body and "guided_json" not in body
+        assert "thinking_token_budget" not in body
+        # Reproduce a reasoning-capable server exhausting its combined token budget.
+        if body.get("chat_template_kwargs", {}).get("enable_thinking") is not False:
+            return reply("", finish="length")
+        return reply("Synthetic draft, not sent.")
+    providers = Providers(settings(text_provider="brev", brev_nim_model="test"), httpx.MockTransport(handle))
+    assert providers._nvidia("Write a plain text draft.", {}) == "Synthetic draft, not sent."
+
+
+def test_brev_source_spans_preserve_unicode_offsets_versions_and_original_document():
+    scenario, documents, _ = load_demo()
+    document = documents[0].model_copy(deep=True)
+    document.version = 3
+    document.pages = [DocumentPage(page=2, text="\r\nCaf\u00e9 \U0001f4b5 $12.00\r\n\r\nRepeat\nRepeat\n  ")]
+    before = document.model_dump(mode="json")
+    captured = []
+    def handle(request):
+        source = json.loads(json.loads(request.content)["messages"][1]["content"])["source_document"]
+        captured.extend(source["pages"][0]["evidence_spans"])
+        assert "text" not in source["pages"][0]  # Do not double the source text/token budget.
+        return reply('{"rules": [], "events": [], "actions": []}')
+    provider = Providers(settings(text_provider="brev", brev_nim_model="test"), httpx.MockTransport(handle))
+    provider.extract(document, scenario)
+    assert document.model_dump(mode="json") == before
+    assert [span["quote"] for span in captured] == ["Caf\u00e9 \U0001f4b5 $12.00", "Repeat", "Repeat"]
+    assert [(span["char_start"], span["char_end"]) for span in captured] == [(2, 15), (19, 25), (26, 32)]
+    for span in captured:
+        assert span["document_id"] == document.id and span["version"] == 3 and span["page"] == 2
+        assert document.pages[0].text[span["char_start"]:span["char_end"]] == span["quote"]
 
 
 def test_missing_brev_model_does_not_fall_back_to_hosted():
