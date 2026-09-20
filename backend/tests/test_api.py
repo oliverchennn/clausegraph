@@ -45,8 +45,15 @@ def transport_handler(request):
                 "content": json.dumps({"checks": [{"rule_id": rule["id"], "supported": True,
                     "reason": "Mocked NVIDIA evidence check; no live call."} for rule in data["extracted_rules"]]})}}]})
         data = json.loads(content)
+        document = data["source_document"]
+        result = candidate(document)
+        if "evidence_spans" in document["pages"][0]:
+            for rule in result["rules"]:
+                rule.pop("evidence")
+                rule["evidence_span_ids"] = [document["pages"][0]["evidence_spans"][0]["id"]]
+                rule["entity_match_issues"] = []
         return httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {
-            "content": json.dumps(candidate(data["source_document"]))}}]})
+            "content": json.dumps(result)}}]})
     if ":generateContent" in request.url.path:
         text = json.loads(request.content)["contents"][0]["parts"][0]["text"]
         data = json.loads(text[text.index('{"source_document"'):])
