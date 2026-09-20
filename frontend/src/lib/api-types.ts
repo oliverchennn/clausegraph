@@ -384,6 +384,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/synthesis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Synthesis */
+        post: operations["synthesis_api_synthesis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/synthesis/adopt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adopt Synthesis */
+        post: operations["adopt_synthesis_api_synthesis_adopt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/verifications": {
         parameters: {
             query?: never;
@@ -1085,6 +1119,12 @@ export interface components {
              * Format: date-time
              */
             generated_at: string;
+            /**
+             * Generation Mode
+             * @default nominal
+             * @enum {string}
+             */
+            generation_mode: "nominal" | "resilient";
             /** Id */
             id: string;
             /**
@@ -1102,7 +1142,7 @@ export interface components {
              * Solver Status
              * @enum {string}
              */
-            solver_status: "OPTIMAL" | "FEASIBLE" | "INFEASIBLE" | "UNKNOWN" | "MODEL_INVALID";
+            solver_status: "OPTIMAL" | "FEASIBLE" | "INFEASIBLE" | "UNKNOWN" | "MODEL_INVALID" | "FIXED_VERIFIED";
             /** Solver Wall Time Seconds */
             solver_wall_time_seconds: number;
             /**
@@ -1110,6 +1150,7 @@ export interface components {
              * @enum {string}
              */
             state: "confirmed" | "conditional" | "infeasible" | "unresolved";
+            synthesis_provenance?: components["schemas"]["SynthesisProvenance"] | null;
             /** Warnings */
             warnings?: string[];
         };
@@ -1308,6 +1349,16 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** ScheduledAction */
+        ScheduledAction: {
+            /** Action Id */
+            action_id: string;
+            /**
+             * Execution Date
+             * Format: date
+             */
+            execution_date: string;
+        };
         /** SessionCreate */
         SessionCreate: {
             /**
@@ -1315,6 +1366,12 @@ export interface components {
              * @default false
              */
             demo: boolean;
+            /**
+             * Demo Variant
+             * @default baseline
+             * @enum {string}
+             */
+            demo_variant: "baseline" | "resilient";
         };
         /** Simulation */
         Simulation: {
@@ -1330,6 +1387,154 @@ export interface components {
             first_shortfall_date: string | null;
             /** Minimum Balance Cents */
             minimum_balance_cents: number;
+        };
+        /** SynthesisAdoptRequest */
+        SynthesisAdoptRequest: {
+            /** Candidate Fingerprint */
+            candidate_fingerprint: string;
+            /** Selected Actions */
+            selected_actions: components["schemas"]["ScheduledAction"][];
+            synthesis_request: components["schemas"]["SynthesisRequest"];
+        };
+        /** SynthesisAdoptionResult */
+        SynthesisAdoptionResult: {
+            plan: components["schemas"]["PlanResult"];
+            verification: components["schemas"]["VerificationResult"];
+        };
+        /** SynthesisCosts */
+        SynthesisCosts: {
+            /** Total Action Burden */
+            total_action_burden: number;
+            /** Total Action Fees Cents */
+            total_action_fees_cents: number;
+        };
+        /** SynthesisProvenance */
+        SynthesisProvenance: {
+            /** Fingerprint */
+            fingerprint: string;
+            request: components["schemas"]["SynthesisRequest"];
+            /** Source Plan Id */
+            source_plan_id: string;
+        };
+        /** SynthesisRefutation */
+        SynthesisRefutation: {
+            counterexample?: components["schemas"]["Counterexample"] | null;
+            /** Failures */
+            failures: components["schemas"]["VerificationFailure"][];
+            /** Selected Actions */
+            selected_actions: components["schemas"]["ScheduledAction"][];
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "nominal" | "uncertainty";
+        };
+        /** SynthesisRequest */
+        SynthesisRequest: {
+            /**
+             * Max Candidates
+             * @default 1000
+             */
+            max_candidates: number;
+            /**
+             * Max Case Checks
+             * @default 10000
+             */
+            max_case_checks: number;
+            /** Plan Id */
+            plan_id: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Time Limit Seconds
+             * @default 5
+             */
+            time_limit_seconds: number;
+            /** Uncertainties */
+            uncertainties?: (components["schemas"]["IncomeDateUncertainty"] | components["schemas"]["IncomeAmountUncertainty"] | components["schemas"]["ApprovalUncertainty"])[];
+        };
+        /** SynthesisResult */
+        SynthesisResult: {
+            assumptions: components["schemas"]["SynthesisRequest"];
+            candidate?: components["schemas"]["PlanResult"] | null;
+            candidate_costs?: components["schemas"]["SynthesisCosts"] | null;
+            /** Candidate Fingerprint */
+            candidate_fingerprint?: string | null;
+            example_refutation?: components["schemas"]["SynthesisRefutation"] | null;
+            /** Excluded Actions */
+            excluded_actions?: {
+                [key: string]: string;
+            };
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Mode
+             * @default bounded_fixed_schedule_synthesis
+             * @constant
+             */
+            mode: "bounded_fixed_schedule_synthesis";
+            nominal_assumptions: components["schemas"]["PlanRequest"];
+            /**
+             * Nominal Checks
+             * @default 0
+             */
+            nominal_checks: number;
+            nominal_costs?: components["schemas"]["SynthesisCosts"] | null;
+            /** Plan Id */
+            plan_id: string;
+            /**
+             * Refuted Candidate Tuples
+             * @default 0
+             */
+            refuted_candidate_tuples: number;
+            /** Revision */
+            revision: number;
+            /** Runtime Seconds */
+            runtime_seconds: number;
+            /**
+             * Search Exhausted
+             * @default false
+             */
+            search_exhausted: boolean;
+            /** Statement */
+            statement: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "FOUND" | "NO_SOLUTION" | "INCONCLUSIVE";
+            /**
+             * Termination
+             * @enum {string}
+             */
+            termination: "VERIFIED_CANDIDATE" | "EXHAUSTED" | "CANDIDATE_LIMIT" | "CASE_LIMIT" | "TIME_LIMIT" | "MODEL_LIMIT" | "UNRESOLVED";
+            /** Total Candidate Tuples */
+            total_candidate_tuples?: string | null;
+            /** Uncertainty Cases Per Candidate */
+            uncertainty_cases_per_candidate: string;
+            /**
+             * Uncertainty Checks
+             * @default 0
+             */
+            uncertainty_checks: number;
+            /**
+             * Unresolved Candidate Tuples
+             * @default 0
+             */
+            unresolved_candidate_tuples: number;
+            verification?: components["schemas"]["VerificationResult"] | null;
+            /**
+             * Visited Candidate Tuples
+             * @default 0
+             */
+            visited_candidate_tuples: number;
+            /** Warnings */
+            warnings?: string[];
         };
         /** TranscriptResponse */
         TranscriptResponse: {
@@ -1488,6 +1693,12 @@ export interface components {
         };
         /** Workspace */
         Workspace: {
+            /**
+             * Demo Variant
+             * @default baseline
+             * @enum {string}
+             */
+            demo_variant: "baseline" | "resilient";
             /** Documents */
             documents: components["schemas"]["Document"][];
             graph: components["schemas"]["DependencyGraph"];
@@ -2125,6 +2336,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Workspace"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    synthesis_api_synthesis_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SynthesisRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SynthesisResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adopt_synthesis_api_synthesis_adopt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SynthesisAdoptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SynthesisAdoptionResult"];
                 };
             };
             /** @description Validation Error */

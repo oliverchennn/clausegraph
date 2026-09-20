@@ -187,15 +187,41 @@ class Store:
             active = snapshot.get("plan")
             if not active or active["id"] != result.plan_id or active["revision"] != result.revision:
                 raise StaleRevision()
-            connection.execute(insert(verification_runs).values(session_id=session_id, id=result.id,
-                plan_id=result.plan_id, revision=result.revision, status=result.status,
-                payload=result.model_dump(mode="json"), created_at=result.generated_at))
-            if result.worst_case and result.worst_case.daily:
-                connection.execute(insert(verification_points), [dict(session_id=session_id, run_id=result.id,
-                    series="worst_case", event_date=point.date, balance_cents=point.balance_cents,
-                    income_cents=point.income_cents, expense_cents=point.expense_cents,
-                    kind="projected") for point in result.worst_case.daily])
+            self._save_verification(connection, session_id, result)
         return result
+
+    def _save_verification(self, connection, session_id: str, result: VerificationResult):
+        connection.execute(insert(verification_runs).values(session_id=session_id, id=result.id,
+            plan_id=result.plan_id, revision=result.revision, status=result.status,
+            payload=result.model_dump(mode="json"), created_at=result.generated_at))
+        if result.worst_case and result.worst_case.daily:
+            connection.execute(insert(verification_points), [dict(session_id=session_id, run_id=result.id,
+                series="worst_case", event_date=point.date, balance_cents=point.balance_cents,
+                income_cents=point.income_cents, expense_cents=point.expense_cents,
+                kind="projected") for point in result.worst_case.daily])
+
+    def adopt_synthesis(self, session_id: str, source_plan_id: str, plan: PlanResult,
+                        verification: VerificationResult, validate: Callable[[Workspace], None]):
+        """Save an already revalidated plan and proof together, or save neither."""
+        if verification.plan_id != plan.id or verification.revision != plan.revision:
+            raise ValueError("Adoption proof must identify its reconstructed plan.")
+        with self.engine.begin() as connection:
+            locked = connection.execute(update(sessions).where(sessions.c.id == session_id,
+                sessions.c.revision == plan.revision).values(revision=plan.revision))
+            if locked.rowcount != 1:
+                if connection.execute(select(sessions.c.id).where(sessions.c.id == session_id)).first() is None:
+                    raise MissingSession()
+                raise StaleRevision()
+            current = Workspace.model_validate(connection.execute(select(sessions.c.snapshot).where(
+                sessions.c.id == session_id)).scalar_one())
+            if current.plan is None or current.plan.id != source_plan_id or current.plan.revision != plan.revision:
+                raise StaleRevision()
+            validate(current)
+            current.plan = plan
+            connection.execute(update(sessions).where(sessions.c.id == session_id).values(
+                snapshot=current.model_dump(mode="json")))
+            self._project(connection, current)
+            self._save_verification(connection, session_id, verification)
 
     def verifications(self, session_id: str) -> list[VerificationResult]:
         # Persisted points are authoritative; missing rows fail closed instead of
